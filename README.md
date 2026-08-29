@@ -566,3 +566,50 @@ D_i^{\mathrm{work}},
 ```
 
 It makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different industries can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
+
+## Numerical implementation
+
+The code mirrors the economics rather than hiding it inside a plotting script:
+
+- `Industry` contains primitives that differ across industries, such as the capability frontier, verification technology, value of work, and adoption hurdles.
+- `Scenario` contains the technology and market variables we want to vary: model capability, token efficiency, token price, and verification speed.
+- `Policy` is the user's choice $(s,x,k)$, while `PolicyOutcome` records reliability, surplus, adoption, and token demand.
+- `IndustryModel` evaluates a candidate policy. It contains no optimization logic.
+- `PolicyOptimizer` solves the user's problem. It enumerates the discrete retry cap and numerically optimizes delegation horizon and inference intensity for each value of $k$.
+
+This separation makes it difficult to accidentally optimize token demand itself. The user maximizes expected surplus; adoption and industry token demand are downstream outcomes.
+
+```python
+from modeling_token_demand import IndustryModel, PolicyOptimizer, Scenario
+from modeling_token_demand.calibrations import SOFTWARE
+
+model = IndustryModel(SOFTWARE)
+scenario = Scenario(
+    model_capability=1.0,
+    token_efficiency=1.0,
+    token_price_per_million=10.0,
+)
+
+optimum = PolicyOptimizer().solve(model, scenario)
+print(optimum.policy)
+print(optimum.realized_tokens)
+```
+
+The package uses physical tokens throughout. `token_reference` on an industry is only a numerical normalization inside the execution-reliability curve; it does not change the unit of $x$ or reported demand.
+
+### Running the code
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e '.[plot,dev]'
+.venv/bin/pytest
+.venv/bin/python scripts/plot_comparative_statics.py
+```
+
+The plotting script re-solves the user's policy at every point and writes two figures:
+
+![Optimized token demand versus token price](figures/token-demand-vs-price.png)
+
+![Optimized token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
+
+The included industry calibrations are designed to expose qualitatively different regimes, not to serve as empirical estimates. In particular, the near-threshold calibration illustrates the condition needed for a Jevons-style rebound: efficiency must unlock enough new adopted work to outweigh the reduction in physical tokens used per unit of existing work.
