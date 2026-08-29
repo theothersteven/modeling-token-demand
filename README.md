@@ -619,16 +619,16 @@ uv run pytest
 uv run jupyter lab notebooks/comparative_statics.ipynb
 ```
 
-The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes five figures:
+The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes five figures. Its demand and spending figures use the abundant-work, attention-limited polar case with 100,000 human verification hours per industry; this normalization scales the vertical axis without changing the curve shapes.
 
-![Optimized token demand versus token price](figures/token-demand-vs-price.png)
+![Attention-limited token demand versus token price](figures/token-demand-vs-price.png)
 
-![Optimized token spend versus token price](figures/token-spend-vs-price.png)
+![Attention-limited token spend versus token price](figures/token-spend-vs-price.png)
 
-![Optimized token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
+![Attention-limited token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
 
-![Optimized token demand versus model capability](figures/token-demand-vs-capability.png)
+![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)
 
 ![Optimized user surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
 
-The included industry calibrations are designed to expose qualitatively different regimes, not to serve as empirical estimates. In particular, the near-threshold calibration illustrates the condition needed for a Jevons-style rebound: efficiency must unlock enough new adopted work to outweigh the reduction in tokens used per unit of existing work.
+The plotted industry calibrations are designed to expose qualitatively different attention and verification regimes, not to serve as empirical estimates. The package retains a separate near-adoption-threshold calibration for later work-limited comparisons, but it is intentionally excluded here because adoption parameters do not affect strictly attention-limited demand.
