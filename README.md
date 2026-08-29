@@ -629,6 +629,6 @@ The [comparative-statics notebook](notebooks/comparative_statics.ipynb) document
 
 ![Optimized token demand versus model capability](figures/token-demand-vs-capability.png)
 
-![Model capability versus optimized user surplus](figures/model-capability-vs-optimized-surplus.png)
+![Optimized user surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
 
 The included industry calibrations are designed to expose qualitatively different regimes, not to serve as empirical estimates. In particular, the near-threshold calibration illustrates the condition needed for a Jevons-style rebound: efficiency must unlock enough new adopted work to outweigh the reduction in tokens used per unit of existing work.
