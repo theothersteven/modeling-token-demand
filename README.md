@@ -8,7 +8,7 @@
 
 AI token demand is not mechanically increasing in model capability. A user chooses how to use a model: how much work to delegate before the next checkpoint, how much inference to spend on each attempt, and how many attempts to allow. Better models can reduce the tokens needed for a fixed task, but they can also unlock longer autonomous tasks, induce adoption, and let each hour of human attention supervise more machine work.
 
-This paper develops an industry-level model of those choices. Each industry has its own task-difficulty distribution, returns to inference, verification technology, value of successful work, and adoption hurdles. The model separates a task's capability frontier from stochastic execution reliability, so repeated attempts improve pass rates without forcing success to converge to one. Users choose delegation horizon, inference intensity, and retry count to maximize expected surplus. Aggregate demand is then determined by both intensive margins---tokens used by existing industry work---and extensive margins such as adoption and newly economical work.
+This paper develops an industry-level model of those choices. Each industry has its own task-difficulty distribution, returns to inference, verification technology, value of successful work, and adoption hurdles. The model separates a task's capability frontier from stochastic execution reliability, so repeated attempts improve pass rates without forcing success to converge to one. Users choose delegation horizon, inference intensity, and retry count to maximize surplus relative to the resource that constrains them: underlying work in one polar case and human attention in the other. Aggregate demand is then determined by both intensive margins---tokens used by existing industry work---and extensive margins such as adoption and newly economical work.
 
 The central result is deliberately ambiguous. Model progress can raise token demand in capability-threshold industries while lowering it in mature, work-limited industries. Token efficiency can produce an inverted-U demand curve when it triggers adoption before eventually reducing tokens per unit of work. Verification improvements are also not one-dimensional: cheaper checkpoints can increase adoption while encouraging shorter, safer tasks and less inference per attempt.
 
@@ -51,6 +51,8 @@ This decomposition matters. Increasing $s$ means asking the model to carry a lar
 | $A_i$ | Fraction of potential industry work volume delegated to AI |
 | $W_i$ | Total potential industry work volume in human-hours per period |
 | $H_i$ | Human verification hours available per period |
+| $N_i$ | Number of delegated chunks attempted per period |
+| $J_i$ | Expected net surplus per human verification hour |
 | $D_i$ | Token demand per period |
 
 ## 2. Capability and execution are different
@@ -170,6 +172,8 @@ For $\beta_i\leq 1$, this normally falls with $s$: larger chunks amortize checkp
 
 ## 5. The user's problem
 
+The correct objective depends on what is scarce. We first state the fixed-work problem, then derive the abundant-work, attention-constrained problem separately.
+
 Assume a successfully completed hour-equivalent of work in industry $i$ produces value $b_i$. Expected value per unit of underlying work is $b_iP_i$.
 
 Define the cost of one attempted unit of work as
@@ -189,7 +193,7 @@ b_iP_i(s,x,k)
 -E_i(s,x,k)C_i(s,x).
 ```
 
-The user chooses
+When underlying work is the binding resource, the user chooses
 
 ```math
 (s_i^{\star},x_i^{\star},k_i^{\star})
@@ -199,7 +203,7 @@ The user chooses
 
 The outside option is not to use AI. Adoption is introduced below.
 
-### 5.1 The optimal retry count
+### 5.1 The optimal retry count in the fixed-work problem
 
 The retry choice has a clean marginal solution. After $k$ allowed attempts, adding attempt $k+1$ raises success probability by
 
@@ -273,6 +277,66 @@ Thus verification cost per unit falls as the delegated chunk grows. The optimum 
 
 The economic meaning of $s_i^{\star}$ is direct: it is the user's optimal degree of agenticness.
 
+### 5.4 The attention-constrained user
+
+Now suppose useful work is abundant but the industry has only $H_i$ human verification hours per period. Let $N_i$ be the number of delegated chunks. The user solves
+
+```math
+\max_{s,x,k,N_i\geq0}
+N_i s\,u_i(s,x,k)
+```
+
+subject to
+
+```math
+N_iE_i(s,x,k)h_i(s)\leq H_i.
+```
+
+If AI use creates positive value and attention binds, then
+
+```math
+N_i^{\star}
+=
+\frac{H_i}{E_i(s,x,k)h_i(s)}.
+```
+
+Substitution reduces the policy problem to
+
+```math
+(s_i^{\star},x_i^{\star},k_i^{\star})
+=
+\arg\max_{s>0,\;x>0,\;k\in\mathbb N}
+J_i(s,x,k),
+```
+
+where
+
+```math
+J_i(s,x,k)
+=
+\frac{s\,u_i(s,x,k)}{E_i(s,x,k)h_i(s)}
+=
+\frac{s}{h_i(s)}
+\left[
+\frac{b_iP_i(s,x,k)}{E_i(s,x,k)}-cx
+\right]
+-w_i.
+```
+
+$J_i$ is expected net surplus per human verification hour. The size of the attention endowment $H_i$ scales activity but does not change the optimal policy in this single-industry polar case. The explicit human attention cost $w_i$ enters $J_i$ as the constant $-w_i$: it determines whether AI use is worthwhile but does not change $(s_i^{\star},x_i^{\star},k_i^{\star})$ once the hard attention constraint binds. A shadow price on the constraint would add to that opportunity cost.
+
+This objective changes retry behavior sharply. At any fixed $(s,x)$,
+
+```math
+\frac{P_{i,k}}{E_{i,k}}
+\leq
+q_ir_i
+=
+\frac{P_{i,1}}{E_{i,1}},
+```
+
+because $1-(1-r_i)^k\leq kr_i$. The token-cost term in $J_i$ does not depend on $k$, so $k=1$ weakly dominates every larger retry cap. After a failure, a fresh task is another draw from the prior, while the failed task is more likely to belong to the unsolvable tail. Retrying can return if work is finite, abandoning a task is costly, task values differ, or later attempts learn from earlier failures.
+
 ## 6. Industry adoption and induced work
 
 Let $A_i\in[0,1]$ be the fraction of potential work volume in industry $i$ that is economically delegated to AI. This is a reduced-form adoption measure that summarizes heterogeneity across the industry's work in suitability, integration difficulty, regulation, trust, switching costs, and other barriers.
@@ -326,7 +390,7 @@ The delegation horizon cancels mechanically. Merely grouping the same fixed work
 
 ### 7.2 Human-attention-limited demand
 
-Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. Each chunk uses $E_i^{\star}h_i(s_i^{\star})$ expected human hours, so the industry can supervise $H_i/[E_i^{\star}h_i(s_i^{\star})]$ chunks. Multiplying by expected tokens per chunk gives
+Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. The policy is now chosen to maximize $J_i$, as derived in Section 5.4. Each chunk uses $E_i^{\star}h_i(s_i^{\star})$ expected human hours, so the industry can supervise $H_i/[E_i^{\star}h_i(s_i^{\star})]$ chunks. Multiplying by expected tokens per chunk gives
 
 ```math
 D_i^{\mathrm{attention}}
@@ -346,21 +410,23 @@ The expected retry count cancels because retries consume both tokens and checkpo
 
 This is the main agentic-demand channel: better models can let each human checkpoint launch far more machine work.
 
-A compact industry equation is
+For any *given* policy, the two capacity limits imply the accounting equation
 
 ```math
-D_i
+D_i(s,x,k)
 =
 \min\left\{
-D_i^{\mathrm{work}},
-\;D_i^{\mathrm{attention}}
+W_iA_i(u_i)xE_i,
+\;H_i\frac{sx}{h_i(s)}
 \right\}.
 ```
 
-and aggregate demand is
+This minimum is not, by itself, a solved equilibrium. If both work and attention can bind, the user must choose $(s,x,k,N_i)$ jointly subject to both capacity constraints. In particular, one should not take the minimum of demands generated by two policies optimized under different polar assumptions. The two polar cases isolate the mechanisms cleanly; the joint problem is the natural extension.
+
+After solving the relevant user problem, aggregate demand is
 
 ```math
-D=\sum_iD_i.
+D=\sum_iN_i^{\star}s_i^{\star}x_i^{\star}E_i^{\star}.
 ```
 
 ## 8. Comparative statics
@@ -378,6 +444,16 @@ s_i^{\star}\uparrow,
 because longer tasks become feasible. But $x_i^{\star}$ and $k_i^{\star}$ are ambiguous. A stronger model may need less inference and fewer retries for existing work, or the user may move into harder work and spend more.
 
 Token demand rises when adoption, work creation, or supervisory leverage grows faster than tokens per completed unit fall. It falls when adoption is already saturated and efficiency dominates.
+
+The attention-constrained case has a particularly transparent scaling force. Because $q_i$ depends on $s/m$ and $r_i$ depends on $s/[m(\eta x)^{\alpha_i}]$, choosing $s_i^{\star}$ roughly proportional to $m$ can hold the reliability arguments approximately fixed. If variable verification time dominates fixed overhead, then
+
+```math
+\frac{s_i^{\star}}{h_i(s_i^{\star})}
+\propto
+m^{1-\beta_i}.
+```
+
+Thus capability can raise attention-limited demand even when $x_i^{\star}$ barely changes. This channel is strong in machine-verifiable industries with low $\beta_i$ and weak when review grows nearly linearly with scope.
 
 ### 8.2 Token efficiency
 
@@ -573,13 +649,10 @@ The most useful forecasting equation is
 D
 =
 \sum_i
-\min\left\{
-D_i^{\mathrm{work}},
-\;D_i^{\mathrm{attention}}
-\right\}.
+N_i^{\star}s_i^{\star}x_i^{\star}E_i^{\star},
 ```
 
-It makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different industries can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
+where the starred activity and policy must be solved under the constraint that actually binds in each industry. This makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different industries can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
 
 ## Numerical implementation
 
@@ -587,14 +660,20 @@ The code mirrors the economics rather than hiding it inside a plotting notebook:
 
 - `Industry` contains primitives that differ across industries, such as the capability frontier, verification technology, value of work, and adoption hurdles.
 - `Scenario` contains the technology and market variables we want to vary: model capability, token efficiency, token price, and verification speed.
-- `Policy` is the user's choice $(s,x,k)$, while `PolicyOutcome` records reliability, surplus, adoption, and token demand.
+- `Policy` is the user's choice $(s,x,k)$, while `PolicyOutcome` records reliability, surplus per work-hour, surplus per attention-hour, adoption, and token demand.
 - `IndustryModel` evaluates a candidate policy. It contains no optimization logic.
-- `PolicyOptimizer` solves the user's problem. It enumerates the discrete retry cap and numerically optimizes delegation horizon and inference intensity for each value of $k$. Its `solve_by_attempts` method exposes the best continuous policy conditional on every $k$, which makes discrete regime switches inspectable.
+- `PolicyOptimizer` maximizes surplus per work-hour for the fixed-work polar case.
+- `AttentionConstrainedOptimizer` maximizes surplus per human verification hour for the abundant-work, binding-attention polar case. Both optimizers enumerate the discrete retry cap and numerically optimize delegation horizon and inference intensity for each value of $k$.
 
 This separation makes it difficult to accidentally optimize token demand itself. The user maximizes expected surplus; adoption and industry token demand are downstream outcomes.
 
 ```python
-from modeling_token_demand import IndustryModel, PolicyOptimizer, Scenario
+from modeling_token_demand import (
+    AttentionConstrainedOptimizer,
+    IndustryModel,
+    PolicyOptimizer,
+    Scenario,
+)
 from modeling_token_demand.calibrations import SOFTWARE
 
 model = IndustryModel(SOFTWARE)
@@ -604,9 +683,10 @@ scenario = Scenario(
     token_price_per_million=10.0,
 )
 
-optimum = PolicyOptimizer().solve(model, scenario)
-print(optimum.policy)
-print(optimum.realized_tokens)
+work_limited_optimum = PolicyOptimizer().solve(model, scenario)
+attention_limited_optimum = AttentionConstrainedOptimizer().solve(model, scenario)
+print(work_limited_optimum.policy)
+print(attention_limited_optimum.policy)
 ```
 
 The package measures $x$ and demand directly in tokens. `token_reference` on an industry is only a numerical normalization inside the execution-reliability curve; it does not change the unit of $x$ or reported demand.
@@ -619,7 +699,7 @@ uv run pytest
 uv run jupyter lab notebooks/comparative_statics.ipynb
 ```
 
-The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes five figures. Its demand and spending figures use the abundant-work, attention-limited polar case with 100,000 human verification hours per industry; this normalization scales the vertical axis without changing the curve shapes.
+The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the attention-constrained policy at every point, and writes six figures. Its demand and spending figures use the abundant-work, binding-attention polar case with 100,000 human verification hours per industry; this normalization scales the vertical axis without changing the curve shapes. A separate capability figure compares that solution with the earlier procedure that maximized surplus per work-hour before applying the attention cap.
 
 ![Attention-limited token demand versus token price](figures/token-demand-vs-price.png)
 
@@ -629,6 +709,8 @@ The [comparative-statics notebook](notebooks/comparative_statics.ipynb) document
 
 ![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)
 
+![Capability demand under alternative policy objectives](figures/token-demand-vs-capability-objectives.png)
+
 ![Optimized user surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
 
-The plotted industry calibrations are designed to expose qualitatively different attention and verification regimes, not to serve as empirical estimates. The package retains a separate near-adoption-threshold calibration for later work-limited comparisons, but it is intentionally excluded here because adoption parameters do not affect strictly attention-limited demand.
+The plotted industry calibrations are designed to expose qualitatively different attention and verification regimes, not to serve as empirical estimates. The package retains a separate near-adoption-threshold calibration for later work-limited comparisons, but it is intentionally excluded here because adoption parameters do not affect demand when attention binds and useful work is abundant.

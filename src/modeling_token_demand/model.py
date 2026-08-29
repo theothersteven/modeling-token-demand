@@ -147,6 +147,10 @@ class PolicyOutcome:
     verification_hours_per_attempt: float
     expected_cost_per_work_hour: float
     surplus_per_work_hour: float
+    # Net surplus created per expected human verification hour. This is the
+    # relevant policy objective when useful work is abundant and attention is
+    # the binding resource.
+    surplus_per_attention_hour: float
     adoption_share: float
     work_limited_tokens: float
     attention_limited_tokens: Optional[float]
@@ -243,6 +247,11 @@ class IndustryModel:
         )
         expected_cost = attempts * (token_cost + review_cost)
         surplus = p.value_per_work_hour * success - expected_cost
+        surplus_per_attention_hour = (
+            policy.delegation_hours
+            * surplus
+            / (attempts * verification_hours)
+        )
         adoption = self.adoption_share(surplus)
 
         tokens_per_work_hour = policy.tokens_per_work_hour * attempts
@@ -255,9 +264,8 @@ class IndustryModel:
             attention_limited_tokens = None
             realized_tokens = work_limited_tokens
         else:
-            # Fixed-policy throughput when the human-attention constraint binds.
-            # This aggregate cap does not feed a scarcity price back into the
-            # user's objective; a full attention-market equilibrium would.
+            # Throughput implied by this policy when the human-attention
+            # constraint binds. Policy selection remains the optimizer's job.
             attention_limited_tokens = (
                 p.human_attention_hours
                 * policy.delegation_hours
@@ -275,6 +283,7 @@ class IndustryModel:
             verification_hours_per_attempt=verification_hours,
             expected_cost_per_work_hour=expected_cost,
             surplus_per_work_hour=surplus,
+            surplus_per_attention_hour=surplus_per_attention_hour,
             adoption_share=adoption,
             work_limited_tokens=work_limited_tokens,
             attention_limited_tokens=attention_limited_tokens,

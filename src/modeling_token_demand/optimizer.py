@@ -67,13 +67,13 @@ class PolicyOptimizer:
     def solve(self, model: IndustryModel, scenario: Scenario) -> PolicyOutcome:
         """Return the best policy found over continuous (s, x) and integer k.
 
-        Users maximize expected surplus per work-hour. Adoption and aggregate
-        token demand are consequences of that choice; they are not themselves
-        part of the user's objective.
+        The objective is supplied by ``objective_value``. The base optimizer
+        maximizes expected surplus per work-hour; subclasses can retain the
+        same numerical search while representing a different economic regime.
         """
 
         outcomes = self.solve_by_attempts(model, scenario)
-        return max(outcomes.values(), key=lambda item: item.surplus_per_work_hour)
+        return max(outcomes.values(), key=self.objective_value)
 
     def solve_by_attempts(
         self,
@@ -112,7 +112,7 @@ class PolicyOptimizer:
                     candidates.append(outcome)
                     best_for_attempts = self._better(best_for_attempts, outcome)
 
-            candidates.sort(key=lambda item: item.surplus_per_work_hour, reverse=True)
+            candidates.sort(key=self.objective_value, reverse=True)
             for start in candidates[: settings.local_starts_per_attempt]:
                 initial = np.log(
                     [
@@ -121,7 +121,7 @@ class PolicyOptimizer:
                     ]
                 )
                 result = minimize(
-                    self._negative_surplus,
+                    self._negative_objective,
                     initial,
                     args=(model, scenario, max_attempts),
                     method="L-BFGS-B",
@@ -149,13 +149,18 @@ class PolicyOptimizer:
 
         return [self.solve(model, scenario) for scenario in scenarios]
 
-    @staticmethod
+    def objective_value(self, outcome: PolicyOutcome) -> float:
+        """Economic objective maximized by this optimizer."""
+
+        return outcome.surplus_per_work_hour
+
     def _better(
+        self,
         current: Optional[PolicyOutcome], candidate: PolicyOutcome
     ) -> PolicyOutcome:
         if current is None:
             return candidate
-        if candidate.surplus_per_work_hour > current.surplus_per_work_hour:
+        if self.objective_value(candidate) > self.objective_value(current):
             return candidate
         return current
 
@@ -174,15 +179,30 @@ class PolicyOptimizer:
         )
         return model.evaluate(policy, scenario)
 
-    @classmethod
-    def _negative_surplus(
-        cls,
+    def _negative_objective(
+        self,
         logs: np.ndarray,
         model: IndustryModel,
         scenario: Scenario,
         max_attempts: int,
     ) -> float:
-        outcome = cls._evaluate_logs(
+        outcome = self._evaluate_logs(
             model, scenario, logs[0], logs[1], max_attempts
         )
-        return -outcome.surplus_per_work_hour
+        return -self.objective_value(outcome)
+
+
+class AttentionConstrainedOptimizer(PolicyOptimizer):
+    """Optimize policy when useful work is abundant and attention is scarce.
+
+    For a policy ``(s, x, k)``, one chunk creates expected net surplus
+    ``s * surplus_per_work_hour`` and consumes ``E * h(s)`` expected human
+    verification hours. The optimizer therefore maximizes their ratio. The
+    size of the attention endowment scales throughput and token demand but does
+    not affect the optimal policy in this single-industry polar case.
+    """
+
+    def objective_value(self, outcome: PolicyOutcome) -> float:
+        """Return expected net surplus per human verification hour."""
+
+        return outcome.surplus_per_attention_hour

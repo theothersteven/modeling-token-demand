@@ -7,10 +7,15 @@ from .model import (
     PolicyOutcome,
     Scenario,
 )
-from .optimizer import OptimizationSettings, PolicyOptimizer
+from .optimizer import (
+    AttentionConstrainedOptimizer,
+    OptimizationSettings,
+    PolicyOptimizer,
+)
 from .calibrations import illustrative_industries
 
 __all__ = [
+    "AttentionConstrainedOptimizer",
     "Industry",
     "IndustryModel",
     "OptimizationSettings",

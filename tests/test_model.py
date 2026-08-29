@@ -1,4 +1,5 @@
 from modeling_token_demand import (
+    AttentionConstrainedOptimizer,
     IndustryModel,
     OptimizationSettings,
     Policy,
@@ -61,3 +62,26 @@ def test_optimizer_returns_a_feasible_policy() -> None:
     assert outcome.surplus_per_work_hour == max(
         item.surplus_per_work_hour for item in outcomes_by_attempts.values()
     )
+
+
+def test_attention_optimizer_maximizes_surplus_per_attention_hour() -> None:
+    settings = OptimizationSettings(
+        grid_points_per_dimension=7,
+        local_starts_per_attempt=1,
+        max_attempts=4,
+    )
+    optimizer = AttentionConstrainedOptimizer(settings)
+    model = IndustryModel(SOFTWARE)
+    outcome = optimizer.solve(model, Scenario())
+    outcomes_by_attempts = optimizer.solve_by_attempts(model, Scenario())
+
+    expected_ratio = (
+        outcome.policy.delegation_hours
+        * outcome.surplus_per_work_hour
+        / (outcome.expected_attempts * outcome.verification_hours_per_attempt)
+    )
+    assert outcome.surplus_per_attention_hour == expected_ratio
+    assert outcome.surplus_per_attention_hour == max(
+        item.surplus_per_attention_hour for item in outcomes_by_attempts.values()
+    )
+    assert outcome.policy.max_attempts == 1
