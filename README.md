@@ -395,6 +395,20 @@ Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increas
 \text{declining tokens per unit}.
 ```
 
+A change in token price $c$ is a different experiment. Lower prices normally raise token demand, but that is an ordinary movement along a demand curve rather than Jevons paradox by itself. Define token spend as
+
+```math
+S_i(c)=cD_i(c).
+```
+
+Spend rises as token prices fall only when token demand increases more than proportionally:
+
+```math
+\frac{d\log D_i}{d\log c}<-1.
+```
+
+This spending rebound is important for provider revenue and customer expenditure, but the direct Jevons-style test in this model is whether higher token efficiency $\eta$ raises total token use.
+
 ### 8.3 Verification cost and verification technology
 
 Write
@@ -600,15 +614,16 @@ The package measures $x$ and demand directly in tokens. `token_reference` on an 
 ### Running the code
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e '.[notebook,dev]'
-.venv/bin/pytest
-.venv/bin/jupyter lab notebooks/comparative_statics.ipynb
+uv sync --extra notebook --extra dev
+uv run pytest
+uv run jupyter lab notebooks/comparative_statics.ipynb
 ```
 
-The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes two figures:
+The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes three figures:
 
 ![Optimized token demand versus token price](figures/token-demand-vs-price.png)
+
+![Optimized token spend versus token price](figures/token-spend-vs-price.png)
 
 ![Optimized token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
 
