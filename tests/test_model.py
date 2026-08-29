@@ -38,10 +38,26 @@ def test_optimizer_returns_a_feasible_policy() -> None:
         local_starts_per_attempt=1,
         max_attempts=4,
     )
-    outcome = PolicyOptimizer(settings).solve(IndustryModel(SOFTWARE), Scenario())
+    optimizer = PolicyOptimizer(settings)
+    model = IndustryModel(SOFTWARE)
+    scenario = Scenario()
+    outcome = optimizer.solve(model, scenario)
+    outcomes_by_attempts = optimizer.solve_by_attempts(model, scenario)
     policy = outcome.policy
 
-    assert settings.min_delegation_hours <= policy.delegation_hours <= settings.max_delegation_hours
-    assert settings.min_tokens_per_work_hour <= policy.tokens_per_work_hour <= settings.max_tokens_per_work_hour
+    assert (
+        settings.min_delegation_hours
+        <= policy.delegation_hours
+        <= settings.max_delegation_hours
+    )
+    assert (
+        settings.min_tokens_per_work_hour
+        <= policy.tokens_per_work_hour
+        <= settings.max_tokens_per_work_hour
+    )
     assert 1 <= policy.max_attempts <= settings.max_attempts
     assert 0.0 <= outcome.adoption_share <= 1.0
+    assert set(outcomes_by_attempts) == set(range(1, settings.max_attempts + 1))
+    assert outcome.surplus_per_work_hour == max(
+        item.surplus_per_work_hour for item in outcomes_by_attempts.values()
+    )

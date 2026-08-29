@@ -569,13 +569,13 @@ It makes the ambiguity transparent. Better models can reduce tokens per unit of 
 
 ## Numerical implementation
 
-The code mirrors the economics rather than hiding it inside a plotting script:
+The code mirrors the economics rather than hiding it inside a plotting notebook:
 
 - `Industry` contains primitives that differ across industries, such as the capability frontier, verification technology, value of work, and adoption hurdles.
 - `Scenario` contains the technology and market variables we want to vary: model capability, token efficiency, token price, and verification speed.
 - `Policy` is the user's choice $(s,x,k)$, while `PolicyOutcome` records reliability, surplus, adoption, and token demand.
 - `IndustryModel` evaluates a candidate policy. It contains no optimization logic.
-- `PolicyOptimizer` solves the user's problem. It enumerates the discrete retry cap and numerically optimizes delegation horizon and inference intensity for each value of $k$.
+- `PolicyOptimizer` solves the user's problem. It enumerates the discrete retry cap and numerically optimizes delegation horizon and inference intensity for each value of $k$. Its `solve_by_attempts` method exposes the best continuous policy conditional on every $k$, which makes discrete regime switches inspectable.
 
 This separation makes it difficult to accidentally optimize token demand itself. The user maximizes expected surplus; adoption and industry token demand are downstream outcomes.
 
@@ -601,12 +601,12 @@ The package uses physical tokens throughout. `token_reference` on an industry is
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e '.[plot,dev]'
+.venv/bin/pip install -e '.[notebook,dev]'
 .venv/bin/pytest
-.venv/bin/python scripts/plot_comparative_statics.py
+.venv/bin/jupyter lab notebooks/comparative_statics.ipynb
 ```
 
-The plotting script re-solves the user's policy at every point and writes two figures:
+The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the user's policy at every point, marks changes in the optimal retry cap, and writes two figures:
 
 ![Optimized token demand versus token price](figures/token-demand-vs-price.png)
 

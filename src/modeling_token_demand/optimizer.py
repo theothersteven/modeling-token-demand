@@ -32,10 +32,10 @@ class OptimizationSettings:
 
     # Smallest and largest physical token budget per work-hour, per attempt.
     min_tokens_per_work_hour: float = 2_000.0
-    max_tokens_per_work_hour: float = 1_200_000.0
+    max_tokens_per_work_hour: float = 2_000_000.0
 
     # Largest retry cap the user can select. Every integer from 1 is evaluated.
-    max_attempts: int = 8
+    max_attempts: int = 12
 
     # Grid resolution and number of promising grid points refined for each k.
     grid_points_per_dimension: int = 15
@@ -72,6 +72,21 @@ class PolicyOptimizer:
         part of the user's objective.
         """
 
+        outcomes = self.solve_by_attempts(model, scenario)
+        return max(outcomes.values(), key=lambda item: item.surplus_per_work_hour)
+
+    def solve_by_attempts(
+        self,
+        model: IndustryModel,
+        scenario: Scenario,
+    ) -> dict[int, PolicyOutcome]:
+        """Return the optimized continuous policy for every allowed retry cap.
+
+        Exposing these conditional optima makes discrete policy switches easy
+        to diagnose: the chosen retry cap changes where two surplus curves
+        cross, even though each fixed-k optimization remains smooth.
+        """
+
         settings = self.settings
         log_s_bounds = (
             math.log(settings.min_delegation_hours),
@@ -84,17 +99,18 @@ class PolicyOptimizer:
         log_s_grid = np.linspace(*log_s_bounds, settings.grid_points_per_dimension)
         log_x_grid = np.linspace(*log_x_bounds, settings.grid_points_per_dimension)
 
-        best: Optional[PolicyOutcome] = None
+        outcomes_by_attempts = {}
 
         for max_attempts in range(1, settings.max_attempts + 1):
             candidates = []
+            best_for_attempts: Optional[PolicyOutcome] = None
             for log_s in log_s_grid:
                 for log_x in log_x_grid:
                     outcome = self._evaluate_logs(
                         model, scenario, log_s, log_x, max_attempts
                     )
                     candidates.append(outcome)
-                    best = self._better(best, outcome)
+                    best_for_attempts = self._better(best_for_attempts, outcome)
 
             candidates.sort(key=lambda item: item.surplus_per_work_hour, reverse=True)
             for start in candidates[: settings.local_starts_per_attempt]:
@@ -116,11 +132,13 @@ class PolicyOptimizer:
                 outcome = self._evaluate_logs(
                     model, scenario, result.x[0], result.x[1], max_attempts
                 )
-                best = self._better(best, outcome)
+                best_for_attempts = self._better(best_for_attempts, outcome)
 
-        if best is None:  # Defensive: validation ensures at least one k exists.
-            raise RuntimeError("optimizer evaluated no candidate policies")
-        return best
+            if best_for_attempts is None:  # Defensive: the grid is nonempty.
+                raise RuntimeError("optimizer evaluated no candidate policies")
+            outcomes_by_attempts[max_attempts] = best_for_attempts
+
+        return outcomes_by_attempts
 
     def solve_many(
         self,
