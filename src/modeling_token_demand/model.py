@@ -54,7 +54,7 @@ class Industry:
     human_attention_hours: Optional[float] = None
 
     # Numerical normalization used inside the execution-reliability function.
-    # The policy variable itself always remains physical tokens per work-hour.
+    # The policy variable itself always remains tokens per work-hour.
     token_reference: float = 100_000.0
 
     def __post_init__(self) -> None:
@@ -108,7 +108,7 @@ class Scenario:
 
     @property
     def token_price(self) -> float:
-        """Dollar price of one physical token."""
+        """Dollar price of one token."""
 
         return self.token_price_per_million / 1_000_000.0
 
@@ -118,7 +118,7 @@ class Policy:
     """A user's interaction policy.
 
     delegation_hours (s) is work delegated before a checkpoint,
-    tokens_per_work_hour (x) is physical inference intensity per attempt, and
+    tokens_per_work_hour (x) is inference intensity per attempt, and
     max_attempts (k) is the retry cap.
     """
 

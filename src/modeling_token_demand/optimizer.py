@@ -30,7 +30,7 @@ class OptimizationSettings:
     min_delegation_hours: float = 0.02
     max_delegation_hours: float = 80.0
 
-    # Smallest and largest physical token budget per work-hour, per attempt.
+    # Smallest and largest token budget per work-hour, per attempt.
     min_tokens_per_work_hour: float = 2_000.0
     max_tokens_per_work_hour: float = 2_000_000.0
 

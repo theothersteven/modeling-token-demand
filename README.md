@@ -10,7 +10,7 @@ AI token demand is not mechanically increasing in model capability. A user choos
 
 This paper develops an industry-level model of those choices. Each industry has its own task-difficulty distribution, returns to inference, verification technology, value of successful work, and adoption hurdles. The model separates a task's capability frontier from stochastic execution reliability, so repeated attempts improve pass rates without forcing success to converge to one. Users choose delegation horizon, inference intensity, and retry count to maximize expected surplus. Aggregate demand is then determined by both intensive margins---tokens used by existing industry work---and extensive margins such as adoption and newly economical work.
 
-The central result is deliberately ambiguous. Model progress can raise token demand in capability-threshold industries while lowering it in mature, work-limited industries. Token efficiency can produce an inverted-U demand curve when it triggers adoption before eventually reducing physical tokens per unit of work. Verification improvements are also not one-dimensional: cheaper checkpoints can increase adoption while encouraging shorter, safer tasks and less inference per attempt.
+The central result is deliberately ambiguous. Model progress can raise token demand in capability-threshold industries while lowering it in mature, work-limited industries. Token efficiency can produce an inverted-U demand curve when it triggers adoption before eventually reducing tokens per unit of work. Verification improvements are also not one-dimensional: cheaper checkpoints can increase adoption while encouraging shorter, safer tasks and less inference per attempt.
 
 ## 1. The economic object
 
@@ -19,7 +19,7 @@ Consider an industry indexed by $i$. Illustrative industries include software de
 A unit of underlying work is measured in **human-hour-equivalents**. The user chooses three features of an AI interaction policy:
 
 - $s$: the **delegation horizon**, or human-hours of work delegated before the next human checkpoint;
-- $x$: **physical inference tokens per human-hour-equivalent, per attempt**;
+- $x$: **inference tokens per human-hour-equivalent, per attempt**;
 - $k$: the maximum number of attempts allowed for one delegated chunk.
 
 One attempt therefore consumes
@@ -36,10 +36,10 @@ This decomposition matters. Increasing $s$ means asking the model to carry a lar
 |---|---|
 | $i$ | Industry |
 | $s$ | Delegated human-hour-equivalents per checkpoint |
-| $x$ | Physical tokens per delegated hour, per attempt |
+| $x$ | Tokens per delegated hour, per attempt |
 | $k$ | Maximum attempts per delegated chunk |
 | $m$ | General model capability |
-| $\eta$ | Effective inference obtained per physical token |
+| $\eta$ | Effective inference obtained per token |
 | $q_i$ | Probability that a task lies within the model's capability frontier |
 | $r_i$ | One-attempt success probability, conditional on the task being solvable |
 | $P_i$ | Success probability after at most $k$ attempts |
@@ -47,11 +47,11 @@ This decomposition matters. Increasing $s$ means asking the model to carry a lar
 | $h_i$ | Human verification time per attempt |
 | $b_i$ | Value per successfully completed hour-equivalent of work |
 | $w_i$ | Cost of one hour of human attention |
-| $c$ | Price per physical token |
+| $c$ | Price per token |
 | $A_i$ | Fraction of potential industry work volume delegated to AI |
 | $W_i$ | Total potential industry work volume in human-hours per period |
 | $H_i$ | Human verification hours available per period |
-| $D_i$ | Physical token demand per period |
+| $D_i$ | Token demand per period |
 
 ## 2. Capability and execution are different
 
@@ -93,7 +93,7 @@ Here:
 
 - $a_i>0$ measures industry-specific execution ease;
 - $0<\alpha_i<1$ gives diminishing returns to additional inference;
-- $\eta>0$ is token efficiency: effective inference per physical token.
+- $\eta>0$ is token efficiency: effective inference per token.
 
 Conditional reliability falls with delegation horizon and rises with capability, inference intensity, and token efficiency.
 
@@ -103,7 +103,7 @@ The unconditional success probability on one attempt is
 p_{1,i}=q_i r_i.
 ```
 
-Capability $m$ and token efficiency $\eta$ are intentionally distinct. In this specification, $m$ both expands the set of solvable tasks through $q_i$ and improves execution through $r_i$. Token efficiency mainly lets a physical token buy more execution effort through $r_i$.
+Capability $m$ and token efficiency $\eta$ are intentionally distinct. In this specification, $m$ both expands the set of solvable tasks through $q_i$ and improves execution through $r_i$. Token efficiency mainly lets each token buy more execution effort through $r_i$.
 
 ## 3. A bounded retry model
 
@@ -134,7 +134,7 @@ E_i(s,x,k)
 
 The first term is the cost of fundamentally unsolvable tasks, which consume all $k$ attempts. The second is the truncated geometric expectation for solvable tasks.
 
-Expected physical tokens consumed by one delegated chunk are
+Expected tokens consumed by one delegated chunk are
 
 ```math
 T_i^{\mathrm{exp}}=sxE_i.
@@ -381,7 +381,7 @@ Token demand rises when adoption, work creation, or supervisory leverage grows f
 
 ### 8.2 Token efficiency
 
-When $\eta$ rises, a physical token buys more effective inference. Holding behavior and reliability fixed, the required $x$ falls. That is the engineering effect.
+When $\eta$ rises, each token buys more effective inference. Holding behavior and reliability fixed, the required $x$ falls. That is the engineering effect.
 
 Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increases optimized surplus, raises the share of industry work delegated to AI, and may expand $W_i$. The likely lifecycle is an inverted U:
 
@@ -392,7 +392,7 @@ Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increas
 \rightarrow
 \text{saturation}
 \rightarrow
-\text{declining physical tokens per unit}.
+\text{declining tokens per unit}.
 ```
 
 ### 8.3 Verification cost and verification technology
@@ -411,7 +411,7 @@ Changes in the **shape** of verification are different from changes in its level
 
 ## 9. Illustrative numerical solution
 
-This section demonstrates regimes the model can generate. It is not an empirical forecast. One unit of $x$ represents 100,000 physical tokens per delegated human-hour. The token price is normalized to $c=1$ dollar per token unit. Baseline technology has $m=\eta=v=1$.
+This section demonstrates regimes the model can generate. It is not an empirical forecast. One unit of $x$ represents 100,000 tokens per delegated human-hour. The token price is normalized to $c=1$ dollar per token unit. Baseline technology has $m=\eta=v=1$.
 
 For each industry and scenario, the solution enumerates $k\in\{1,\ldots,8\}$ and searches logarithmic grids over $s\in[0.02,80]$ hours and $x\in[0.02,12]$. Adoption uses the logistic specification above. Work-limited demand is reported with $W_i=1$ and normalized to each industry's own baseline.
 
@@ -444,7 +444,7 @@ Routine processing receives long chunks and little inference per unit. Frontier 
 
 ### 9.2 Scenario A: model capability rises
 
-The table reports work-limited physical token demand relative to each industry's $m=1$ baseline, with users reoptimizing at every point.
+The table reports work-limited token demand relative to each industry's $m=1$ baseline, with users reoptimizing at every point.
 
 | Capability $m$ | Software | Review-bound | Routine | Frontier research |
 |---:|---:|---:|---:|---:|
@@ -477,7 +477,7 @@ The user delegates more work per checkpoint while spending fewer tokens per unit
 | 2 | 0.78 | 0.85 | 0.75 | 0.81 |
 | 4 | 0.68 | 0.85 | 0.60 | 0.65 |
 
-In the base calibration, higher token efficiency lowers physical token demand in every industry. Adoption moves, but not enough to offset fewer tokens per unit of work.
+In the base calibration, higher token efficiency lowers token demand in every industry. Adoption moves, but not enough to offset fewer tokens per unit of work.
 
 That conclusion is not structural. Consider an industry with the same software-like technology but tightly clustered adoption hurdles around the baseline surplus. Reoptimizing gives:
 
@@ -488,7 +488,7 @@ That conclusion is not structural. Consider an industry with the same software-l
 | 2 | 84.1% | 1.24 |
 | 4 | 95.4% | 1.18 |
 
-This is the rebound case. Efficiency initially raises physical token demand by triggering adoption. Once adoption saturates, the engineering effect reasserts itself.
+This is the rebound case. Efficiency initially raises token demand by triggering adoption. Once adoption saturates, the engineering effect reasserts itself.
 
 ### 9.4 Scenario C: verification becomes cheaper
 
@@ -595,7 +595,7 @@ print(optimum.policy)
 print(optimum.realized_tokens)
 ```
 
-The package uses physical tokens throughout. `token_reference` on an industry is only a numerical normalization inside the execution-reliability curve; it does not change the unit of $x$ or reported demand.
+The package measures $x$ and demand directly in tokens. `token_reference` on an industry is only a numerical normalization inside the execution-reliability curve; it does not change the unit of $x$ or reported demand.
 
 ### Running the code
 
@@ -612,4 +612,4 @@ The [comparative-statics notebook](notebooks/comparative_statics.ipynb) document
 
 ![Optimized token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
 
-The included industry calibrations are designed to expose qualitatively different regimes, not to serve as empirical estimates. In particular, the near-threshold calibration illustrates the condition needed for a Jevons-style rebound: efficiency must unlock enough new adopted work to outweigh the reduction in physical tokens used per unit of existing work.
+The included industry calibrations are designed to expose qualitatively different regimes, not to serve as empirical estimates. In particular, the near-threshold calibration illustrates the condition needed for a Jevons-style rebound: efficiency must unlock enough new adopted work to outweigh the reduction in tokens used per unit of existing work.
