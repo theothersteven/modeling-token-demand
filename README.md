@@ -352,9 +352,9 @@ A compact industry equation is
 D_i
 =
 \min\left\{
-W_iA_ix_i^{\star}E_i^{\star},
-\;H_i\frac{s_i^{\star}x_i^{\star}}{h_i(s_i^{\star})}
-\right\},
+D_i^{\mathrm{work}},
+\;D_i^{\mathrm{attention}}
+\right\}.
 ```
 
 and aggregate demand is
@@ -560,8 +560,8 @@ D
 =
 \sum_i
 \min\left\{
-W_iA_ix_i^{\star}E_i^{\star},
-\;H_i\frac{s_i^{\star}x_i^{\star}}{h_i(s_i^{\star})}
+D_i^{\mathrm{work}},
+\;D_i^{\mathrm{attention}}
 \right\}.
 ```
 
