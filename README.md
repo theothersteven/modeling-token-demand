@@ -24,9 +24,9 @@ A unit of underlying work is measured in **human-hour-equivalents**. The user ch
 
 One attempt therefore consumes
 
-$$
+```math
 T=sx.
-$$
+```
 
 This decomposition matters. Increasing $s$ means asking the model to carry a larger project between checkpoints. Increasing $x$ means making the model reason, search, test, or deliberate more intensely within an attempt. Autocomplete and an autonomous agent differ mainly in $s$; a standard run and a high-compute run differ mainly in $x$.
 
@@ -63,11 +63,11 @@ The model therefore separates two kinds of uncertainty.
 
 Let
 
-$$
+```math
 q_i(s;m)
 =
 \exp\left[-\left(\frac{s}{\lambda_i m}\right)^{\nu_i}\right].
-$$
+```
 
 $q_i$ is the probability that a randomly drawn task of horizon $s$ in sector $i$ is within the model's capability frontier at all.
 
@@ -81,13 +81,13 @@ This is a reduced-form representation of latent task difficulty. A sector with r
 
 Even a solvable task can fail on a particular trajectory. Define
 
-$$
+```math
 r_i(s,x;m,\eta)
 =
 \exp\left[
 -\frac{s}{a_i m(\eta x)^{\alpha_i}}
 \right].
-$$
+```
 
 Here:
 
@@ -99,9 +99,9 @@ Conditional reliability falls with delegation horizon and rises with capability,
 
 The unconditional success probability on one attempt is
 
-$$
+```math
 p_{1,i}=q_i r_i.
-$$
+```
 
 Capability $m$ and token efficiency $\eta$ are intentionally distinct. In this specification, $m$ both expands the set of solvable tasks through $q_i$ and improves execution through $r_i$. Token efficiency mainly lets a physical token buy more execution effort through $r_i$.
 
@@ -109,36 +109,36 @@ Capability $m$ and token efficiency $\eta$ are intentionally distinct. In this s
 
 Conditional on a task being solvable, suppose attempts explore sufficiently different trajectories that each succeeds with probability $r_i$. With at most $k$ attempts,
 
-$$
+```math
 P_i(s,x,k;m,\eta)
 =
 q_i\left[1-(1-r_i)^k\right].
-$$
+```
 
 Consequently,
 
-$$
+```math
 \lim_{k\to\infty}P_i=q_i,
-$$
+```
 
 not one. Retrying can repair execution failures but cannot cross the capability frontier.
 
 The user stops after the first success. Expected attempts are therefore
 
-$$
+```math
 E_i(s,x,k)
 =
 (1-q_i)k
 +q_i\frac{1-(1-r_i)^k}{r_i}.
-$$
+```
 
 The first term is the cost of fundamentally unsolvable tasks, which consume all $k$ attempts. The second is the truncated geometric expectation for solvable tasks.
 
 Expected physical tokens consumed by one delegated chunk are
 
-$$
+```math
 T_i^{\mathrm{exp}}=sxE_i.
-$$
+```
 
 This remains a deliberately minimal retry model. Empirical pass@$k$ curves could later replace the conditional-independence assumption without changing the rest of the framework.
 
@@ -146,9 +146,9 @@ This remains a deliberately minimal retry model. Empirical pass@$k$ curves could
 
 Let verification time after one attempt be
 
-$$
+```math
 h_i(s)=h_{0,i}+h_{1,i}s^{\beta_i}.
-$$
+```
 
 - $h_{0,i}$ is fixed checkpoint overhead: reading a summary, reconstructing context, approving a result, or issuing the next instruction.
 - $h_{1,i}$ is the variable verification burden.
@@ -162,9 +162,9 @@ $\beta_i$ is a central source of sector heterogeneity:
 
 Verification cost per unit of underlying work is
 
-$$
+```math
 w_i\frac{h_i(s)}{s}.
-$$
+```
 
 For $\beta_i\leq 1$, this normally falls with $s$: larger chunks amortize checkpoint overhead. Reliability moves in the opposite direction, creating an interior delegation choice.
 
@@ -174,28 +174,28 @@ Assume a successfully completed hour-equivalent of work in sector $i$ produces v
 
 Define the cost of one attempted unit of work as
 
-$$
+```math
 C_i(s,x)
 =
 cx+w_i\frac{h_i(s)}{s}.
-$$
+```
 
 Expected surplus per hour-equivalent is
 
-$$
+```math
 u_i(s,x,k)
 =
 b_iP_i(s,x,k)
 -E_i(s,x,k)C_i(s,x).
-$$
+```
 
 The user chooses
 
-$$
-(s_i^*,x_i^*,k_i^*)
+```math
+(s_i^{\star},x_i^{\star},k_i^{\star})
 =
 \arg\max_{s>0,\;x>0,\;k\in\mathbb{N}}u_i(s,x,k).
-$$
+```
 
 The outside option is not to use AI. Adoption is introduced below.
 
@@ -203,43 +203,43 @@ The outside option is not to use AI. Adoption is introduced below.
 
 The retry choice has a clean marginal solution. After $k$ allowed attempts, adding attempt $k+1$ raises success probability by
 
-$$
+```math
 \Delta P_i=q_i r_i(1-r_i)^k.
-$$
+```
 
 The extra attempt is actually made only if the first $k$ attempts have not succeeded, an event with probability
 
-$$
+```math
 1-P_{i,k}.
-$$
+```
 
 The next retry is worthwhile if and only if
 
-$$
+```math
 b_iq_ir_i(1-r_i)^k
 >
 (1-P_{i,k})C_i(s,x).
-$$
+```
 
 This rule generally produces a finite retry count. As retries accumulate, the remaining pool contains a growing share of fundamentally unsolvable tasks, so the marginal return falls faster than it would under naive independent retries.
 
 An equivalent expression makes the cutoff explicit. If $b_ir_i>C_i$ and $q_i<1$, another retry is worthwhile when
 
-$$
+```math
 (1-r_i)^k
 >
 \frac{C_i(1-q_i)}{q_i(b_ir_i-C_i)}.
-$$
+```
 
-The optimal $k_i^*$ is the number of successive attempts satisfying the marginal condition. If even the first attempt fails it, the workflow is not economically viable under that $(s,x)$ policy.
+The optimal $k_i^{\star}$ is the number of successive attempts satisfying the marginal condition. If even the first attempt fails it, the workflow is not economically viable under that $(s,x)$ policy.
 
 ### 5.2 Inference intensity
 
 For a fixed retry cap, an interior optimum in $x$ satisfies
 
-$$
+```math
 b_iP_{i,x}=E_{i,x}C_i+E_ic.
-$$
+```
 
 The left side is the marginal value created by more inference. On the right, $E_ic$ is the direct token cost and $E_{i,x}C_i$ captures the fact that a more reliable attempt can change expected retry costs. Because higher $x$ often lowers expected attempts, this second term can be negative.
 
@@ -247,47 +247,47 @@ The left side is the marginal value created by more inference. On the right, $E_
 
 For a fixed retry cap, an interior optimum in $s$ satisfies
 
-$$
+```math
 b_iP_{i,s}
 =
 E_{i,s}C_i
 +E_iw_i\frac{h_i'(s)s-h_i(s)}{s^2}.
-$$
+```
 
 The reliability terms favor shorter tasks. The last term captures checkpoint amortization. For
 
-$$
+```math
 h_i(s)=h_{0,i}+h_{1,i}s^{\beta_i}
-$$
+```
 
 with $\beta_i\leq1$,
 
-$$
+```math
 h_i'(s)s-h_i(s)
 =
 -h_{0,i}-(1-\beta_i)h_{1,i}s^{\beta_i}
 \leq0.
-$$
+```
 
 Thus verification cost per unit falls as the delegated chunk grows. The optimum balances that saving against a lower capability probability, lower execution reliability, and potentially more wasted attempts.
 
-The economic meaning of $s_i^*$ is direct: it is the user's optimal degree of agenticness.
+The economic meaning of $s_i^{\star}$ is direct: it is the user's optimal degree of agenticness.
 
 ## 6. Adoption and induced work
 
 Let $\phi$ be a workflow-specific adoption friction: integration cost, trust, regulation, organizational overhead, switching cost, or inconvenience. If frictions have cumulative distribution $G_i$, a workflow adopts when optimized surplus exceeds its friction. Sector adoption is
 
-$$
-A_i=G_i(u_i^*).
-$$
+```math
+A_i=G_i(u_i^{\star}).
+```
 
 A logistic example used later is
 
-$$
+```math
 A_i
 =
-\frac{1}{1+\exp[-(u_i^*-\mu_i)/\sigma_i]},
-$$
+\frac{1}{1+\exp[-(u_i^{\star}-\mu_i)/\sigma_i]},
+```
 
 where $\mu_i$ is the midpoint adoption threshold and $\sigma_i$ determines how dispersed workflows are around it.
 
@@ -295,14 +295,14 @@ This extensive margin can be nonlinear. If many workflows sit near $\mu_i$, a mo
 
 The volume of useful work can also be endogenous. One optional reduced form is
 
-$$
+```math
 W_i(C_i^{\mathrm{AI}})
 =
 W_i^0
 \left(
 \frac{C_i^{\mathrm{legacy}}}{C_i^{\mathrm{AI}}}
 \right)^{\epsilon_i},
-$$
+```
 
 where $\epsilon_i$ is the elasticity of work creation. Compliance processing may have low $\epsilon_i$ because the number of required filings is fixed. Software experiments, personalized content, scientific search, and continuous monitoring may have much higher elasticities.
 
@@ -312,54 +312,54 @@ There are two useful limiting regimes.
 
 ### 7.1 Work-limited demand
 
-Suppose the sector has $W_i$ hour-equivalents of potential work per period. There are $W_i/s_i^*$ chunks. Each adopted chunk consumes $s_i^*x_i^*E_i^*$ expected tokens. Therefore
+Suppose the sector has $W_i$ hour-equivalents of potential work per period. There are $W_i/s_i^{\star}$ chunks. Each adopted chunk consumes $s_i^{\star}x_i^{\star}E_i^{\star}$ expected tokens. Therefore
 
-$$
+```math
 D_i^{\mathrm{work}}
 =
-W_iA_ix_i^*E_i^*.
-$$
+W_iA_ix_i^{\star}E_i^{\star}.
+```
 
 The delegation horizon cancels mechanically. Merely grouping the same fixed work into larger chunks does not create token demand. It matters indirectly because it changes reliability, inference intensity, retry behavior, adoption, and the size of the economically useful work pool.
 
 ### 7.2 Human-attention-limited demand
 
-Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. Each chunk uses $E_i^*h_i(s_i^*)$ expected human hours, so the sector can supervise $H_i/[E_i^*h_i(s_i^*)]$ chunks. Multiplying by expected tokens per chunk gives
+Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. Each chunk uses $E_i^{\star}h_i(s_i^{\star})$ expected human hours, so the sector can supervise $H_i/[E_i^{\star}h_i(s_i^{\star})]$ chunks. Multiplying by expected tokens per chunk gives
 
-$$
+```math
 D_i^{\mathrm{attention}}
 =
-H_i\frac{s_i^*x_i^*}{h_i(s_i^*)}.
-$$
+H_i\frac{s_i^{\star}x_i^{\star}}{h_i(s_i^{\star})}.
+```
 
 The expected retry count cancels because retries consume both tokens and checkpoints. The key ratio is
 
-$$
+```math
 \frac{D_i^{\mathrm{attention}}}{H_i}
 =
-\underbrace{\frac{s_i^*}{h_i(s_i^*)}}_{\text{AI work launched per human hour}}
+\underbrace{\frac{s_i^{\star}}{h_i(s_i^{\star})}}_{\text{AI work launched per human hour}}
 \times
-\underbrace{x_i^*}_{\text{tokens per unit of work}}.
-$$
+\underbrace{x_i^{\star}}_{\text{tokens per unit of work}}.
+```
 
 This is the main agentic-demand channel: better models can let each human checkpoint launch far more machine work.
 
 A compact sector equation is
 
-$$
+```math
 D_i
 =
 \min\left\{
-W_iA_ix_i^*E_i^*,
-\;H_i\frac{s_i^*x_i^*}{h_i(s_i^*)}
+W_iA_ix_i^{\star}E_i^{\star},
+\;H_i\frac{s_i^{\star}x_i^{\star}}{h_i(s_i^{\star})}
 \right\},
-$$
+```
 
 and aggregate demand is
 
-$$
+```math
 D=\sum_iD_i.
-$$
+```
 
 ## 8. Comparative statics
 
@@ -367,13 +367,13 @@ $$
 
 When $m$ rises, both $q_i$ and $r_i$ improve. For a fixed task and policy, this usually reduces wasted retries. Once the user reoptimizes, the typical but not universal response is
 
-$$
+```math
 m\uparrow
 \quad\Rightarrow\quad
-s_i^*\uparrow,
-$$
+s_i^{\star}\uparrow,
+```
 
-because longer tasks become feasible. But $x_i^*$ and $k_i^*$ are ambiguous. A stronger model may need less inference and fewer retries for existing work, or the user may move into harder work and spend more.
+because longer tasks become feasible. But $x_i^{\star}$ and $k_i^{\star}$ are ambiguous. A stronger model may need less inference and fewer retries for existing work, or the user may move into harder work and spend more.
 
 Token demand rises when adoption, work creation, or supervisory leverage grows faster than tokens per completed unit fall. It falls when adoption is already saturated and efficiency dominates.
 
@@ -383,7 +383,7 @@ When $\eta$ rises, a physical token buys more effective inference. Holding behav
 
 Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increases optimized surplus, moves workflows into AI use, and may expand $W_i$. The likely lifecycle is an inverted U:
 
-$$
+```math
 \text{efficiency improvement}
 \rightarrow
 \text{adoption surge}
@@ -391,15 +391,15 @@ $$
 \text{saturation}
 \rightarrow
 \text{declining physical tokens per unit}.
-$$
+```
 
 ### 8.3 Verification cost and verification technology
 
 Write
 
-$$
+```math
 h_i(s)\rightarrow v h_i(s),
-$$
+```
 
 where a lower $v$ means cheaper verification. At a fixed interaction policy, attention-limited demand is proportional to $1/v$. But reoptimization is subtler.
 
@@ -431,7 +431,7 @@ For each sector and scenario, the solution enumerates $k\in\{1,\ldots,8\}$ and s
 
 The baseline optimum is:
 
-| Sector | $s^*$ (hours) | $x^*$ | $k^*$ | $P^*$ | Expected attempts | Adoption |
+| Sector | $s^{\star}$ (hours) | $x^{\star}$ | $k^{\star}$ | $P^{\star}$ | Expected attempts | Adoption |
 |---|---:|---:|---:|---:|---:|---:|
 | Software | 0.89 | 0.88 | 4 | 97.0% | 1.29 | 48% |
 | Review-bound writing | 0.47 | 1.13 | 3 | 97.5% | 1.16 | 45% |
@@ -457,7 +457,7 @@ Frontier research is threshold-dominated. Demand rises as adoption moves from 5%
 
 Software shows the interaction-policy response especially clearly:
 
-| $m$ | $s^*$ | $x^*$ | $k^*$ | Adoption |
+| $m$ | $s^{\star}$ | $x^{\star}$ | $k^{\star}$ | Adoption |
 |---:|---:|---:|---:|---:|
 | 0.5 | 0.59 | 1.26 | 4 | 25% |
 | 1 | 0.89 | 0.88 | 4 | 48% |
@@ -501,7 +501,7 @@ Let $v$ multiply verification time. A value of $v=0.5$ means verification takes 
 
 The review-bound and frontier sectors initially show an adoption rebound: halving verification time sharply increases adoption and keeps demand near or above baseline. Further reductions eventually lower demand as users choose cheaper, shorter interactions and less inference.
 
-In this calibration, cheaper verification often reduces $s^*$. For software, $(s^*,x^*)$ moves from $(0.89,0.88)$ at $v=1$ to $(0.65,0.58)$ at $v=0.5$ and $(0.49,0.32)$ at $v=0.25$. Cheap checkpoints make short, reliable tasks economical; they do not mechanically force longer autonomy.
+In this calibration, cheaper verification often reduces $s^{\star}$. For software, $(s^{\star},x^{\star})$ moves from $(0.89,0.88)$ at $v=1$ to $(0.65,0.58)$ at $v=0.5$ and $(0.49,0.32)$ at $v=0.25$. Cheap checkpoints make short, reliable tasks economical; they do not mechanically force longer autonomy.
 
 This table is work-limited. In the attention-limited regime, the direct $1/v$ increase in supervisory capacity pushes the other way. Which constraint binds is therefore empirically important.
 
@@ -511,10 +511,10 @@ The model suggests that forecasting should focus on workflow regimes rather than
 
 | Regime | Typical parameters | Response to better models | Token-demand tendency |
 |---|---|---|---|
-| Mature, fixed workload | High existing $A_i$, low $\epsilon_i$ | $x^*$ and retries fall | Declining |
+| Mature, fixed workload | High existing $A_i$, low $\epsilon_i$ | $x^{\star}$ and retries fall | Declining |
 | Capability threshold | Low $\lambda_i$ or high adoption threshold | $q_i$ and $A_i$ rise sharply | Rising, then potentially falling |
 | Review-bound | $\beta_i\approx1$, high $w_ih_i$ | Autonomy grows slowly | Flat or hump-shaped |
-| Machine-verifiable | Low $\beta_i$, abundant backlog | High $s_i^*/h_i(s_i^*)$ | Potentially very large |
+| Machine-verifiable | Low $\beta_i$, abundant backlog | High $s_i^{\star}/h_i(s_i^{\star})$ | Potentially very large |
 | Highly elastic work | High $\epsilon_i$ | New work appears as cost falls | Strong rebound possible |
 
 This taxonomy explains why aggregate token demand can rise even while demand falls in many mature sectors. The sum is dominated by sectors crossing capability, adoption, or verification thresholds.
@@ -553,14 +553,14 @@ Inference demand is an equilibrium outcome of a human interaction policy, not a 
 
 The most useful forecasting equation is
 
-$$
+```math
 D
 =
 \sum_i
 \min\left\{
-W_iA_ix_i^*E_i^*,
-\;H_i\frac{s_i^*x_i^*}{h_i(s_i^*)}
+W_iA_ix_i^{\star}E_i^{\star},
+\;H_i\frac{s_i^{\star}x_i^{\star}}{h_i(s_i^{\star})}
 \right\}.
-$$
+```
 
 It makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different sectors can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
