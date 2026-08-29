@@ -8,13 +8,13 @@
 
 AI token demand is not mechanically increasing in model capability. A user chooses how to use a model: how much work to delegate before the next checkpoint, how much inference to spend on each attempt, and how many attempts to allow. Better models can reduce the tokens needed for a fixed task, but they can also unlock longer autonomous tasks, induce adoption, and let each hour of human attention supervise more machine work.
 
-This paper develops a sector-level model of those choices. Each sector has its own task-difficulty distribution, returns to inference, verification technology, value of successful work, and adoption frictions. The model separates a task's capability frontier from stochastic execution reliability, so repeated attempts improve pass rates without forcing success to converge to one. Users choose delegation horizon, inference intensity, and retry count to maximize expected surplus. Aggregate demand is then determined by both intensive margins---tokens used by existing workflows---and extensive margins such as adoption and newly economical work.
+This paper develops an industry-level model of those choices. Each industry has its own task-difficulty distribution, returns to inference, verification technology, value of successful work, and adoption hurdles. The model separates a task's capability frontier from stochastic execution reliability, so repeated attempts improve pass rates without forcing success to converge to one. Users choose delegation horizon, inference intensity, and retry count to maximize expected surplus. Aggregate demand is then determined by both intensive margins---tokens used by existing industry work---and extensive margins such as adoption and newly economical work.
 
-The central result is deliberately ambiguous. Model progress can raise token demand in capability-threshold sectors while lowering it in mature, work-limited sectors. Token efficiency can produce an inverted-U demand curve when it triggers adoption before eventually reducing physical tokens per unit of work. Verification improvements are also not one-dimensional: cheaper checkpoints can increase adoption while encouraging shorter, safer tasks and less inference per attempt.
+The central result is deliberately ambiguous. Model progress can raise token demand in capability-threshold industries while lowering it in mature, work-limited industries. Token efficiency can produce an inverted-U demand curve when it triggers adoption before eventually reducing physical tokens per unit of work. Verification improvements are also not one-dimensional: cheaper checkpoints can increase adoption while encouraging shorter, safer tasks and less inference per attempt.
 
 ## 1. The economic object
 
-Consider a sector or workflow class indexed by $i$. Examples include software development, review-heavy writing, routine document processing, and frontier research.
+Consider an industry indexed by $i$. Illustrative industries include software development, professional writing, routine business processing, and scientific research.
 
 A unit of underlying work is measured in **human-hour-equivalents**. The user chooses three features of an AI interaction policy:
 
@@ -34,7 +34,7 @@ This decomposition matters. Increasing $s$ means asking the model to carry a lar
 
 | Symbol | Meaning |
 |---|---|
-| $i$ | Sector or workflow class |
+| $i$ | Industry |
 | $s$ | Delegated human-hour-equivalents per checkpoint |
 | $x$ | Physical tokens per delegated hour, per attempt |
 | $k$ | Maximum attempts per delegated chunk |
@@ -48,8 +48,8 @@ This decomposition matters. Increasing $s$ means asking the model to carry a lar
 | $b_i$ | Value per successfully completed hour-equivalent of work |
 | $w_i$ | Cost of one hour of human attention |
 | $c$ | Price per physical token |
-| $A_i$ | Fraction of potential workflows that adopt AI |
-| $W_i$ | Potential work volume in human-hours per period |
+| $A_i$ | Fraction of potential industry work volume delegated to AI |
+| $W_i$ | Total potential industry work volume in human-hours per period |
 | $H_i$ | Human verification hours available per period |
 | $D_i$ | Physical token demand per period |
 
@@ -69,13 +69,13 @@ q_i(s;m)
 \exp\left[-\left(\frac{s}{\lambda_i m}\right)^{\nu_i}\right].
 ```
 
-$q_i$ is the probability that a randomly drawn task of horizon $s$ in sector $i$ is within the model's capability frontier at all.
+$q_i$ is the probability that a randomly drawn task of horizon $s$ in industry $i$ is within the model's capability frontier at all.
 
-- $\lambda_i>0$ is sector tractability. Larger values mean that longer tasks are feasible for a model of a given capability.
+- $\lambda_i>0$ is industry tractability. Larger values mean that longer tasks are feasible for a model of a given capability.
 - $\nu_i>0$ controls how sharply feasibility deteriorates with task horizon.
 - $m>0$ shifts the frontier outward.
 
-This is a reduced-form representation of latent task difficulty. A sector with routine, structured tasks may have a high $\lambda_i$. A sector requiring novel discoveries may have a low one.
+This is a reduced-form representation of latent task difficulty. An industry with routine, structured tasks may have a high $\lambda_i$. An industry requiring novel discoveries may have a low one.
 
 ### 2.2 Execution reliability conditional on solvability
 
@@ -91,7 +91,7 @@ r_i(s,x;m,\eta)
 
 Here:
 
-- $a_i>0$ measures sector-specific execution ease;
+- $a_i>0$ measures industry-specific execution ease;
 - $0<\alpha_i<1$ gives diminishing returns to additional inference;
 - $\eta>0$ is token efficiency: effective inference per physical token.
 
@@ -154,7 +154,7 @@ h_i(s)=h_{0,i}+h_{1,i}s^{\beta_i}.
 - $h_{1,i}$ is the variable verification burden.
 - $\beta_i$ is the verification scaling exponent.
 
-$\beta_i$ is a central source of sector heterogeneity:
+$\beta_i$ is a central source of industry heterogeneity:
 
 - $\beta_i\approx 0$: outcome verification, automated tests, strong formal checks, or cheap sampling;
 - $0<\beta_i<1$: spot checks and summaries cause review to grow sublinearly;
@@ -170,7 +170,7 @@ For $\beta_i\leq 1$, this normally falls with $s$: larger chunks amortize checkp
 
 ## 5. The user's problem
 
-Assume a successfully completed hour-equivalent of work in sector $i$ produces value $b_i$. Expected value per unit of underlying work is $b_iP_i$.
+Assume a successfully completed hour-equivalent of work in industry $i$ produces value $b_i$. Expected value per unit of underlying work is $b_iP_i$.
 
 Define the cost of one attempted unit of work as
 
@@ -231,7 +231,7 @@ An equivalent expression makes the cutoff explicit. If $b_ir_i>C_i$ and $q_i<1$,
 \frac{C_i(1-q_i)}{q_i(b_ir_i-C_i)}.
 ```
 
-The optimal $k_i^{\star}$ is the number of successive attempts satisfying the marginal condition. If even the first attempt fails it, the workflow is not economically viable under that $(s,x)$ policy.
+The optimal $k_i^{\star}$ is the number of successive attempts satisfying the marginal condition. If even the first attempt fails it, AI use is not economically viable under that $(s,x)$ policy.
 
 ### 5.2 Inference intensity
 
@@ -273,9 +273,11 @@ Thus verification cost per unit falls as the delegated chunk grows. The optimum 
 
 The economic meaning of $s_i^{\star}$ is direct: it is the user's optimal degree of agenticness.
 
-## 6. Adoption and induced work
+## 6. Industry adoption and induced work
 
-Let $\phi$ be a workflow-specific adoption friction: integration cost, trust, regulation, organizational overhead, switching cost, or inconvenience. If frictions have cumulative distribution $G_i$, a workflow adopts when optimized surplus exceeds its friction. Sector adoption is
+Let $A_i\in[0,1]$ be the fraction of potential work volume in industry $i$ that is economically delegated to AI. This is a reduced-form adoption measure that summarizes heterogeneity across the industry's work in suitability, integration difficulty, regulation, trust, switching costs, and other barriers.
+
+Let $\phi$ denote an adoption hurdle measured in dollars per human-hour-equivalent of work. If these per-unit hurdles have a work-volume-weighted cumulative distribution $G_i$, the adopted share of industry work is
 
 ```math
 A_i=G_i(u_i^{\star}).
@@ -289,9 +291,9 @@ A_i
 \frac{1}{1+\exp[-(u_i^{\star}-\mu_i)/\sigma_i]},
 ```
 
-where $\mu_i$ is the midpoint adoption threshold and $\sigma_i$ determines how dispersed workflows are around it.
+where $\mu_i$ is the surplus per unit of work at which half of potential industry work is delegated to AI, and $\sigma_i$ determines how gradually adoption spreads across the industry's work.
 
-This extensive margin can be nonlinear. If many workflows sit near $\mu_i$, a modest technology improvement can move adoption from nearly zero to nearly complete.
+This extensive margin can be nonlinear. If a large share of industry work has adoption hurdles near $\mu_i$, a modest technology improvement can move $A_i$ from nearly zero to nearly one.
 
 The volume of useful work can also be endogenous. One optional reduced form is
 
@@ -312,7 +314,7 @@ There are two useful limiting regimes.
 
 ### 7.1 Work-limited demand
 
-Suppose the sector has $W_i$ hour-equivalents of potential work per period. There are $W_i/s_i^{\star}$ chunks. Each adopted chunk consumes $s_i^{\star}x_i^{\star}E_i^{\star}$ expected tokens. Therefore
+Suppose the industry has $W_i$ hour-equivalents of potential work per period. There are $W_i/s_i^{\star}$ chunks. Each adopted chunk consumes $s_i^{\star}x_i^{\star}E_i^{\star}$ expected tokens. Therefore
 
 ```math
 D_i^{\mathrm{work}}
@@ -324,7 +326,7 @@ The delegation horizon cancels mechanically. Merely grouping the same fixed work
 
 ### 7.2 Human-attention-limited demand
 
-Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. Each chunk uses $E_i^{\star}h_i(s_i^{\star})$ expected human hours, so the sector can supervise $H_i/[E_i^{\star}h_i(s_i^{\star})]$ chunks. Multiplying by expected tokens per chunk gives
+Suppose instead that useful work is abundant but only $H_i$ human verification hours are available. Each chunk uses $E_i^{\star}h_i(s_i^{\star})$ expected human hours, so the industry can supervise $H_i/[E_i^{\star}h_i(s_i^{\star})]$ chunks. Multiplying by expected tokens per chunk gives
 
 ```math
 D_i^{\mathrm{attention}}
@@ -344,7 +346,7 @@ The expected retry count cancels because retries consume both tokens and checkpo
 
 This is the main agentic-demand channel: better models can let each human checkpoint launch far more machine work.
 
-A compact sector equation is
+A compact industry equation is
 
 ```math
 D_i
@@ -381,7 +383,7 @@ Token demand rises when adoption, work creation, or supervisory leverage grows f
 
 When $\eta$ rises, a physical token buys more effective inference. Holding behavior and reliability fixed, the required $x$ falls. That is the engineering effect.
 
-Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increases optimized surplus, moves workflows into AI use, and may expand $W_i$. The likely lifecycle is an inverted U:
+Demand can nevertheless rise near an adoption threshold. A higher $\eta$ increases optimized surplus, raises the share of industry work delegated to AI, and may expand $W_i$. The likely lifecycle is an inverted U:
 
 ```math
 \text{efficiency improvement}
@@ -403,7 +405,7 @@ h_i(s)\rightarrow v h_i(s),
 
 where a lower $v$ means cheaper verification. At a fixed interaction policy, attention-limited demand is proportional to $1/v$. But reoptimization is subtler.
 
-Cheaper checkpoints can make AI viable for more workflows. They can also reduce the need to amortize a checkpoint across a long task, leading the user to choose a smaller $s$, lower $x$, and possibly more attempts. Thus a uniform fall in verification cost need not make behavior more agentic.
+Cheaper checkpoints can make AI viable for a larger share of industry work. They can also reduce the need to amortize a checkpoint across a long task, leading the user to choose a smaller $s$, lower $x$, and possibly more attempts. Thus a uniform fall in verification cost need not make behavior more agentic.
 
 Changes in the **shape** of verification are different from changes in its level. Automated outcome checks that make $\beta_i$ small allow verification to grow slowly with task scope and can greatly increase $s/h_i(s)$. Better failure detection, lower escaped-error losses, and formal verification would add further channels not modeled in the minimal version.
 
@@ -411,18 +413,18 @@ Changes in the **shape** of verification are different from changes in its level
 
 This section demonstrates regimes the model can generate. It is not an empirical forecast. One unit of $x$ represents 100,000 physical tokens per delegated human-hour. The token price is normalized to $c=1$ dollar per token unit. Baseline technology has $m=\eta=v=1$.
 
-For each sector and scenario, the solution enumerates $k\in\{1,\ldots,8\}$ and searches logarithmic grids over $s\in[0.02,80]$ hours and $x\in[0.02,12]$. Adoption uses the logistic specification above. Work-limited demand is reported with $W_i=1$ and normalized to each sector's own baseline.
+For each industry and scenario, the solution enumerates $k\in\{1,\ldots,8\}$ and searches logarithmic grids over $s\in[0.02,80]$ hours and $x\in[0.02,12]$. Adoption uses the logistic specification above. Work-limited demand is reported with $W_i=1$ and normalized to each industry's own baseline.
 
 ### 9.1 Calibration
 
-| Sector | $\lambda$ | $\nu$ | $a$ | $\alpha$ | Interpretation |
+| Industry | $\lambda$ | $\nu$ | $a$ | $\alpha$ | Interpretation |
 |---|---:|---:|---:|---:|---|
 | Software | 15 | 1.25 | 5 | 0.55 | Tractable, with sublinear review |
 | Review-bound writing | 12 | 1.15 | 4 | 0.50 | Capable execution, but near-linear review |
 | Routine processing | 40 | 1.35 | 8 | 0.45 | Easy tasks and strong verification |
 | Frontier research | 2 | 1.40 | 1.5 | 0.60 | A tight capability frontier |
 
-| Sector | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ |
+| Industry | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Software | 0.035 | 0.025 | 0.35 | 125 | 100 | 112 | 6 |
 | Review-bound writing | 0.025 | 0.130 | 0.95 | 125 | 100 | 100 | 7 |
@@ -431,7 +433,7 @@ For each sector and scenario, the solution enumerates $k\in\{1,\ldots,8\}$ and s
 
 The baseline optimum is:
 
-| Sector | $s^{\star}$ (hours) | $x^{\star}$ | $k^{\star}$ | $P^{\star}$ | Expected attempts | Adoption |
+| Industry | $s^{\star}$ (hours) | $x^{\star}$ | $k^{\star}$ | $P^{\star}$ | Expected attempts | Adoption |
 |---|---:|---:|---:|---:|---:|---:|
 | Software | 0.89 | 0.88 | 4 | 97.0% | 1.29 | 48% |
 | Review-bound writing | 0.47 | 1.13 | 3 | 97.5% | 1.16 | 45% |
@@ -442,7 +444,7 @@ Routine processing receives long chunks and little inference per unit. Frontier 
 
 ### 9.2 Scenario A: model capability rises
 
-The table reports work-limited physical token demand relative to each sector's $m=1$ baseline, with users reoptimizing at every point.
+The table reports work-limited physical token demand relative to each industry's $m=1$ baseline, with users reoptimizing at every point.
 
 | Capability $m$ | Software | Review-bound | Routine | Frontier research |
 |---:|---:|---:|---:|---:|
@@ -475,9 +477,9 @@ The user delegates more work per checkpoint while spending fewer tokens per unit
 | 2 | 0.78 | 0.85 | 0.75 | 0.81 |
 | 4 | 0.68 | 0.85 | 0.60 | 0.65 |
 
-In the base calibration, higher token efficiency lowers physical token demand in every sector. Adoption moves, but not enough to offset fewer tokens per unit of work.
+In the base calibration, higher token efficiency lowers physical token demand in every industry. Adoption moves, but not enough to offset fewer tokens per unit of work.
 
-That conclusion is not structural. Consider a workflow with the same software technology but tightly clustered adoption thresholds around the baseline surplus. Reoptimizing gives:
+That conclusion is not structural. Consider an industry with the same software-like technology but tightly clustered adoption hurdles around the baseline surplus. Reoptimizing gives:
 
 | $\eta$ | Adoption | Relative token demand |
 |---:|---:|---:|
@@ -499,15 +501,15 @@ Let $v$ multiply verification time. A value of $v=0.5$ means verification takes 
 | 0.5 | 0.88 | 1.06 | 0.58 | 1.01 |
 | 0.25 | 0.57 | 0.64 | 0.34 | 0.68 |
 
-The review-bound and frontier sectors initially show an adoption rebound: halving verification time sharply increases adoption and keeps demand near or above baseline. Further reductions eventually lower demand as users choose cheaper, shorter interactions and less inference.
+The review-bound and frontier industries initially show an adoption rebound: halving verification time sharply increases adoption and keeps demand near or above baseline. Further reductions eventually lower demand as users choose cheaper, shorter interactions and less inference.
 
 In this calibration, cheaper verification often reduces $s^{\star}$. For software, $(s^{\star},x^{\star})$ moves from $(0.89,0.88)$ at $v=1$ to $(0.65,0.58)$ at $v=0.5$ and $(0.49,0.32)$ at $v=0.25$. Cheap checkpoints make short, reliable tasks economical; they do not mechanically force longer autonomy.
 
 This table is work-limited. In the attention-limited regime, the direct $1/v$ increase in supervisory capacity pushes the other way. Which constraint binds is therefore empirically important.
 
-## 10. Sector regimes
+## 10. Industry regimes
 
-The model suggests that forecasting should focus on workflow regimes rather than broad industry labels.
+The model suggests that industries may occupy several distinct token-demand regimes.
 
 | Regime | Typical parameters | Response to better models | Token-demand tendency |
 |---|---|---|---|
@@ -517,19 +519,19 @@ The model suggests that forecasting should focus on workflow regimes rather than
 | Machine-verifiable | Low $\beta_i$, abundant backlog | High $s_i^{\star}/h_i(s_i^{\star})$ | Potentially very large |
 | Highly elastic work | High $\epsilon_i$ | New work appears as cost falls | Strong rebound possible |
 
-This taxonomy explains why aggregate token demand can rise even while demand falls in many mature sectors. The sum is dominated by sectors crossing capability, adoption, or verification thresholds.
+This taxonomy explains why aggregate token demand can rise even while demand falls in many mature industries. The sum is dominated by industries crossing capability, adoption, or verification thresholds.
 
 ## 11. What would need to be estimated
 
-The model is useful only if its sector surfaces can be measured. The main empirical objects are:
+The model is useful only if its industry surfaces can be measured. The main empirical objects are:
 
 1. **Capability curves:** $q_i(s;m)$ across task horizons and task distributions.
 2. **Inference-response curves:** $r_i(s,x;m,\eta)$ and empirical pass@$k$ behavior.
 3. **Verification functions:** $h_i(s)$, including how tests, judges, and formal checks change its level and exponent.
 4. **Economic primitives:** $b_i$, human attention cost $w_i$, and the cost of detected and undetected failures.
-5. **Adoption distributions:** $G_i$ and the mass of workflows near the adoption frontier.
+5. **Adoption distributions:** $G_i$ and the share of industry work near the adoption frontier.
 6. **Work elasticity:** how $W_i$ changes when AI lowers the cost of producing an outcome.
-7. **Binding constraints:** whether a sector is limited by available work, human attention, budgets, latency, data, or something else.
+7. **Binding constraints:** whether an industry is limited by available work, human attention, budgets, latency, data, or something else.
 
 The highest-value behavioral data records the chosen policy $(s,x,k)$ together with success, human review time, repair time, and final acceptance. Tokens per task alone are not enough.
 
@@ -549,7 +551,7 @@ These extensions should be added only when the data can identify them. The minim
 
 ## Conclusion
 
-Inference demand is an equilibrium outcome of a human interaction policy, not a fixed engineering requirement. Users decide how much work to delegate, how hard the model should think, and how many times it should try. Sectors differ in capability barriers, inference returns, verification scaling, economic value, and adoption friction.
+Inference demand is an equilibrium outcome of a human interaction policy, not a fixed engineering requirement. Users decide how much work to delegate, how hard the model should think, and how many times it should try. Industries differ in capability barriers, inference returns, verification scaling, economic value, and adoption hurdles.
 
 The most useful forecasting equation is
 
@@ -563,4 +565,4 @@ W_iA_ix_i^{\star}E_i^{\star},
 \right\}.
 ```
 
-It makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different sectors can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
+It makes the ambiguity transparent. Better models can reduce tokens per unit of existing work while increasing delegation horizons, adoption, supervisory leverage, and the amount of work worth doing. Different industries can therefore move in opposite directions at the same time. That is not a flaw in the model; it is the central phenomenon the model is designed to explain.
