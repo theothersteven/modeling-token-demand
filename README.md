@@ -83,6 +83,20 @@ The parameter $a_i>0$ measures execution ease. The parameter $0<\alpha_i<1$ give
 
 Capability and token efficiency play different roles. Capability $m$ expands the solvable set through $q_i$ and improves execution through $r_i$. Token efficiency $\eta$ changes how much effective inference is obtained from a token, but it does not directly move the capability frontier.
 
+There is no single industry parameter for the "return on intelligence." The scale parameters $\lambda_i$ and $a_i$ describe baseline task tractability: $\lambda_i$ sets how far the capability frontier extends, while $a_i$ measures how easily a solvable task is executed. They are not return coefficients for $m$; larger values make a given task easier before capability improves. At a fixed policy, the local responses to capability are
+
+```math
+\frac{\partial\log q_i}{\partial\log m}
+=
+\nu_i\left(\frac{s}{\lambda_i m}\right)^{\nu_i},
+\qquad
+\frac{\partial\log r_i}{\partial\log m}
+=
+\frac{s}{a_i m[\eta(x/x_{\mathrm{ref}})]^{\alpha_i}}.
+```
+
+Thus the return to higher $m$ is greatest where the capability or execution constraint is locally tight. The shape parameter $\nu_i$ directly governs the frontier response, while $\alpha_i$ is the direct return to additional inference intensity $x$. An industry's realized gain from higher model capability depends jointly on these parameters and on how the user changes $(s,x,k)$.
+
 ### 2.3 Bounded retries
 
 Suppose attempts on a solvable task explore independent execution paths, each of which succeeds with probability $r_i$. The user stops after the first success or after $k$ failures. The probability of success within $k$ attempts is
@@ -189,6 +203,10 @@ W_iA_ix_i^WE_i^W.
 ```
 
 The delegation horizon cancels from this accounting identity. Grouping a fixed amount of work into larger chunks does not mechanically create more work. The horizon still matters because it changes capability, reliability, verification, retries, inference intensity, and adoption.
+
+The following numerical illustration changes model capability, token efficiency, and token price one at a time. Each curve reoptimizes $(s,x,k)$ and allows adoption to respond, so it includes both tokens per adopted unit and the share of fixed work that switches to AI. The labels identify the defining parameter characteristic of each stylized regime rather than naming example industries.
+
+![Work-limited token demand versus capability, efficiency, and price](figures/work-limited-token-demand.png)
 
 #### Result 2: retries can be worthwhile, but the optimal cap is finite
 

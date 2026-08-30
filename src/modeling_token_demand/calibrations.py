@@ -11,7 +11,7 @@ from .model import Industry
 
 
 SUBLINEAR_VERIFICATION = Industry(
-    name="Sublinear verification",
+    name="Low verification growth",
     capability_horizon_hours=15.0,
     capability_shape=1.25,
     execution_scale=5.0,
@@ -26,7 +26,7 @@ SUBLINEAR_VERIFICATION = Industry(
 )
 
 NEAR_LINEAR_VERIFICATION = Industry(
-    name="Near-linear verification",
+    name="High verification burden",
     capability_horizon_hours=12.0,
     capability_shape=1.15,
     execution_scale=4.0,
@@ -41,7 +41,7 @@ NEAR_LINEAR_VERIFICATION = Industry(
 )
 
 LOW_COST_VERIFICATION = Industry(
-    name="Low-cost verification",
+    name="Low verification cost",
     capability_horizon_hours=40.0,
     capability_shape=1.35,
     execution_scale=8.0,
@@ -75,7 +75,7 @@ TIGHT_CAPABILITY_FRONTIER = Industry(
 # tokens saved on each existing task.
 ADOPTION_THRESHOLD = replace(
     SUBLINEAR_VERIFICATION,
-    name="Near an adoption threshold",
+    name="Sharp adoption threshold",
     adoption_midpoint=111.6,
     adoption_scale=0.4,
 )
