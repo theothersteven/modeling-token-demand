@@ -166,22 +166,23 @@ def test_uniform_verification_speed_preserves_attention_policy() -> None:
     )
     multiplier = 0.4
 
-    baseline = optimizer.solve_interior(
-        model, Scenario(verification_time_multiplier=1.0)
-    )
-    faster = optimizer.solve_interior(
+    # Exercise the general optimizer used by the comparative-statics notebook.
+    # The scalar solver omits the uniform multiplier by construction, so using
+    # it here would not catch a regression in the production search path.
+    baseline = optimizer.solve(model, Scenario(verification_time_multiplier=1.0))
+    faster = optimizer.solve(
         model, Scenario(verification_time_multiplier=multiplier)
     )
 
     assert math.isclose(
         faster.policy.delegation_hours,
         baseline.policy.delegation_hours,
-        rel_tol=1e-12,
+        rel_tol=1e-6,
     )
     assert math.isclose(
         faster.policy.tokens_per_work_hour,
         baseline.policy.tokens_per_work_hour,
-        rel_tol=1e-12,
+        rel_tol=1e-6,
     )
     assert faster.policy.max_attempts == baseline.policy.max_attempts == 1
     assert faster.attention_limited_tokens is not None
@@ -189,5 +190,5 @@ def test_uniform_verification_speed_preserves_attention_policy() -> None:
     assert math.isclose(
         faster.attention_limited_tokens,
         baseline.attention_limited_tokens / multiplier,
-        rel_tol=1e-12,
+        rel_tol=1e-6,
     )
