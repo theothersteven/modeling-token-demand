@@ -162,23 +162,19 @@ First suppose industry $i$ has a fixed pool of potential work and enough human a
 u_i(s,x,k).
 ```
 
-Write $u_i^W$ for the optimized surplus. The outside option is not to use AI, so operation requires positive surplus after any adoption hurdle.
+Write $u_i^W$ for the optimized AI surplus. Adoption compares this surplus with the current alternative for each unit of work.
 
-To represent heterogeneous adoption decisions, let $\phi$ be a per-unit hurdle with work-volume-weighted cumulative distribution $G_i$. Conceptually, $\phi$ is the minimum AI surplus required for a unit of work to switch from its current alternative, which may be human production; it can therefore incorporate the surplus from human-only work together with switching, integration, and risk costs. The adoption share $A_i$ is the fraction of potential work for which the optimized AI policy clears that hurdle:
-
-```math
-A_i=G_i(u_i^W).
-```
-
-The numerical implementation uses the logistic specification
+Assume that the minimum AI surplus $\phi$ required for a unit of work to switch is distributed logistically across work, with location $\mu_i$ and scale $\sigma_i>0$. This threshold can incorporate the surplus from human-only production together with switching, integration, and risk costs. The adoption share is therefore
 
 ```math
 A_i
 =
+\Pr(\phi\leq u_i^W)
+=
 \frac{1}{1+\exp[-(u_i^W-\mu_i)/\sigma_i]},
 ```
 
-where $\mu_i$ is the surplus at which half of potential work is adopted and $\sigma_i>0$ controls the dispersion of adoption hurdles.
+where $\mu_i$ is the surplus at which half of potential work is adopted and $\sigma_i$ controls how gradually work switches to AI. More generally, write $A_i(s,x,k)$ for the same logistic expression evaluated at the candidate surplus $u_i(s,x,k)$.
 
 #### Result 1: work-limited demand depends on adoption and tokens per unit of work
 
@@ -351,7 +347,7 @@ For a candidate policy, the maximum feasible number of chunks is
 N_i(s,x,k)
 =
 \min\left\{
-\frac{W_iG_i(u_i(s,x,k))}{s},
+\frac{W_iA_i(s,x,k)}{s},
 \frac{H_i}{E_i(s,x,k)h_i(s;v)}
 \right\}.
 ```
@@ -368,7 +364,7 @@ subject to
 ```math
 N_i s
 \leq
-W_iG_i(u_i(s,x,k)),
+W_iA_i(s,x,k),
 \qquad
 N_iE_i(s,x,k)h_i(s;v)
 \leq
@@ -559,7 +555,7 @@ The model separates the empirical objects needed for a forecast:
 1. **Capability:** estimate $q_i(s;m)$ over task horizons and model versions.
 2. **Execution:** estimate $r_i(s,x;m,\eta)$ and empirical pass-at-$k$ curves.
 3. **Verification:** estimate $h_i(s;v)$, including its fixed cost and elasticity with respect to delegated scope.
-4. **Value and cost:** estimate $b_i$, $w_i$, and the distribution $G_i$ of adoption hurdles.
+4. **Value and cost:** estimate $b_i$, $w_i$, and the location $\mu_i$ and scale $\sigma_i$ of adoption thresholds.
 5. **Available resources:** measure potential work $W_i$ and human attention $H_i$ to determine which constraint binds.
 6. **Behavior:** observe the chosen $(s,x,k)$ together with success, review time, repair time, abandonment, and final acceptance.
 
@@ -603,8 +599,8 @@ The constraint must be part of the optimization problem. With fixed work, retrie
 | $R_i$ | Gross value per verification hour before subtracting $w_i$ |
 | $\rho_i^*$ | Optimized gross value of an additional verification hour |
 | $\theta_i$ | Elasticity of verification time with respect to delegated scope |
-| $\phi$, $G_i$ | Adoption hurdle and its work-volume-weighted distribution |
-| $\mu_i$, $\sigma_i$ | Midpoint and dispersion in the logistic adoption specification |
+| $\phi$ | Minimum AI surplus required for a unit of work to switch from its current alternative |
+| $\mu_i$, $\sigma_i$ | Location and scale of the logistic distribution of adoption thresholds |
 | $A_i$ | Share of potential work assigned to AI |
 | $W_i$ | Potential units of work during the period |
 | $H_i$ | Human verification hours available during the period |
