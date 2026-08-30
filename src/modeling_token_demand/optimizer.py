@@ -12,7 +12,7 @@ import math
 from typing import Iterable, Optional
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import brentq, minimize
 
 from .model import IndustryModel, Policy, PolicyOutcome, Scenario
 
@@ -206,3 +206,95 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
         """Return expected net surplus per human verification hour."""
 
         return outcome.surplus_per_attention_hour
+
+    def solve_interior(
+        self, model: IndustryModel, scenario: Scenario
+    ) -> PolicyOutcome:
+        """Solve the exact scalar first-order equation to numerical tolerance.
+
+        With positive fixed verification overhead and verification elasticity
+        in [0, 1], the unconstrained attention optimum is unique in (s, x),
+        and k=1 dominates retries. Eliminating x from the first-order
+        conditions leaves a strictly increasing equation in log(s). This
+        gives an independent check on the general grid/local-search solver.
+
+        The reduction assumes an interior policy. Reject unsupported
+        verification technologies and optima outside the configured bounds;
+        callers should use solve() for those cases. Like solve(), this returns
+        a policy conditional on operating, not a participation decision.
+        """
+
+        p = model.industry
+        if p.verification_fixed_hours <= 0 or p.verification_elasticity > 1:
+            raise ValueError(
+                "Interior reduction requires positive fixed verification "
+                "overhead and verification elasticity at most one; use solve()"
+            )
+
+        alpha = p.inference_returns
+        nu = p.capability_shape
+        log_capability_horizon = math.log(
+            p.capability_horizon_hours * scenario.model_capability
+        )
+        log_execution_scale = math.log(
+            p.execution_scale * scenario.model_capability
+        )
+        cost_constant = alpha * math.log(
+            scenario.token_price * p.token_reference
+            / (alpha * p.value_per_work_hour * scenario.token_efficiency)
+        )
+
+        def exponents(log_s: float) -> tuple[float, float]:
+            # A = -log(q); B = -log(r), implied by the horizon FOC after
+            # substituting the inference FOC cx = alpha * B * b * q * r.
+            capability_exponent = math.exp(nu * (log_s - log_capability_horizon))
+            variable_review = p.verification_scale * math.exp(
+                p.verification_elasticity * log_s
+            )
+            review_elasticity = (
+                p.verification_elasticity * variable_review
+                / (p.verification_fixed_hours + variable_review)
+            )
+            delta = 1.0 - review_elasticity
+            execution_exponent = (
+                (delta - nu * capability_exponent) / (1.0 + alpha * delta)
+            )
+            return capability_exponent, execution_exponent
+
+        def residual(log_s: float) -> float:
+            capability_exponent, execution_exponent = exponents(log_s)
+            if execution_exponent <= 0:
+                return math.inf
+            return (
+                cost_constant + log_s - log_execution_scale
+                + alpha * capability_exponent
+                - (alpha + 1.0) * math.log(execution_exponent)
+                + alpha * execution_exponent
+            )
+
+        # At nu*A = 1, B <= 0. Toward s=0, the residual tends to -infinity.
+        upper = log_capability_horizon - math.log(nu) / nu
+        lower = upper - 8.0
+        while residual(lower) >= 0:
+            lower -= 8.0
+        log_s = brentq(residual, lower, upper, xtol=1e-12, rtol=1e-12)
+        _, execution_exponent = exponents(log_s)
+        log_x = math.log(p.token_reference / scenario.token_efficiency) + (
+            log_s - log_execution_scale - math.log(execution_exponent)
+        ) / alpha
+        policy = Policy(
+            delegation_hours=math.exp(log_s),
+            tokens_per_work_hour=math.exp(log_x),
+            max_attempts=1,
+        )
+        settings = self.settings
+        if not (
+            settings.min_delegation_hours <= policy.delegation_hours
+            <= settings.max_delegation_hours
+            and settings.min_tokens_per_work_hour <= policy.tokens_per_work_hour
+            <= settings.max_tokens_per_work_hour
+        ):
+            raise ValueError(
+                "Interior optimum lies outside configured policy bounds; use solve()"
+            )
+        return model.evaluate(policy, scenario)

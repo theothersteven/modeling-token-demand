@@ -663,7 +663,7 @@ The code mirrors the economics rather than hiding it inside a plotting notebook:
 - `Policy` is the user's choice $(s,x,k)$, while `PolicyOutcome` records reliability, surplus per work-hour, surplus per attention-hour, adoption, and token demand.
 - `IndustryModel` evaluates a candidate policy. It contains no optimization logic.
 - `PolicyOptimizer` maximizes surplus per work-hour for the fixed-work polar case.
-- `AttentionConstrainedOptimizer` maximizes surplus per human verification hour for the abundant-work, binding-attention polar case. Both optimizers enumerate the discrete retry cap and numerically optimize delegation horizon and inference intensity for each value of $k$.
+- `AttentionConstrainedOptimizer` maximizes surplus per human verification hour for the abundant-work, binding-attention polar case. Both optimizers enumerate the discrete retry cap and numerically optimize delegation horizon and inference intensity for each value of $k$. For the verification technology used here, `solve_interior` also obtains the unique interior attention solution from its exact one-dimensional first-order equation.
 
 This separation makes it difficult to accidentally optimize token demand itself. The user maximizes expected surplus; adoption and industry token demand are downstream outcomes.
 
@@ -699,7 +699,7 @@ uv run pytest
 uv run jupyter lab notebooks/comparative_statics.ipynb
 ```
 
-The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the attention-constrained policy at every point, and writes six figures. Its demand and spending figures use the abundant-work, binding-attention polar case with 100,000 human verification hours per industry; this normalization scales the vertical axis without changing the curve shapes. A separate capability figure compares that solution with the earlier procedure that maximized surplus per work-hour before applying the attention cap.
+The [comparative-statics notebook](notebooks/comparative_statics.ipynb) documents the industry calibrations, re-solves the attention-constrained policy at every point, and writes seven figures. Its demand and spending figures use the abundant-work, binding-attention polar case with 100,000 human verification hours per industry; this normalization scales the vertical axis without changing the curve shapes. A separate capability figure compares that solution with the earlier procedure that maximized surplus per work-hour before applying the attention cap. The shadow-price figure derives the marginal value of an additional attention hour and its exact capability elasticity.
 
 ![Attention-limited token demand versus token price](figures/token-demand-vs-price.png)
 
@@ -710,6 +710,8 @@ The [comparative-statics notebook](notebooks/comparative_statics.ipynb) document
 ![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)
 
 ![Capability demand under alternative policy objectives](figures/token-demand-vs-capability-objectives.png)
+
+![Shadow price of attention versus model capability](figures/shadow-price-of-attention-vs-capability.png)
 
 ![Optimized user surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
 

@@ -1,3 +1,6 @@
+from dataclasses import replace
+import math
+
 from modeling_token_demand import (
     AttentionConstrainedOptimizer,
     IndustryModel,
@@ -6,7 +9,7 @@ from modeling_token_demand import (
     PolicyOptimizer,
     Scenario,
 )
-from modeling_token_demand.calibrations import SOFTWARE
+from modeling_token_demand.calibrations import SOFTWARE, illustrative_industries
 
 
 def test_one_attempt_is_always_consumed() -> None:
@@ -85,3 +88,71 @@ def test_attention_optimizer_maximizes_surplus_per_attention_hour() -> None:
         item.surplus_per_attention_hour for item in outcomes_by_attempts.values()
     )
     assert outcome.policy.max_attempts == 1
+
+
+def test_scalar_attention_solution_matches_general_optimizer() -> None:
+    settings = OptimizationSettings(
+        max_tokens_per_work_hour=20_000_000.0,
+        grid_points_per_dimension=11,
+        local_starts_per_attempt=2,
+        max_attempts=4,
+    )
+    optimizer = AttentionConstrainedOptimizer(settings)
+
+    for industry in illustrative_industries(include_threshold=False):
+        model = IndustryModel(industry)
+        for capability in (0.35, 1.0, 5.0):
+            scenario = Scenario(model_capability=capability)
+            general = optimizer.solve(model, scenario)
+            scalar = optimizer.solve_interior(model, scenario)
+
+            assert math.isclose(
+                general.surplus_per_attention_hour,
+                scalar.surplus_per_attention_hour,
+                rel_tol=1e-9,
+            )
+            assert scalar.policy.max_attempts == 1
+
+
+def test_attention_shadow_price_capability_elasticity() -> None:
+    settings = OptimizationSettings(max_tokens_per_work_hour=20_000_000.0)
+    optimizer = AttentionConstrainedOptimizer(settings)
+    epsilon = 1e-4
+
+    for industry in illustrative_industries(include_threshold=False):
+        model = IndustryModel(industry)
+        center = optimizer.solve_interior(model, Scenario(model_capability=1.0))
+        lower = optimizer.solve_interior(
+            model, Scenario(model_capability=math.exp(-epsilon))
+        )
+        upper = optimizer.solve_interior(
+            model, Scenario(model_capability=math.exp(epsilon))
+        )
+        gross_shadow_price = (
+            center.surplus_per_attention_hour + industry.human_cost_per_hour
+        )
+        lower_shadow_price = (
+            lower.surplus_per_attention_hour + industry.human_cost_per_hour
+        )
+        upper_shadow_price = (
+            upper.surplus_per_attention_hour + industry.human_cost_per_hour
+        )
+        s = center.policy.delegation_hours
+        variable_review = industry.verification_scale * (
+            s ** industry.verification_elasticity
+        )
+        review_elasticity = (
+            industry.verification_elasticity * variable_review
+            / (industry.verification_fixed_hours + variable_review)
+        )
+        numerical_elasticity = math.log(
+            upper_shadow_price / lower_shadow_price
+        ) / (2.0 * epsilon)
+
+        assert gross_shadow_price > 0
+        assert math.isclose(
+            numerical_elasticity,
+            1.0 - review_elasticity,
+            rel_tol=1e-7,
+            abs_tol=1e-7,
+        )
