@@ -204,9 +204,21 @@ W_iA_ix_i^WE_i^W.
 
 The delegation horizon cancels from this accounting identity. Grouping a fixed amount of work into larger chunks does not mechanically create more work. The horizon still matters because it changes capability, reliability, verification, retries, inference intensity, and adoption.
 
-The following numerical illustration changes model capability, token efficiency, and token price one at a time. Each curve reoptimizes $(s,x,k)$ and allows adoption to respond, so it includes both tokens per adopted unit and the share of fixed work that switches to AI. The labels identify the defining parameter characteristic of each stylized regime rather than naming example industries.
+The numerical illustration starts from one reference industry and changes one parameter group at a time. Each group has a high and low case, while all unrelated parameters and potential work $W_i$ remain fixed. Capability changes $\lambda_i$; execution changes $a_i$; verification burden scales $(h_{0,i},h_{1,i})$ together; economic surplus changes $(b_i,w_i)$; and the adoption hurdle changes $\mu_i$. Shape parameters are held fixed so that each pair has an economically consistent ordering over the plotted policies.
 
-![Work-limited token demand versus capability, efficiency, and price](figures/work-limited-token-demand.png)
+Each curve reoptimizes $(s,x,k)$ and allows adoption to respond. Gray denotes the reference case. Each parameter group has one color, with a solid line for its high setting and a dashed line for its low setting. The first figure reports absolute demand under a common $W_i$.
+
+![Work-limited token demand in levels](figures/work-limited-token-demand-levels.png)
+
+The second figure divides each curve by its own demand at the common scenario baseline: $m=1$, $\eta=1$, or a token price of 10 dollars per million. For an axis variable $z$ with fixed baseline $z_0$, the plotted index is
+
+```math
+\widetilde D_i^W(z)=\frac{D_i^W(z)}{D_i^W(z_0)}.
+```
+
+The denominator is one constant for each curve, not the reference industry's demand evaluated at every $z$. This removes level differences but preserves monotonicity, turning points, percentage changes, and log slopes. In particular, it does not remove the shape of the reference industry.
+
+![Indexed work-limited token demand](figures/work-limited-token-demand-indexed.png)
 
 #### Result 2: retries can be worthwhile, but the optimal cap is finite
 
@@ -561,13 +573,29 @@ Changing $\beta_i$ is different. It changes how verification scales with the del
 
 ## 5. Numerical illustrations
 
-The numerical exercise solves four parameter regimes that differ in capability, execution, and verification. The labels describe those parameter differences; they are not empirical industry estimates. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
+The numerical exercise is a controlled comparison rather than a collection of named or independently calibrated industries. It begins with the following reference case:
 
-The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per parameter regime. This normalization scales demand without changing the optimized policy or the shape of the curves. The numerical results confirm four features of the analysis:
+| $\lambda$ | $\nu$ | $a$ | $\alpha$ | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ | $W$ |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 12 | 1.25 | 4 | 0.50 | 0.03 | 0.05 | 0.50 | 125 | 100 | 107 | 8 | 1,000,000 |
+
+The reference is a transparent central calibration, not an estimated median industry. Five high/low pairs then change only the indicated group:
+
+| Parameter group | Parameters changed | Low setting | Reference | High setting |
+|---|---|---:|---:|---:|
+| Capability | $\lambda$ | 6 | 12 | 24 |
+| Execution | $a$ | 2 | 4 | 8 |
+| Verification burden | $(h_0,h_1)$ | $(0.015,0.025)$ | $(0.03,0.05)$ | $(0.06,0.10)$ |
+| Economic surplus | $(b,w)$ | $(100,125)$ | $(125,100)$ | $(150,75)$ |
+| Adoption hurdle | $\mu$ | 99 | 107 | 115 |
+
+The frontier shape $\nu$, inference curvature $\alpha$, verification elasticity $\beta$, and adoption dispersion $\sigma$ remain fixed in this main experiment. Increasing these shape parameters does not produce a uniformly ordered high or low case over every possible policy, so they are better studied separately as robustness checks. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
+
+The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per case. All demand and spending curves are indexed to their own value at the common scenario baseline, focusing attention on their shapes rather than arbitrary scale differences. Some lines overlap by construction: adoption hurdles are inactive in the attention-limited problem, while uniform changes in verification time rescale demand without changing its indexed path. The numerical results confirm four features of the analysis:
 
 1. The attention-constrained optimizer selects $k=1$ throughout the price, efficiency, and capability sweeps, as Result 3 predicts.
-2. Capability raises the shadow value of attention in every regime, while token demand can rise or fall depending on verification elasticity and the response of inference intensity.
-3. Higher token efficiency usually lowers token demand, but a sufficiently strong increase in supervisory leverage can produce an intermediate rebound.
+2. Capability raises the shadow value of attention in every case. Attention-limited demand also rises in this controlled calibration, while the work-limited responses include declining and hump-shaped paths.
+3. Token efficiency can lower demand or produce an intermediate rebound. The controlled capability and execution variants show how a single parameter group can change that response; discrete retry choices can create additional kinks in the work-limited curves.
 4. Optimizing surplus per unit of work and then applying an attention cap can produce a substantially different policy and demand path from solving the attention-constrained problem directly.
 
 ![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)
@@ -579,6 +607,8 @@ The primary figures use the abundant-work, binding-attention regime with 100,000
 ![Attention-limited token demand versus token price](figures/token-demand-vs-price.png)
 
 ![Attention-limited token spend versus token price](figures/token-spend-vs-price.png)
+
+To isolate the effect of the optimization objective itself, the next comparison uses only the reference industry and indexes each objective's demand to its own value at $m=1$.
 
 ![Capability demand under alternative policy objectives](figures/token-demand-vs-capability-objectives.png)
 
@@ -667,9 +697,9 @@ from modeling_token_demand import (
     PolicyOptimizer,
     Scenario,
 )
-from modeling_token_demand.calibrations import SUBLINEAR_VERIFICATION
+from modeling_token_demand.calibrations import REFERENCE_INDUSTRY
 
-model = IndustryModel(SUBLINEAR_VERIFICATION)
+model = IndustryModel(REFERENCE_INDUSTRY)
 scenario = Scenario(
     model_capability=1.0,
     token_efficiency=1.0,
