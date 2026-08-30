@@ -26,7 +26,7 @@ We study an industry-level user who chooses an interaction policy with three com
 - inference intensity, which is the number of tokens used per unit of delegated work in each attempt; and
 - a retry cap, which is the maximum number of attempts allowed for one delegated chunk.
 
-The analysis proceeds in the order needed to determine demand. Section 2 defines the policy, the capability and execution model, retry behavior, verification, and surplus. Section 3 solves the user's problem under a work constraint, an attention constraint, and both constraints together. Section 4 separates comparative statics that are guaranteed by the model from changes in token demand that depend on reoptimization. Section 5 reports numerical comparative statics. The numerical exercise is designed to expose model mechanisms; it is not an empirical forecast.
+The analysis proceeds in the order needed to determine demand. Section 2 defines the policy, the capability and execution model, retry behavior, verification, and surplus. Section 3 derives optimal policies and token demand under a work constraint, an attention constraint, and both constraints together, taking technology and prices as given. Section 4 examines how those choices and demand respond to changes in capability, efficiency, token prices, and verification. Section 5 illustrates these responses numerically. The numerical exercise is designed to expose model mechanisms; it is not an empirical forecast.
 
 The main results are as follows. First, separating capability from execution prevents pass rates from converging mechanically to one and makes the value of retries depend on the unsolvable share of work. Second, the resource constraint changes the policy objective. Applying an attention cap after optimizing surplus per unit of work generally does not recover the attention-constrained solution. Third, when useful tasks are abundant and interchangeable, retrying a failed task cannot improve expected value per scarce verification hour. Fourth, model capability can raise the value of an additional attention hour even when optimized token demand falls. These results identify the objects that must be estimated before aggregate token demand can be forecast.
 
@@ -149,6 +149,8 @@ Equivalently, a delegated chunk creates expected surplus $s u_i$. This is the co
 
 ## 3. User behavior under alternative constraints
 
+This section holds technology and prices fixed and derives the policy and token demand implied by each resource constraint. Section 4 then changes technology or prices and compares the resulting optimal choices.
+
 ### 3.1 Limited work, nonbinding attention
 
 First suppose industry $i$ has a fixed pool of potential work and enough human attention to review all economically adopted work. The user chooses
@@ -178,7 +180,9 @@ A_i
 
 where $\mu_i$ is the surplus at which half of potential work is adopted and $\sigma_i>0$ controls the dispersion of adoption hurdles.
 
-Let $W_i>0$ be potential work during the period. The number of adopted chunks is $W_iA_i/s_i^W$. Each chunk consumes $s_i^Wx_i^WE_i^W$ expected tokens. Work-limited token demand is therefore
+#### Result 1: work-limited demand depends on adoption and tokens per unit of work
+
+Token demand equals the amount of work adopted multiplied by expected tokens per unit of work. Let $W_i>0$ be potential work during the period. The number of adopted chunks is $W_iA_i/s_i^W$. Each chunk consumes $s_i^Wx_i^WE_i^W$ expected tokens. Work-limited token demand is therefore
 
 ```math
 D_i^W
@@ -188,9 +192,11 @@ W_iA_ix_i^WE_i^W.
 
 The delegation horizon cancels from this accounting identity. Grouping a fixed amount of work into larger chunks does not mechanically create more work. The horizon still matters because it changes capability, reliability, verification, retries, inference intensity, and adoption.
 
-#### Retry choice
+#### Result 2: retries can be worthwhile, but the optimal cap is finite
 
-Fix $(s,x)$ and write $P_{i,k}=q_i[1-(1-r_i)^k]$. Allowing attempt $k+1$ increases the success probability by
+For fixed $(s,x)$, retries can raise surplus, but the optimal cap is finite whenever $q_i<1$ and the first attempt is worthwhile. Each failure makes it more likely that the task is unsolvable. The user should allow another attempt only while its expected benefit exceeds its expected cost.
+
+Write $P_{i,k}=q_i[1-(1-r_i)^k]$. Allowing attempt $k+1$ increases the success probability by
 
 ```math
 P_{i,k+1}-P_{i,k}
@@ -214,9 +220,9 @@ When $b_ir_i>C_i$ and $q_i<1$, this condition is equivalent to
 \frac{C_i(1-q_i)}{q_i(b_ir_i-C_i)}.
 ```
 
-The right side is positive whenever some tasks are unsolvable. As failures accumulate, the remaining tasks contain a larger unsolvable share, so the marginal value of another attempt falls. This produces a finite retry cap whenever the first attempt is worthwhile but the unsolvable share is nonzero.
+The right side is positive whenever some tasks are unsolvable, while the left side tends to zero as $k$ grows. The inequality must therefore eventually fail. If it holds at $k=1$, allowing a second attempt improves surplus over stopping after one. Once it fails, no later retry becomes worthwhile at the same $(s,x)$.
 
-#### Inference and delegation choices
+#### Optimal inference and delegation
 
 For a fixed retry cap, an interior inference choice satisfies
 
@@ -295,7 +301,7 @@ Thus the attention-constrained policy is
 
 The attention endowment $H_i$ scales activity but does not change this policy in the single-industry polar case. The opportunity cost $w_i$ enters as a constant. It determines participation but does not change the maximizing policy once attention binds.
 
-#### Result 1: retries do not improve value per scarce attention hour
+#### Result 3: retries do not improve value per scarce attention hour
 
 For any fixed $(s,x)$,
 
@@ -311,9 +317,9 @@ The inequality follows from $1-(1-r_i)^k\leq kr_i$. The token-cost term in $J_i$
 
 The result depends on abundant interchangeable work. After a failure, beginning a fresh task draws again from the original capability distribution, while retrying the same task conditions on evidence that it may lie outside the capability frontier. Retries can return when work is finite, abandonment destroys value, tasks differ in value, later attempts learn from earlier failures, or setup costs can be reused.
 
-#### Result 2: attention-limited demand depends on supervisory leverage
+#### Result 4: attention-limited demand depends on supervisory leverage
 
-The industry completes $H_i/[E_i^Hh_i(s_i^H;v)]$ chunks. Multiplying by expected tokens per chunk gives
+The industry attempts $H_i/[E_i^Hh_i(s_i^H;v)]$ chunks. Multiplying by expected tokens per chunk gives
 
 ```math
 D_i^H
@@ -333,46 +339,7 @@ Expected attempts cancel from demand because each additional attempt consumes bo
 {\text{tokens per unit of work}}.
 ```
 
-This decomposition isolates the attention channel. A technology change raises attention-limited demand only if the increase in work launched per human hour outweighs any decline in inference intensity.
-
-#### Result 3: capability raises the value of scarce attention
-
-Define gross value per verification hour, after token spending but before subtracting $w_i$, as
-
-```math
-R_i(s,x,k)
-=
-J_i(s,x,k)+w_i.
-```
-
-Its optimized value is
-
-```math
-\rho_i^*(m)
-=
-\max\left\{0,\max_{s,x,k}R_i(s,x,k;m)\right\}.
-```
-
-If $h_{0,i}>0$, $0\leq\beta_i\leq1$, $\rho_i^*>0$, and the attention-constrained solution is interior, then $k_i^H=1$ and, holding $c$, $\eta$, and $v$ fixed, the capability elasticity of the optimized gross value is
-
-```math
-\frac{d\log\rho_i^*}{d\log m}
-=
-1-\theta_i(s_i^H),
-```
-
-where
-
-```math
-\theta_i(s)
-:=
-\frac{s h_{i,s}(s;v)}{h_i(s;v)}
-=
-\frac{\beta_i h_{1,i}s^{\beta_i}}
-{h_{0,i}+h_{1,i}s^{\beta_i}}.
-```
-
-Since $0\leq\theta_i(s)\leq\beta_i$, the elasticity lies between $1-\beta_i$ and $1$. Capability is most valuable at the margin when verification grows slowly with delegated scope. This is a value result, not a token-demand result: $\rho_i^*$ can rise while $D_i^H$ falls if the user reduces $x_i^H$ sufficiently.
+This decomposition isolates the attention channel: a fixed human attention budget supports token use through both the work launched per attention hour and the inference devoted to each unit of work.
 
 ### 3.3 Work and attention can both bind
 
@@ -420,9 +387,11 @@ The work-limited and attention-limited models are the two cases in which one of 
 D=\sum_{i\in\mathcal I}D_i.
 ```
 
-## 4. Comparative statics
+## 4. How technology and prices affect token demand
 
-The model gives strong conclusions about feasibility and optimized value. It gives weaker conclusions about token demand because users change their policies.
+Section 3 derived the user's policy for given technology and prices. Here we change one input at a time, hold the other inputs and resource endowments fixed, and compare outcomes after the user chooses a new optimal policy. These comparisons do not model how quickly users adjust.
+
+The model gives strong conclusions about feasibility and optimized value. It gives weaker conclusions about token demand because users can change delegation, inference intensity, retries, and adoption.
 
 | Change | Guaranteed effect at a fixed policy or effective inference level | Effect on optimized token demand |
 |---|---|---|
@@ -434,6 +403,49 @@ The model gives strong conclusions about feasibility and optimized value. It giv
 ### 4.1 Model capability
 
 For every fixed policy, greater $m$ raises the solvable share $q_i$ and conditional success $r_i$. It therefore raises eventual success $P_i$ and reduces expected attempts $E_i$. The user can respond by choosing a longer horizon, less inference per unit of work, or a different retry cap.
+
+#### Result 5: capability raises the value of scarce attention
+
+Define gross value per verification hour, after token spending but before subtracting $w_i$, as
+
+```math
+R_i(s,x,k)
+=
+J_i(s,x,k)+w_i.
+```
+
+Its optimized value is
+
+```math
+\rho_i^*(m)
+=
+\max\left\{0,\max_{s,x,k}R_i(s,x,k;m)\right\}.
+```
+
+If $h_{0,i}>0$, $0\leq\beta_i\leq1$, $\rho_i^*>0$, and the attention-constrained solution is interior, then $k_i^H=1$ and, holding $c$, $\eta$, and $v$ fixed, the capability elasticity of the optimized gross value is
+
+```math
+\frac{d\log\rho_i^*}{d\log m}
+=
+1-\theta_i(s_i^H),
+```
+
+where
+
+```math
+\theta_i(s)
+:=
+\frac{s h_{i,s}(s;v)}{h_i(s;v)}
+=
+\frac{\beta_i h_{1,i}s^{\beta_i}}
+{h_{0,i}+h_{1,i}s^{\beta_i}}.
+```
+
+Since $0\leq\theta_i(s)\leq\beta_i$, the elasticity lies between $1-\beta_i$ and $1$. Capability is most valuable at the margin when verification grows slowly with delegated scope.
+
+#### The effect on token demand remains ambiguous
+
+The value result does not determine token use: $\rho_i^*$ can rise while $D_i^H$ falls if the user reduces $x_i^H$ sufficiently. The two resource regimes make the relevant tradeoffs clear.
 
 In the work-limited regime,
 
@@ -487,7 +499,11 @@ Price and efficiency answer different questions. A lower $c$ changes the budget 
 
 ### 4.4 Verification technology
 
-The level and shape of verification have different effects. A change in $v$ multiplies all verification time by the same factor. In the pure attention-limited regime,
+The level and shape of verification have different effects. A change in $v$ multiplies all verification time by the same factor.
+
+#### Result 6: uniformly faster verification scales up attention-limited demand
+
+If verification takes half as long, the same attention budget supports twice as many tokens without changing the optimal policy, provided attention binds in both cases. In the pure attention-limited regime,
 
 ```math
 J_i(s,x,k;v)
@@ -503,17 +519,19 @@ D_i^H(v)
 \frac{1}{v}D_i^H(1).
 ```
 
-This exact result applies only when useful work is abundant and attention is the binding constraint. In the work-limited or joint problem, lower verification time changes per-unit cost, adoption, and the optimal policy.
+This exact result applies only when useful work is abundant and attention is the binding constraint at both values of $v$. In the work-limited or joint problem, lower verification time changes per-unit cost, adoption, and the optimal policy.
+
+#### Changes in how verification scales with scope
 
 Changing $\beta_i$ is different. It changes how verification scales with the delegation horizon, alters the policy itself, and changes both supervisory leverage and the capability elasticity of scarce attention.
 
-## 5. Numerical comparative statics
+## 5. Numerical illustrations
 
 The numerical exercise solves four parameter regimes that differ in capability, execution, and verification. The labels describe those parameter differences; they are not empirical industry estimates. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
 
 The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per parameter regime. This normalization scales demand without changing the optimized policy or the shape of the curves. The numerical results confirm four features of the analysis:
 
-1. The attention-constrained optimizer selects $k=1$ throughout the price, efficiency, and capability sweeps, as Result 1 predicts.
+1. The attention-constrained optimizer selects $k=1$ throughout the price, efficiency, and capability sweeps, as Result 3 predicts.
 2. Capability raises the shadow value of attention in every regime, while token demand can rise or fall depending on verification elasticity and the response of inference intensity.
 3. Higher token efficiency usually lowers token demand, but a sufficiently strong increase in supervisory leverage can produce an intermediate rebound.
 4. Optimizing surplus per unit of work and then applying an attention cap can produce a substantially different policy and demand path from solving the attention-constrained problem directly.
@@ -532,7 +550,7 @@ The primary figures use the abundant-work, binding-attention regime with 100,000
 
 ![Optimized per-work surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
 
-The [comparative-statics notebook](notebooks/comparative_statics.ipynb) records the parameter values, numerical bounds, optimizer checks, and figure-generation code.
+The [analysis notebook](notebooks/comparative_statics.ipynb) records the parameter values, numerical bounds, optimizer checks, and figure-generation code.
 
 ## 6. Measurement and limitations
 
