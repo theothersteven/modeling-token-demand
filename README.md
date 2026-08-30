@@ -240,7 +240,7 @@ The right side is positive whenever some tasks are unsolvable, while the left si
 
 #### Optimal inference and delegation
 
-For a fixed retry cap, an interior inference choice satisfies
+For a fixed retry cap, suppose the optimal inference intensity is not pinned to a lower or upper constraint. Such an **interior choice** allows the user to make a small increase or decrease in $x$. Its marginal benefit must therefore equal its marginal cost:
 
 ```math
 b_iP_{i,x}
@@ -248,9 +248,9 @@ b_iP_{i,x}
 E_{i,x}C_i+E_ic,
 ```
 
-where a subscript denotes a partial derivative. The left side is the marginal value of more inference. The right side includes its direct token cost and its effect on the expected number of attempts.
+where a subscript denotes a partial derivative. The left side is the marginal value of more inference. The right side includes its direct token cost and its effect on the expected number of attempts. If the optimum is at a boundary instead, this equality need not hold.
 
-An interior delegation choice satisfies
+If the optimal delegation horizon is also interior, it satisfies
 
 ```math
 b_iP_{i,s}
@@ -438,7 +438,7 @@ Its optimized value is
 \max\left\{0,\max_{s,x,k}R_i(s,x,k;m)\right\}.
 ```
 
-If $h_{0,i}>0$, $0\leq\beta_i\leq1$, $\rho_i^*>0$, and the attention-constrained solution is interior, then $k_i^H=1$ and, holding $c$, $\eta$, and $v$ fixed, the capability elasticity of the optimized gross value is
+If $h_{0,i}>0$, $0\leq\beta_i\leq1$, $\rho_i^*>0$, and the optimal attention-constrained values of $s$ and $x$ lie strictly inside their feasible ranges, then $k_i^H=1$ and, holding $c$, $\eta$, and $v$ fixed, the capability elasticity of the optimized gross value is
 
 ```math
 \frac{d\log\rho_i^*}{d\log m}
