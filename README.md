@@ -163,9 +163,25 @@ b_iP_i(s,x,k)
 
 Equivalently, a delegated chunk creates expected surplus $s u_i$. This is the common economic object used in each constraint regime. What changes across regimes is the resource against which that surplus is maximized.
 
+The attention cost $w_i$ can represent a wage or the opportunity cost of the reviewer's time; it is not the value $b_i$ of the underlying work. Raising $b_i$ rewards successful output, whereas raising $w_i$ penalizes verification time, so the two can produce different policy responses when work is limited. With abundant work and binding attention, $w_i$ instead becomes a constant in the policy objective below: it affects whether operating is worthwhile, but not the chosen policy conditional on operating. The numerical comparisons hold $w_i$ fixed and vary economic value through $b_i$ alone.
+
 ## 3. User behavior under alternative constraints
 
 This section holds technology and prices fixed and derives the policy and token demand implied by each resource constraint. Section 4 then changes technology or prices and compares the resulting optimal choices.
+
+The figures illustrate both regimes using one reference industry and five high/low pairs. Each pair changes the related parameters in one group together; all other industry parameters stay at the reference. The industry comparisons in Sections 3 and 5 use the same eleven cases. Gray denotes the reference, each group has one color, and solid/dashed lines denote its high/low setting.
+
+| Parameter group | Parameters varied together | Low setting | Reference | High setting | Meaning of the high setting |
+|---|---|---|---|---|---|
+| Capability constraint | $(\lambda,\nu)$ | $(24,1.50)$ | $(12,1.25)$ | $(6,1.00)$ | Shorter capability horizon and more failures at modest task sizes |
+| Execution difficulty | $(a,\alpha)$ | $(8,0.65)$ | $(4,0.50)$ | $(2,0.35)$ | Lower execution ease and weaker returns to extra inference |
+| Verification burden | $(h_0,h_1,\beta)$ | $(0.015,0.025,0.25)$ | $(0.03,0.05,0.50)$ | $(0.06,0.10,0.95)$ | More review time, growing faster with delegated scope |
+| Economic value | $b$ | 100 | 125 | 150 | Greater value from successfully completed work |
+| Adoption hurdle | $(\mu,\sigma)$ | $(99,6)$ | $(107,8)$ | $(115,10)$ | Higher typical adoption hurdle and more dispersed hurdles |
+
+All cases hold $w_i=100$ dollars per verification hour, $W_i=1{,}000{,}000$ potential work hours in the work-limited regime, and $H_i=100{,}000$ verification hours in the attention-limited regime. The values $b_i$, $\mu_i$, and $\sigma_i$ are dollars per unit of underlying work. The common scenario baseline is $m=\eta=v=1$ and a token price of 10 dollars per million, with $x_{\mathrm{ref}}=100{,}000$ tokens per work hour. This is an illustrative central calibration, not an estimated median industry.
+
+"High" refers to the named feature, not to every parameter being numerically larger or to token demand necessarily being higher. Shape parameters are not globally ordered: changing $\nu$ or $\alpha$ can make reliability curves cross, and increasing $\sigma$ adds both low- and high-hurdle work. The joint settings have the stated difficulty ordering over the policies and adoption surpluses in each comparison, which the notebook checks. For example, the adoption curves cross at surplus 75; above that level, the high-hurdle case has lower adoption than the reference. Each comparison captures a combined change in its group, rather than identifying the effect of one constituent parameter.
 
 ### 3.1 Limited work, nonbinding attention
 
@@ -204,7 +220,7 @@ W_iA_ix_i^WE_i^W.
 
 The delegation horizon cancels from this accounting identity. Grouping a fixed amount of work into larger chunks does not mechanically create more work. The horizon still matters because it changes capability, reliability, verification, retries, inference intensity, and adoption.
 
-The numerical illustration starts from one reference industry and changes one parameter group at a time. Each group has a high and low case, while all unrelated parameters and potential work $W_i$ remain fixed. Capability changes $\lambda_i$; execution changes $a_i$; verification burden scales $(h_{0,i},h_{1,i})$ together; economic surplus changes $(b_i,w_i)$; and the adoption hurdle changes $\mu_i$. Shape parameters are held fixed so that each pair has an economically consistent ordering over the plotted policies.
+The numerical illustration uses the joint parameter settings in the table above, holding potential work $W_i$ fixed. In particular, verification burden combines higher or lower checkpoint overhead, variable review time, and review growth in one group; it is not just a uniform rescaling of verification time.
 
 Each curve reoptimizes $(s,x,k)$ and allows adoption to respond. Gray denotes the reference case. Each parameter group has one color, with a solid line for its high setting and a dashed line for its low setting. The first figure reports absolute demand under a common $W_i$.
 
@@ -386,6 +402,18 @@ Expected attempts cancel from demand because each additional attempt consumes bo
 ```
 
 This decomposition isolates the attention channel: a fixed human attention budget supports token use through both the work launched per attention hour and the inference devoted to each unit of work.
+
+The following figures mirror Section 3.1: three panels vary model capability, token efficiency, and token price, with all other scenario inputs fixed. Each point solves the attention-constrained problem directly, using the same $H_i=100{,}000$ verification hours for every case. Gray denotes the reference industry; each parameter group has one color, with solid and dashed lines for its high and low settings.
+
+These figures use exactly the same five parameter-group pairs as Section 3.1, including the combined verification-burden settings. The first figure reports absolute token demand.
+
+![Attention-limited token demand in levels](figures/attention-limited-token-demand-levels.png)
+
+The second divides each curve by its own demand at $m=1$, $\eta=1$, or a token price of 10 dollars per million. It compares proportional changes from that fixed scenario baseline; a line above gray need not have higher absolute demand. Verification-burden changes now affect both levels and response shapes because they also change $\beta_i$. Adoption-hurdle changes are inactive in this abundant-work regime, so those lines overlap the reference in both figures.
+
+![Indexed attention-limited token demand](figures/attention-limited-token-demand-indexed.png)
+
+The verification-burden pair changes the capability response itself. Raising capability from $m=1$ to $m=5$ multiplies demand by about $3.63$ in the low-burden case, $2.40$ in the reference, and $0.89$ in the high-burden case. When fixed verification overhead is negligible, the model approximately scales as $D_i^H(m)\propto m^{1-\beta_i}$: larger delegated tasks create more supervisory leverage when review grows slowly with scope. With positive fixed overhead, the optimal inference response can also matter enough to reverse demand growth when review is nearly proportional to scope. These comparisons change all three verification parameters together; the separate uniform-time experiment in Section 4.4 isolates the pure level effect.
 
 ### 3.3 Work and attention can both bind
 
@@ -573,29 +601,13 @@ Changing $\beta_i$ is different. It changes how verification scales with the del
 
 ## 5. Numerical illustrations
 
-The numerical exercise is a controlled comparison rather than a collection of named or independently calibrated industries. It begins with the following reference case:
+The numerical exercise uses the reference and joint high/low settings tabulated at the beginning of Section 3. It changes one parameter group at a time, keeps industry scale and the attention cost $w_i$ fixed, and uses a single verification-burden pair that varies $(h_{0,i},h_{1,i},\beta_i)$ together. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
 
-| $\lambda$ | $\nu$ | $a$ | $\alpha$ | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ | $W$ |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 12 | 1.25 | 4 | 0.50 | 0.03 | 0.05 | 0.50 | 125 | 100 | 107 | 8 | 1,000,000 |
-
-The reference is a transparent central calibration, not an estimated median industry. Five high/low pairs then change only the indicated group:
-
-| Parameter group | Parameters changed | Low setting | Reference | High setting |
-|---|---|---:|---:|---:|
-| Capability | $\lambda$ | 6 | 12 | 24 |
-| Execution | $a$ | 2 | 4 | 8 |
-| Verification burden | $(h_0,h_1)$ | $(0.015,0.025)$ | $(0.03,0.05)$ | $(0.06,0.10)$ |
-| Economic surplus | $(b,w)$ | $(100,125)$ | $(125,100)$ | $(150,75)$ |
-| Adoption hurdle | $\mu$ | 99 | 107 | 115 |
-
-The frontier shape $\nu$, inference curvature $\alpha$, verification elasticity $\beta$, and adoption dispersion $\sigma$ remain fixed in this main experiment. Increasing these shape parameters does not produce a uniformly ordered high or low case over every possible policy, so they are better studied separately as robustness checks. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
-
-The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per case. All demand and spending curves are indexed to their own value at the common scenario baseline, focusing attention on their shapes rather than arbitrary scale differences. Some lines overlap by construction: adoption hurdles are inactive in the attention-limited problem, while uniform changes in verification time rescale demand without changing its indexed path. The numerical results confirm four features of the analysis:
+The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per case. The single-axis demand and spending figures below are indexed to each case's own value at the common scenario baseline; Sections 3.1 and 3.2 show both absolute and indexed demand. Adoption-hurdle lines overlap the reference by construction because adoption is inactive in the attention-limited problem. The numerical results confirm four features of the analysis:
 
 1. The attention-constrained optimizer selects $k=1$ throughout the price, efficiency, and capability sweeps, as Result 3 predicts.
-2. Capability raises the shadow value of attention in every case. Attention-limited demand also rises in this controlled calibration, while the work-limited responses include declining and hump-shaped paths.
-3. Token efficiency can lower demand or produce an intermediate rebound. The controlled capability and execution variants show how a single parameter group can change that response; discrete retry choices can create additional kinks in the work-limited curves.
+2. Capability raises the shadow value of attention in every case. Its token-demand response depends on verification growth: attention-limited demand rises strongly when review grows slowly, but can fall when review is nearly proportional to delegated scope. Work-limited responses also include declining and hump-shaped paths.
+3. Token efficiency can lower demand, raise it, or produce an intermediate rebound. The controlled capability and execution variants show how a single parameter group can change that response; discrete retry choices can create additional kinks in the work-limited curves.
 4. Optimizing surplus per unit of work and then applying an attention cap can produce a substantially different policy and demand path from solving the attention-constrained problem directly.
 
 ![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)

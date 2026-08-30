@@ -1,8 +1,9 @@
 """Controlled reference calibrations used in the numerical illustrations.
 
-The main experiment starts from one reference industry and changes one
-economically ordered parameter group at a time. These cases are deliberately
-stylized comparative statics, not empirical industry estimates.
+The main experiment starts from one reference industry and changes one related
+parameter group at a time. The high/low labels describe the named feature over
+the illustrated policy range, not a global ordering of shape parameters.
+These are stylized comparative statics, not empirical industry estimates.
 """
 
 from dataclasses import replace
@@ -27,74 +28,80 @@ REFERENCE_INDUSTRY = Industry(
     adoption_scale=8.0,
 )
 
-# Capability level: lambda moves the capability frontier while its shape nu
-# remains fixed, so the two cases are ordered at every delegation horizon.
-HIGH_CAPABILITY = replace(
+# A tighter frontier combines a shorter capability horizon with more failures
+# at modest task sizes. Changing nu can reverse the ordering at extreme s/m;
+# the notebook checks the ordering at the policies used in the figures.
+HIGH_CAPABILITY_CONSTRAINT = replace(
     REFERENCE_INDUSTRY,
-    name="Capability: high",
-    capability_horizon_hours=24.0,
-)
-LOW_CAPABILITY = replace(
-    REFERENCE_INDUSTRY,
-    name="Capability: low",
+    name="Capability constraint: high",
     capability_horizon_hours=6.0,
+    capability_shape=1.00,
+)
+LOW_CAPABILITY_CONSTRAINT = replace(
+    REFERENCE_INDUSTRY,
+    name="Capability constraint: low",
+    capability_horizon_hours=24.0,
+    capability_shape=1.50,
 )
 
-# Execution level: a changes reliability on solvable tasks while alpha, the
-# curvature of returns to inference, remains fixed.
-HIGH_EXECUTION = replace(
+# Harder execution combines lower baseline ease with weaker returns to extra
+# inference. The joint change lowers reliability over the illustrated range.
+HIGH_EXECUTION_DIFFICULTY = replace(
     REFERENCE_INDUSTRY,
-    name="Execution: high",
-    execution_scale=8.0,
-)
-LOW_EXECUTION = replace(
-    REFERENCE_INDUSTRY,
-    name="Execution: low",
+    name="Execution difficulty: high",
     execution_scale=2.0,
+    inference_returns=0.35,
+)
+LOW_EXECUTION_DIFFICULTY = replace(
+    REFERENCE_INDUSTRY,
+    name="Execution difficulty: low",
+    execution_scale=8.0,
+    inference_returns=0.65,
 )
 
-# Verification burden: fixed and variable review time move together. Beta is
-# held fixed because changing it alters the shape rather than the level of the
-# verification technology.
+# One verification group combines the level of review time with how quickly
+# review grows as the user delegates larger tasks.
 HIGH_VERIFICATION_BURDEN = replace(
     REFERENCE_INDUSTRY,
     name="Verification burden: high",
     verification_fixed_hours=0.06,
     verification_scale=0.10,
+    verification_elasticity=0.95,
 )
 LOW_VERIFICATION_BURDEN = replace(
     REFERENCE_INDUSTRY,
     name="Verification burden: low",
     verification_fixed_hours=0.015,
     verification_scale=0.025,
+    verification_elasticity=0.25,
 )
 
-# Economic surplus moves value and human cost in opposite directions. This
-# changes the attractiveness of AI while leaving technical performance fixed.
-HIGH_ECONOMIC_SURPLUS = replace(
+# Vary output value alone; the opportunity cost of human attention stays fixed.
+HIGH_ECONOMIC_VALUE = replace(
     REFERENCE_INDUSTRY,
-    name="Economic surplus: high",
+    name="Economic value: high",
     value_per_work_hour=150.0,
-    human_cost_per_hour=75.0,
 )
-LOW_ECONOMIC_SURPLUS = replace(
+LOW_ECONOMIC_VALUE = replace(
     REFERENCE_INDUSTRY,
-    name="Economic surplus: low",
+    name="Economic value: low",
     value_per_work_hour=100.0,
-    human_cost_per_hour=125.0,
 )
 
-# Adoption hurdle: shifting mu by one baseline sigma yields approximately
-# 27%, 50%, and 73% adoption at the reference industry's baseline surplus.
+# Higher typical hurdles are also more dispersed. These CDFs cross at surplus
+# 75, below the surplus range in the adoption comparisons; dispersion alone
+# would not define an unambiguously harder adoption environment.
 HIGH_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
     name="Adoption hurdle: high",
     adoption_midpoint=115.0,
+    adoption_scale=10.0,
 )
 LOW_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
     name="Adoption hurdle: low",
     adoption_midpoint=99.0,
+    adoption_scale=6.0,
 )
 
 # Optional shape case retained for robustness checks, but excluded from the
@@ -107,21 +114,19 @@ SHARP_ADOPTION_THRESHOLD = replace(
 )
 
 
-def illustrative_industries(
-    include_threshold: bool = False,
-) -> tuple[Industry, ...]:
-    """Return the reference case and one high/low pair for each group."""
+def illustrative_industries(include_threshold: bool = False) -> tuple[Industry, ...]:
+    """Return the reference and five joint high/low parameter-group pairs."""
 
     industries = (
         REFERENCE_INDUSTRY,
-        HIGH_CAPABILITY,
-        LOW_CAPABILITY,
-        HIGH_EXECUTION,
-        LOW_EXECUTION,
+        HIGH_CAPABILITY_CONSTRAINT,
+        LOW_CAPABILITY_CONSTRAINT,
+        HIGH_EXECUTION_DIFFICULTY,
+        LOW_EXECUTION_DIFFICULTY,
         HIGH_VERIFICATION_BURDEN,
         LOW_VERIFICATION_BURDEN,
-        HIGH_ECONOMIC_SURPLUS,
-        LOW_ECONOMIC_SURPLUS,
+        HIGH_ECONOMIC_VALUE,
+        LOW_ECONOMIC_VALUE,
         HIGH_ADOPTION_HURDLE,
         LOW_ADOPTION_HURDLE,
     )
