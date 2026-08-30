@@ -12,7 +12,7 @@ from .optimizer import (
     OptimizationSettings,
     PolicyOptimizer,
 )
-from .calibrations import illustrative_industries
+from .calibrations import SUBLINEAR_VERIFICATION, illustrative_industries
 
 __all__ = [
     "AttentionConstrainedOptimizer",
@@ -23,5 +23,6 @@ __all__ = [
     "PolicyOptimizer",
     "PolicyOutcome",
     "Scenario",
+    "SUBLINEAR_VERIFICATION",
     "illustrative_industries",
 ]

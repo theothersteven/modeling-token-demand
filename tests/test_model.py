@@ -156,3 +156,39 @@ def test_attention_shadow_price_capability_elasticity() -> None:
             rel_tol=1e-7,
             abs_tol=1e-7,
         )
+
+
+def test_uniform_verification_speed_preserves_attention_policy() -> None:
+    industry = replace(SOFTWARE, human_attention_hours=100_000.0)
+    model = IndustryModel(industry)
+    optimizer = AttentionConstrainedOptimizer(
+        OptimizationSettings(max_tokens_per_work_hour=20_000_000.0)
+    )
+    multiplier = 0.4
+
+    # Exercise the general optimizer used by the comparative-statics notebook.
+    # The scalar solver omits the uniform multiplier by construction, so using
+    # it here would not catch a regression in the production search path.
+    baseline = optimizer.solve(model, Scenario(verification_time_multiplier=1.0))
+    faster = optimizer.solve(
+        model, Scenario(verification_time_multiplier=multiplier)
+    )
+
+    assert math.isclose(
+        faster.policy.delegation_hours,
+        baseline.policy.delegation_hours,
+        rel_tol=1e-6,
+    )
+    assert math.isclose(
+        faster.policy.tokens_per_work_hour,
+        baseline.policy.tokens_per_work_hour,
+        rel_tol=1e-6,
+    )
+    assert faster.policy.max_attempts == baseline.policy.max_attempts == 1
+    assert faster.attention_limited_tokens is not None
+    assert baseline.attention_limited_tokens is not None
+    assert math.isclose(
+        faster.attention_limited_tokens,
+        baseline.attention_limited_tokens / multiplier,
+        rel_tol=1e-6,
+    )
