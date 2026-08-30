@@ -236,6 +236,8 @@ The denominator is one constant for each curve, not the reference industry's dem
 
 ![Indexed work-limited token demand](figures/work-limited-token-demand-indexed.png)
 
+The indexed price panel includes a black dash-dot **constant-revenue benchmark**, $c_0/c$, where $c_0=10$ dollars per million tokens. Above that line, an industry's token revenue exceeds its revenue at the baseline price; below it, revenue is lower. For example, halving the token price requires twice the baseline demand to preserve revenue. Indexing lets the same benchmark apply to every industry despite their different demand levels. This compares revenue with the baseline, rather than predicting the effect of every further small price cut.
+
 #### Result 2: retries can be worthwhile, but the optimal cap is finite
 
 For fixed $(s,x)$, the decision after a failure is local: the user should make one more attempt only when its conditional expected benefit exceeds its cost. The relevant success probability changes after every failure because failure is evidence that the task may be outside the capability frontier.
@@ -413,6 +415,8 @@ The second divides each curve by its own demand at $m=1$, $\eta=1$, or a token p
 
 ![Indexed attention-limited token demand](figures/attention-limited-token-demand-indexed.png)
 
+As in Section 3.1, the black dash-dot line in the indexed price panel is $c_0/c$. A curve above it has more token revenue than at its own baseline price; a curve below it has less. To the right of the baseline, this shows whether demand growth offsets the price cut.
+
 The verification-burden pair changes the capability response itself. Raising capability from $m=1$ to $m=5$ multiplies demand by about $3.63$ in the low-burden case, $2.40$ in the reference, and $0.89$ in the high-burden case. When fixed verification overhead is negligible, the model approximately scales as $D_i^H(m)\propto m^{1-\beta_i}$: larger delegated tasks create more supervisory leverage when review grows slowly with scope. With positive fixed overhead, the optimal inference response can also matter enough to reverse demand growth when review is nearly proportional to scope. These comparisons change all three verification parameters together; the separate uniform-time experiment in Section 4.4 isolates the pure level effect.
 
 ### 3.3 Work and attention can both bind
@@ -563,13 +567,22 @@ Let
 S(c)=cD(c)
 ```
 
-be token spend. Spend rises after a price reduction only when token demand increases more than proportionally:
+be token spend, equivalently revenue received by token suppliers. For a small price reduction, spend rises only when token demand increases more than proportionally:
 
 ```math
 \frac{d\log D}{d\log c}<-1.
 ```
 
-Price and efficiency answer different questions. A lower $c$ changes the budget tradeoff for the same token technology. A larger $\eta$ changes the amount of effective inference produced by each token.
+For a finite change from baseline price $c_0$, the exact revenue comparison is
+
+```math
+\frac{S(c)}{S(c_0)}
+=\frac{c}{c_0}\frac{D(c)}{D(c_0)}.
+```
+
+Revenue is therefore constant when indexed demand equals $c_0/c$, the black dash-dot line in the indexed price plots. A curve above this benchmark has higher revenue than at $c_0$, and one below it has lower revenue. For a price cut, being above the line means the demand increase more than offsets the lower price over that interval. It need not mean that the local elasticity exceeds one in magnitude at every point along the curve.
+
+Price and efficiency answer different questions. A lower $c$ changes the budget tradeoff for the same token technology. A larger $\eta$ changes the amount of effective inference produced by each token. Jevons' paradox concerns efficiency improvements that increase total resource use; see [Gillingham, Rapson, and Wagner (2014)](https://media.rff.org/documents/RFF-DP-14-39.pdf). In this model, its counterpart is token demand rising when $\eta$ increases with $c$ and $m$ held fixed. Higher revenue after a pure token-price cut is an elastic demand response, not by itself evidence of Jevons' paradox.
 
 ### 4.4 Verification technology
 
