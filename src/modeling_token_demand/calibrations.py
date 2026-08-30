@@ -1,7 +1,7 @@
-"""Illustrative industry regimes used in examples and plots.
+"""Illustrative parameter regimes used in plots.
 
 These are deliberately stylized, not empirical estimates.  Each calibration
-changes only industry primitives; technology and token prices belong in a
+changes only model primitives; technology and token prices belong in a
 separate :class:`Scenario` so comparative statics remain transparent.
 """
 
@@ -10,8 +10,8 @@ from dataclasses import replace
 from .model import Industry
 
 
-SOFTWARE = Industry(
-    name="Software development",
+SUBLINEAR_VERIFICATION = Industry(
+    name="Sublinear verification",
     capability_horizon_hours=15.0,
     capability_shape=1.25,
     execution_scale=5.0,
@@ -25,8 +25,8 @@ SOFTWARE = Industry(
     adoption_scale=6.0,
 )
 
-HIGH_REVIEW = Industry(
-    name="High-review professional work",
+NEAR_LINEAR_VERIFICATION = Industry(
+    name="Near-linear verification",
     capability_horizon_hours=12.0,
     capability_shape=1.15,
     execution_scale=4.0,
@@ -40,8 +40,8 @@ HIGH_REVIEW = Industry(
     adoption_scale=7.0,
 )
 
-ROUTINE_AUTOMATION = Industry(
-    name="Routine automation",
+LOW_COST_VERIFICATION = Industry(
+    name="Low-cost verification",
     capability_horizon_hours=40.0,
     capability_shape=1.35,
     execution_scale=8.0,
@@ -55,8 +55,8 @@ ROUTINE_AUTOMATION = Industry(
     adoption_scale=8.0,
 )
 
-FRONTIER_WORK = Industry(
-    name="Capability-limited frontier work",
+TIGHT_CAPABILITY_FRONTIER = Industry(
+    name="Tight capability frontier",
     capability_horizon_hours=2.0,
     capability_shape=1.40,
     execution_scale=1.5,
@@ -70,11 +70,11 @@ FRONTIER_WORK = Industry(
     adoption_scale=10.0,
 )
 
-# A software-like industry with many tasks clustered near a sharp adoption
-# threshold.  It is useful for illustrating how efficiency can unlock enough
-# new work to outweigh the tokens saved on each existing task.
+# A regime with many tasks clustered near a sharp adoption threshold. It is
+# useful for showing how efficiency can unlock enough work to outweigh the
+# tokens saved on each existing task.
 ADOPTION_THRESHOLD = replace(
-    SOFTWARE,
+    SUBLINEAR_VERIFICATION,
     name="Near an adoption threshold",
     adoption_midpoint=111.6,
     adoption_scale=0.4,
@@ -82,9 +82,21 @@ ADOPTION_THRESHOLD = replace(
 
 
 def illustrative_industries(include_threshold: bool = True) -> tuple[Industry, ...]:
-    """Return the standard non-empirical calibrations in display order."""
+    """Return the standard non-empirical parameter regimes in display order."""
 
-    industries = (SOFTWARE, HIGH_REVIEW, ROUTINE_AUTOMATION, FRONTIER_WORK)
+    industries = (
+        SUBLINEAR_VERIFICATION,
+        NEAR_LINEAR_VERIFICATION,
+        LOW_COST_VERIFICATION,
+        TIGHT_CAPABILITY_FRONTIER,
+    )
     if include_threshold:
         return industries + (ADOPTION_THRESHOLD,)
     return industries
+
+
+# Backward-compatible aliases for earlier notebooks and imports.
+SOFTWARE = SUBLINEAR_VERIFICATION
+HIGH_REVIEW = NEAR_LINEAR_VERIFICATION
+ROUTINE_AUTOMATION = LOW_COST_VERIFICATION
+FRONTIER_WORK = TIGHT_CAPABILITY_FRONTIER
