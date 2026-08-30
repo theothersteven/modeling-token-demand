@@ -164,7 +164,7 @@ u_i(s,x,k).
 
 Write $u_i^W$ for the optimized surplus. The outside option is not to use AI, so operation requires positive surplus after any adoption hurdle.
 
-To represent heterogeneous adoption costs, let $\phi$ be a per-unit hurdle with work-volume-weighted cumulative distribution $G_i$. The share of potential work assigned to AI is
+To represent heterogeneous adoption decisions, let $\phi$ be a per-unit hurdle with work-volume-weighted cumulative distribution $G_i$. Conceptually, $\phi$ is the minimum AI surplus required for a unit of work to switch from its current alternative, which may be human production; it can therefore incorporate the surplus from human-only work together with switching, integration, and risk costs. The adoption share $A_i$ is the fraction of potential work for which the optimized AI policy clears that hurdle:
 
 ```math
 A_i=G_i(u_i^W).
