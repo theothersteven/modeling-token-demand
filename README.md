@@ -26,6 +26,8 @@ We study an industry-level user who chooses an interaction policy with three com
 - inference intensity, which is the number of tokens used per unit of delegated work in each attempt; and
 - a retry cap, which is the maximum number of attempts allowed for one delegated chunk.
 
+In practical systems, inference intensity corresponds to the amount of computation allocated to an attempt. In ChatGPT, it is similar to choosing a reasoning-effort setting such as low, medium, high, or xhigh; a higher-compute mode such as Pro is another example of moving along this margin. Choosing among smaller and larger models in the same family can also be represented through $x$ after converting raw tokens to a common compute-equivalent unit, so that one token from a larger model counts as multiple smaller-model-token equivalents. Any remaining difference in the set of tasks the models can solve belongs in capability $m$, while differences in effective inference per compute-equivalent token belong in efficiency $\eta$.
+
 The analysis proceeds in the order needed to determine demand. Section 2 defines the policy, the capability and execution model, retry behavior, verification, and surplus. Section 3 derives optimal policies and token demand under a work constraint, an attention constraint, and both constraints together, taking technology and prices as given. Section 4 examines how those choices and demand respond to changes in capability, efficiency, token prices, and verification. Section 5 illustrates these responses numerically. The numerical exercise is designed to expose model mechanisms; it is not an empirical forecast.
 
 The main results are as follows. First, separating capability from execution prevents pass rates from converging mechanically to one and makes the value of retries depend on the unsolvable share of work. Second, the resource constraint changes the policy objective. Applying an attention cap after optimizing surplus per unit of work generally does not recover the attention-constrained solution. Third, when useful tasks are abundant and interchangeable, retrying a failed task cannot improve expected value per scarce verification hour. Fourth, model capability can raise the value of an additional attention hour even when optimized token demand falls. These results identify the objects that must be estimated before aggregate token demand can be forecast.
@@ -190,17 +192,27 @@ The delegation horizon cancels from this accounting identity. Grouping a fixed a
 
 #### Result 2: retries can be worthwhile, but the optimal cap is finite
 
-For fixed $(s,x)$, retries can raise surplus, but the optimal cap is finite whenever $q_i<1$ and the first attempt is worthwhile. Each failure makes it more likely that the task is unsolvable. The user should allow another attempt only while its expected benefit exceeds its expected cost.
+For fixed $(s,x)$, the decision after a failure is local: the user should make one more attempt only when its conditional expected benefit exceeds its cost. The relevant success probability changes after every failure because failure is evidence that the task may be outside the capability frontier.
 
-Write $P_{i,k}=q_i[1-(1-r_i)^k]$. Allowing attempt $k+1$ increases the success probability by
+Write $P_{i,k}=q_i[1-(1-r_i)^k]$. After the first $k$ attempts fail, the posterior probability that the task is solvable is
 
 ```math
-P_{i,k+1}-P_{i,k}
+\widehat q_{i,k}
+:=
+\Pr(\text{solvable}\mid k\text{ failures})
 =
-q_ir_i(1-r_i)^k.
+\frac{q_i(1-r_i)^k}{1-P_{i,k}}.
 ```
 
-The additional attempt is made only after the first $k$ attempts fail, which occurs with probability $1-P_{i,k}$. It is worthwhile if and only if
+The conditional probability that the next attempt succeeds is therefore $\widehat q_{i,k}r_i$. At the decision point, one more attempt is worthwhile if and only if
+
+```math
+b_i\widehat q_{i,k}r_i
+>
+C_i(s,x;v).
+```
+
+At $k=0$, the posterior equals the prior, so the rule for starting a fresh task is $b_iq_ir_i>C_i$. After failures, $\widehat q_{i,k}<q_i$ whenever $q_i<1$. Multiplying the local condition by the probability $1-P_{i,k}$ of reaching the decision point gives
 
 ```math
 b_iq_ir_i(1-r_i)^k
@@ -208,7 +220,15 @@ b_iq_ir_i(1-r_i)^k
 (1-P_{i,k})C_i(s,x;v).
 ```
 
-When $b_ir_i>C_i$ and $q_i<1$, this condition is equivalent to
+This is also the ex ante comparison between retry caps $k$ and $k+1$, because
+
+```math
+P_{i,k+1}-P_{i,k}
+=
+q_ir_i(1-r_i)^k.
+```
+
+When $b_ir_i>C_i$ and $q_i<1$, either form of the condition is equivalent to
 
 ```math
 (1-r_i)^k
@@ -216,7 +236,7 @@ When $b_ir_i>C_i$ and $q_i<1$, this condition is equivalent to
 \frac{C_i(1-q_i)}{q_i(b_ir_i-C_i)}.
 ```
 
-The right side is positive whenever some tasks are unsolvable, while the left side tends to zero as $k$ grows. The inequality must therefore eventually fail. If it holds at $k=1$, allowing a second attempt improves surplus over stopping after one. Once it fails, no later retry becomes worthwhile at the same $(s,x)$.
+The right side is positive whenever some tasks are unsolvable, while the left side tends to zero as $k$ grows. The inequality must therefore eventually fail. If it holds at $k=1$, allowing a second attempt improves surplus over stopping after one. Once it fails, the posterior solvable probability only falls further, so no later retry becomes worthwhile at the same $(s,x)$.
 
 #### Optimal inference and delegation
 
@@ -586,6 +606,7 @@ The constraint must be part of the optimization problem. With fixed work, retrie
 | $\lambda_i$, $\nu_i$ | Scale and shape of the capability frontier |
 | $a_i$, $\alpha_i$ | Execution scale and inference-return elasticity |
 | $q_i$ | Share of tasks inside the capability frontier |
+| $\widehat q_{i,k}$ | Posterior probability that a task is solvable after $k$ failed attempts |
 | $r_i$ | One-attempt success probability conditional on solvability |
 | $P_i$ | Success probability within $k$ attempts |
 | $E_i$ | Expected attempts consumed |
