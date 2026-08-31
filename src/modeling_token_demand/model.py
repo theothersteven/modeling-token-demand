@@ -115,24 +115,22 @@ class Scenario:
 
 @dataclass(frozen=True)
 class Policy:
-    """A user's interaction policy.
+    """A user's policy for one delegated chunk and one review.
 
     delegation_hours (s) is work delegated before a checkpoint,
-    tokens_per_work_hour (x) is inference intensity per attempt, and
-    max_attempts (k) is the retry cap.
+    and tokens_per_work_hour (x) is inference intensity for that work.
+    Every chunk consumes sx tokens and h(s) review hours, whether it succeeds
+    or fails. Failed work produces no output in this model.
     """
 
     delegation_hours: float
     tokens_per_work_hour: float
-    max_attempts: int
 
     def __post_init__(self) -> None:
         if self.delegation_hours <= 0:
             raise ValueError("delegation_hours must be positive")
         if self.tokens_per_work_hour <= 0:
             raise ValueError("tokens_per_work_hour must be positive")
-        if self.max_attempts < 1:
-            raise ValueError("max_attempts must be at least one")
 
 
 @dataclass(frozen=True)
@@ -142,12 +140,11 @@ class PolicyOutcome:
     policy: Policy
     capability_share: float
     conditional_success: float
-    eventual_success: float
-    expected_attempts: float
-    verification_hours_per_attempt: float
-    expected_cost_per_work_hour: float
+    success_probability: float
+    verification_hours_per_chunk: float
+    cost_per_work_hour: float
     surplus_per_work_hour: float
-    # Net surplus created per expected human verification hour. This is the
+    # Expected net surplus created per human verification hour. This is the
     # relevant policy objective when useful work is abundant and attention is
     # the binding resource.
     surplus_per_attention_hour: float
@@ -189,26 +186,15 @@ class IndustryModel:
         # zero below that point is numerically harmless and avoids underflow.
         return 0.0 if exponent < -745.0 else math.exp(exponent)
 
-    def eventual_success(self, policy: Policy, scenario: Scenario) -> float:
-        """P: success after at most k attempts."""
+    def success_probability(self, policy: Policy, scenario: Scenario) -> float:
+        """P = qr: probability that the delegated chunk is completed."""
 
         q = self.capability_share(policy, scenario)
         r = self.conditional_success(policy, scenario)
-        return q * (1.0 - (1.0 - r) ** policy.max_attempts)
-
-    def expected_attempts(self, policy: Policy, scenario: Scenario) -> float:
-        """E: attempts consumed when the user stops after the first success."""
-
-        q = self.capability_share(policy, scenario)
-        r = self.conditional_success(policy, scenario)
-        k = policy.max_attempts
-
-        # This finite geometric sum is stable even when r underflows to zero.
-        solvable_attempts = sum((1.0 - r) ** j for j in range(k))
-        return (1.0 - q) * k + q * solvable_attempts
+        return q * r
 
     def verification_hours(self, policy: Policy, scenario: Scenario) -> float:
-        """Human review time required after one attempt."""
+        """Human review time required for every delegated chunk."""
 
         p = self.industry
         base_time = (
@@ -235,8 +221,7 @@ class IndustryModel:
         p = self.industry
         q = self.capability_share(policy, scenario)
         r = self.conditional_success(policy, scenario)
-        success = q * (1.0 - (1.0 - r) ** policy.max_attempts)
-        attempts = self.expected_attempts(policy, scenario)
+        success = q * r
         verification_hours = self.verification_hours(policy, scenario)
 
         token_cost = scenario.token_price * policy.tokens_per_work_hour
@@ -245,18 +230,19 @@ class IndustryModel:
             * verification_hours
             / policy.delegation_hours
         )
-        expected_cost = attempts * (token_cost + review_cost)
-        surplus = p.value_per_work_hour * success - expected_cost
+        # Neither cost is conditional on success: failed work consumes the
+        # same tokens and review time as successful work at this policy.
+        cost = token_cost + review_cost
+        surplus = p.value_per_work_hour * success - cost
         surplus_per_attention_hour = (
             policy.delegation_hours
             * surplus
-            / (attempts * verification_hours)
+            / verification_hours
         )
         adoption = self.adoption_share(surplus)
 
-        tokens_per_work_hour = policy.tokens_per_work_hour * attempts
         work_limited_tokens = (
-            p.potential_work_hours * adoption * tokens_per_work_hour
+            p.potential_work_hours * adoption * policy.tokens_per_work_hour
         )
 
         attention_limited_tokens: Optional[float]
@@ -278,10 +264,9 @@ class IndustryModel:
             policy=policy,
             capability_share=q,
             conditional_success=r,
-            eventual_success=success,
-            expected_attempts=attempts,
-            verification_hours_per_attempt=verification_hours,
-            expected_cost_per_work_hour=expected_cost,
+            success_probability=success,
+            verification_hours_per_chunk=verification_hours,
+            cost_per_work_hour=cost,
             surplus_per_work_hour=surplus,
             surplus_per_attention_hour=surplus_per_attention_hour,
             adoption_share=adoption,

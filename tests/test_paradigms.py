@@ -67,7 +67,7 @@ def test_value_and_concentration_use_the_requested_geometric_steps():
         LOW_ECONOMIC_VALUE, REFERENCE_INDUSTRY, HIGH_ECONOMIC_VALUE)] == [50, 100, 200]
     assert [industry.adoption_scale for industry in (
         HIGH_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY, LOW_ADOPTION_CONCENTRATION)] == [1, 4, 16]
-    assert all(industry.adoption_midpoint == 84 for industry in illustrative_industries())
+    assert all(industry.adoption_midpoint == 76 for industry in illustrative_industries())
 
 
 def test_parameter_row_tables_match_the_calibrations_and_manuscript():
@@ -106,11 +106,11 @@ def work_outcomes():
 
 def test_concentrated_adoption_unlocks_large_market_and_revenue(work_outcomes):
     prices, _ = work_outcomes
-    assert .25 < prices[10].adoption_share < .30
-    assert .45 < prices[5].adoption_share < .55
-    assert prices[1].adoption_share > .75
+    assert .2 < prices[10].adoption_share < .5
+    assert prices[5].adoption_share > .75
+    assert prices[1].adoption_share > .95
     ratio = prices[5].work_limited_tokens / prices[10].work_limited_tokens
-    assert 3 < ratio < 4  # A meaningful rebound, without the former near-step jump.
+    assert ratio > 2  # Adoption expansion more than offsets the price cut.
     assert ratio / 2 > 1.5
     assert prices[1].work_limited_tokens / prices[10].work_limited_tokens > 10
     assert not boundary_hits(list(prices.values()), gallery_settings())
@@ -142,7 +142,6 @@ def test_capability_valley_survives_nearby_parameters(field, factor):
     demand = [o.attention_limited_tokens for o in outcomes]
     assert demand[0] > demand[1] * 1.08
     assert demand[-1] > demand[1] * 1.08
-    assert all(o.policy.max_attempts == 1 for o in outcomes)
     assert all(o.surplus_per_attention_hour > 0 for o in outcomes)
     assert np.all(np.diff([o.surplus_per_attention_hour for o in outcomes]) > 0)
     assert not boundary_hits(outcomes, gallery_settings())
@@ -190,7 +189,6 @@ def test_main_curves_include_all_cases_and_audited_paradigms():
     assert indexed[HIGH_ADOPTION_CONCENTRATION.name, "work", "efficiency"]["shape"] == "hump"
     valley = indexed[CAPABILITY_VALLEY.name, "attention", "capability"]
     assert valley["shape"] == "U-shape"
-    assert set(valley["k"]) == {1}
     assert all(np.diff(valley["attention_value"]) > 0)
     offset = indexed["Offsetting efficiency", "attention", "efficiency"]
     assert max(offset["demand"]) / min(offset["demand"]) < 1.10

@@ -78,12 +78,11 @@ def solve_interventions(points=81):
     work = PolicyOptimizer(settings)
     attention = AttentionConstrainedOptimizer(settings)
     strict_settings = replace(
-        settings, grid_points_per_dimension=25, local_starts_per_attempt=8,
+        settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
         min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
-        max_attempts=16,
     )
     strict = {"work": PolicyOptimizer(strict_settings),
               "attention": AttentionConstrainedOptimizer(strict_settings)}
@@ -116,34 +115,30 @@ def solve_interventions(points=81):
                     raise AssertionError(f"{case['label']}/{experiment['key']}/{regime}: {hits}")
                 if regime == "attention":
                     assert all(o.surplus_per_attention_hour > 0 for o in outcomes)
-                    assert all(o.policy.max_attempts == 1 for o in outcomes)
                 assigned = np.array([
                     industry.potential_work_hours * o.adoption_share if regime == "work"
                     else industry.human_attention_hours * o.policy.delegation_hours
-                    / (o.expected_attempts * o.verification_hours_per_attempt)
+                    / o.verification_hours_per_chunk
                     for o in outcomes
                 ])
                 demand = np.array([o.work_limited_tokens if regime == "work"
                                    else o.attention_limited_tokens for o in outcomes])
-                intensity = np.array([o.policy.tokens_per_work_hour * o.expected_attempts
-                                      for o in outcomes])
+                intensity = np.array([o.policy.tokens_per_work_hour for o in outcomes])
                 np.testing.assert_allclose(demand, assigned * intensity, rtol=1e-12)
                 record.update(
                     demand=demand.tolist(), assigned_work=assigned.tolist(),
-                    completed_work=(assigned * [o.eventual_success for o in outcomes]).tolist(),
+                    completed_work=(assigned * [o.success_probability for o in outcomes]).tolist(),
                     tokens_per_assigned_work=intensity.tolist(),
-                    success=[o.eventual_success for o in outcomes],
+                    success=[o.success_probability for o in outcomes],
                     adoption=[o.adoption_share for o in outcomes] if regime == "work" else None,
                     s=[o.policy.delegation_hours for o in outcomes],
                     x=[o.policy.tokens_per_work_hour for o in outcomes],
-                    k=[o.policy.max_attempts for o in outcomes],
-                    expected_attempts=[o.expected_attempts for o in outcomes],
-                    verification_hours=[o.verification_hours_per_attempt for o in outcomes],
+                    verification_hours=[o.verification_hours_per_chunk for o in outcomes],
                     objective=[work.objective_value(o) if regime == "work"
                                else attention.objective_value(o) for o in outcomes],
                 )
                 # Check endpoints, baseline, and sampled extrema against a
-                # denser, wider search that enumerates all retry caps. For
+                # denser search over wider continuous bounds. For
                 # attention this also independently checks the scalar solver.
                 checkpoints = {0, len(outcomes) - 1, record["baseline_index"]}
                 for metric in ("demand", "assigned_work", "completed_work"):
@@ -160,7 +155,7 @@ def solve_interventions(points=81):
                 records.append(record)
         print(f"Section 5: {experiment['key']} solved and audited.", flush=True)
 
-    return dict(settings=asdict(settings), curves=records, audit=dict(
+    return dict(model="single_attempt", settings=asdict(settings), curves=records, audit=dict(
         boundary_hits=[], independent_checks=len(errors),
         max_relative_objective_error=max(errors),
         policy_count=sum(len(record["values"]) for record in records),

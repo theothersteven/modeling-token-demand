@@ -31,7 +31,7 @@ def main():
     args = parser.parse_args()
     settings = OptimizationSettings(
         max_tokens_per_work_hour=20_000_000,
-        grid_points_per_dimension=11, local_starts_per_attempt=2,
+        grid_points_per_dimension=11, local_starts=2,
     )
     work = PolicyOptimizer(settings)
     attention = AttentionConstrainedOptimizer(settings)
@@ -84,7 +84,6 @@ def main():
                         "surplus": [o.surplus_per_work_hour for o in selected],
                         "s": [o.policy.delegation_hours for o in selected],
                         "x": [o.policy.tokens_per_work_hour for o in selected],
-                        "k": [o.policy.max_attempts for o in selected],
                         "boundary_hits": hits,
                         "positive_attention_value": all(
                             o.surplus_per_attention_hour > 0 for o in selected),
@@ -93,7 +92,7 @@ def main():
               f"{industry.name}", flush=True)
     # A targeted second stage searches for smooth attention-side reversals.
     # Broader capability range; varying fixed overhead changes the transition
-    # from overhead-dominated to scope-dependent review. k remains exactly 1.
+    # from fixed checkpoint overhead to scope-dependent review.
     extended = list(product(
         (.00001, .0001, .001, .003, .01, .03, .1, .3),
         (.1, .3, 1, 3), (.8, .9, .95, .98), (.15, .25, .5, .75),
@@ -122,6 +121,7 @@ def main():
                      if not r["boundary_hits"] and
                      (r["regime"] == "work" or r["positive_attention_value"]))
     report = {
+        "model": "single_attempt",
         "settings": asdict(settings), "shape_excursion": 0.08,
         "technical_configurations": len(candidates),
         "threshold_configurations_per_work_case": 15,

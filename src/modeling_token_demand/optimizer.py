@@ -1,8 +1,7 @@
 """Numerical solution of the user's policy problem.
 
-The retry cap is discrete, so the optimizer enumerates it exactly.  For each
-retry cap it searches over delegation horizon and inference intensity in log
-space.  A coarse grid supplies several starting points to a bounded local
+The optimizer searches over delegation horizon and inference intensity in log
+space. A coarse grid supplies several starting points to a bounded local
 optimizer.  This is deterministic and robust enough for comparative statics
 without coupling the economic model to one particular solver.
 """
@@ -30,16 +29,13 @@ class OptimizationSettings:
     min_delegation_hours: float = 0.02
     max_delegation_hours: float = 80.0
 
-    # Smallest and largest token budget per work-hour, per attempt.
+    # Smallest and largest token budget per work-hour.
     min_tokens_per_work_hour: float = 2_000.0
     max_tokens_per_work_hour: float = 2_000_000.0
 
-    # Largest retry cap the user can select. Every integer from 1 is evaluated.
-    max_attempts: int = 12
-
-    # Grid resolution and number of promising grid points refined for each k.
+    # Grid resolution and number of promising grid points refined locally.
     grid_points_per_dimension: int = 15
-    local_starts_per_attempt: int = 3
+    local_starts: int = 3
 
     def __post_init__(self) -> None:
         if self.min_delegation_hours <= 0:
@@ -50,12 +46,10 @@ class OptimizationSettings:
             raise ValueError("min_tokens_per_work_hour must be positive")
         if self.max_tokens_per_work_hour <= self.min_tokens_per_work_hour:
             raise ValueError("max_tokens_per_work_hour must exceed its minimum")
-        if self.max_attempts < 1:
-            raise ValueError("max_attempts must be at least one")
         if self.grid_points_per_dimension < 2:
             raise ValueError("grid_points_per_dimension must be at least two")
-        if self.local_starts_per_attempt < 1:
-            raise ValueError("local_starts_per_attempt must be at least one")
+        if self.local_starts < 1:
+            raise ValueError("local_starts must be at least one")
 
 
 class PolicyOptimizer:
@@ -65,26 +59,11 @@ class PolicyOptimizer:
         self.settings = settings or OptimizationSettings()
 
     def solve(self, model: IndustryModel, scenario: Scenario) -> PolicyOutcome:
-        """Return the best policy found over continuous (s, x) and integer k.
+        """Return the best policy found over delegation and inference (s, x).
 
         The objective is supplied by ``objective_value``. The base optimizer
         maximizes expected surplus per work-hour; subclasses can retain the
         same numerical search while representing a different economic regime.
-        """
-
-        outcomes = self.solve_by_attempts(model, scenario)
-        return max(outcomes.values(), key=self.objective_value)
-
-    def solve_by_attempts(
-        self,
-        model: IndustryModel,
-        scenario: Scenario,
-    ) -> dict[int, PolicyOutcome]:
-        """Return the optimized continuous policy for every allowed retry cap.
-
-        Exposing these conditional optima makes discrete policy switches easy
-        to diagnose: the chosen retry cap changes where two surplus curves
-        cross, even though each fixed-k optimization remains smooth.
         """
 
         settings = self.settings
@@ -99,46 +78,37 @@ class PolicyOptimizer:
         log_s_grid = np.linspace(*log_s_bounds, settings.grid_points_per_dimension)
         log_x_grid = np.linspace(*log_x_bounds, settings.grid_points_per_dimension)
 
-        outcomes_by_attempts = {}
-
-        for max_attempts in range(1, settings.max_attempts + 1):
-            candidates = []
-            best_for_attempts: Optional[PolicyOutcome] = None
-            for log_s in log_s_grid:
-                for log_x in log_x_grid:
-                    outcome = self._evaluate_logs(
-                        model, scenario, log_s, log_x, max_attempts
-                    )
-                    candidates.append(outcome)
-                    best_for_attempts = self._better(best_for_attempts, outcome)
-
-            candidates.sort(key=self.objective_value, reverse=True)
-            for start in candidates[: settings.local_starts_per_attempt]:
-                initial = np.log(
-                    [
-                        start.policy.delegation_hours,
-                        start.policy.tokens_per_work_hour,
-                    ]
-                )
-                result = minimize(
-                    self._negative_objective,
-                    initial,
-                    args=(model, scenario, max_attempts),
-                    method="L-BFGS-B",
-                    bounds=(log_s_bounds, log_x_bounds),
-                )
-                # L-BFGS-B can report a line-search warning even when its last
-                # feasible point is useful, so always evaluate the returned point.
+        candidates = []
+        best: Optional[PolicyOutcome] = None
+        for log_s in log_s_grid:
+            for log_x in log_x_grid:
                 outcome = self._evaluate_logs(
-                    model, scenario, result.x[0], result.x[1], max_attempts
+                    model, scenario, log_s, log_x
                 )
-                best_for_attempts = self._better(best_for_attempts, outcome)
+                candidates.append(outcome)
+                best = self._better(best, outcome)
 
-            if best_for_attempts is None:  # Defensive: the grid is nonempty.
-                raise RuntimeError("optimizer evaluated no candidate policies")
-            outcomes_by_attempts[max_attempts] = best_for_attempts
+        candidates.sort(key=self.objective_value, reverse=True)
+        for start in candidates[: settings.local_starts]:
+            initial = np.log(
+                [start.policy.delegation_hours, start.policy.tokens_per_work_hour]
+            )
+            result = minimize(
+                self._negative_objective,
+                initial,
+                args=(model, scenario),
+                method="L-BFGS-B",
+                bounds=(log_s_bounds, log_x_bounds),
+            )
+            # A line-search warning can still leave a useful feasible point.
+            outcome = self._evaluate_logs(
+                model, scenario, result.x[0], result.x[1]
+            )
+            best = self._better(best, outcome)
 
-        return outcomes_by_attempts
+        if best is None:  # Defensive: the grid is nonempty.
+            raise RuntimeError("optimizer evaluated no candidate policies")
+        return best
 
     def solve_many(
         self,
@@ -170,12 +140,10 @@ class PolicyOptimizer:
         scenario: Scenario,
         log_s: float,
         log_x: float,
-        max_attempts: int,
     ) -> PolicyOutcome:
         policy = Policy(
             delegation_hours=math.exp(float(log_s)),
             tokens_per_work_hour=math.exp(float(log_x)),
-            max_attempts=max_attempts,
         )
         return model.evaluate(policy, scenario)
 
@@ -184,10 +152,9 @@ class PolicyOptimizer:
         logs: np.ndarray,
         model: IndustryModel,
         scenario: Scenario,
-        max_attempts: int,
     ) -> float:
         outcome = self._evaluate_logs(
-            model, scenario, logs[0], logs[1], max_attempts
+            model, scenario, logs[0], logs[1]
         )
         return -self.objective_value(outcome)
 
@@ -195,8 +162,8 @@ class PolicyOptimizer:
 class AttentionConstrainedOptimizer(PolicyOptimizer):
     """Optimize policy when useful work is abundant and attention is scarce.
 
-    For a policy ``(s, x, k)``, one chunk creates expected net surplus
-    ``s * surplus_per_work_hour`` and consumes ``E * h(s)`` expected human
+    For a policy ``(s, x)``, one chunk creates expected net surplus
+    ``s * surplus_per_work_hour`` and consumes ``h(s)`` human
     verification hours. The optimizer therefore maximizes their ratio. The
     size of the attention endowment scales throughput and token demand but does
     not affect the optimal policy in this single-industry polar case.
@@ -214,7 +181,7 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
 
         With positive fixed verification overhead and verification elasticity
         in [0, 1], the unconstrained attention optimum is unique in (s, x),
-        and k=1 dominates retries. Eliminating x from the first-order
+        with one review per chunk. Eliminating x from the first-order
         conditions leaves a strictly increasing equation in log(s). This
         gives an independent check on the general grid/local-search solver.
 
@@ -285,7 +252,6 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
         policy = Policy(
             delegation_hours=math.exp(log_s),
             tokens_per_work_hour=math.exp(log_x),
-            max_attempts=1,
         )
         settings = self.settings
         if not (

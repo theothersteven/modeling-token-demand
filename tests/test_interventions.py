@@ -19,6 +19,7 @@ def report():
 
 
 def test_intervention_outcomes_reproduce_model_and_distinguish_adoption(report):
+    assert report["model"] == "single_attempt"
     assert len(report["curves"]) == 16
     assert report["audit"]["boundary_hits"] == []
     assert report["audit"]["independent_checks"] >= 48
@@ -30,7 +31,7 @@ def test_intervention_outcomes_reproduce_model_and_distinguish_adoption(report):
             np.array(curve["assigned_work"]) * curve["success"])
         for index in {0, curve["baseline_index"], len(curve["values"]) - 1}:
             industry, scenario = configuration(curve, curve["values"][index])
-            policy = Policy(curve["s"][index], curve["x"][index], curve["k"][index])
+            policy = Policy(curve["s"][index], curve["x"][index])
             outcome = IndustryModel(industry).evaluate(policy, scenario)
             if curve["regime"] == "work":
                 expected = outcome.work_limited_tokens
@@ -40,10 +41,9 @@ def test_intervention_outcomes_reproduce_model_and_distinguish_adoption(report):
             else:
                 expected = outcome.attention_limited_tokens
                 assert curve["adoption"] is None  # no market adoption rate in this regime
-                assert curve["k"][index] == 1
                 assert outcome.surplus_per_attention_hour > 0
-                assert curve["assigned_work"][index] / policy.delegation_hours * outcome.expected_attempts \
-                    * outcome.verification_hours_per_attempt == pytest.approx(100_000)
+                assert curve["assigned_work"][index] / policy.delegation_hours \
+                    * outcome.verification_hours_per_chunk == pytest.approx(100_000)
             assert curve["demand"][index] == pytest.approx(expected)
 
 
@@ -53,7 +53,7 @@ def test_uniform_verification_scales_throughput_without_changing_policy(report):
     for metric in ("demand", "assigned_work", "completed_work"):
         values = np.array(curve[metric])
         assert values / values[curve["baseline_index"]] == pytest.approx(1 / np.array(curve["values"]))
-    for metric in ("s", "x", "k", "success"):
+    for metric in ("s", "x", "success"):
         assert curve[metric] == pytest.approx([curve[metric][0]] * len(curve["values"]))
 
 
@@ -63,7 +63,7 @@ def test_harness_only_changes_feasibility_not_execution(report):
     # Same proportional frontier shift; only m also improves execution.
     base_industry, base_scenario = configuration(curves[0], 1)
     baseline = IndustryModel(base_industry)
-    policy = Policy(4, 100_000, 1)
+    policy = Policy(4, 100_000)
     models = [IndustryModel(configuration(c, 5)[0]) for c in curves]
     scenarios = [configuration(c, 5)[1] for c in curves]
     assert models[0].capability_share(policy, scenarios[0]) == pytest.approx(
@@ -91,3 +91,22 @@ def test_exported_question_panels_use_correct_regimes_units_and_baselines(report
                 assert line["y"] == pytest.approx(expected)
             assert panel["yscale"] == "linear"
             assert (panel["xlim"][0] > panel["xlim"][1]) == (key in ("verification-speed", "review-growth"))
+
+
+def test_manuscript_efficiency_table_uses_regenerated_endpoints(report):
+    source = (ROOT / "README.md").read_text()
+    for alpha in (.25, .5, .75):
+        curves = [next(c for c in report["curves"]
+                       if c["experiment"] == "efficiency-returns"
+                       and c["industry"]["inference_returns"] == alpha
+                       and c["regime"] == regime) for regime in ("work", "attention")]
+        ratios = [c["demand"][c["values"].index(100)] / c["demand"][c["baseline_index"]]
+                  for c in curves]
+        assert f"| {alpha:.2f} | {ratios[0]:.2f} | {ratios[1]:.2f} |" in source
+        assert all(c["completed_work"][-1] > c["completed_work"][c["baseline_index"]]
+                   for c in curves)
+        if alpha == .25:
+            assert ratios[0] > 1  # Adoption can still outweigh savings at 100x efficiency.
+        else:
+            assert ratios[0] < 1
+        assert ratios[1] < 1

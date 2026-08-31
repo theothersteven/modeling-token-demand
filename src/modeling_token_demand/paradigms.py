@@ -1,4 +1,4 @@
-"""Reproducible existence examples using the unchanged economic model.
+"""Reproducible existence examples using the single-attempt economic model.
 
 The notebook calls this module to generate the gallery and its audit data.
 The exploratory scanner uses the same shape and boundary diagnostics, but its
@@ -37,7 +37,7 @@ def gallery_settings():
     return OptimizationSettings(
         min_delegation_hours=.002, max_delegation_hours=800,
         min_tokens_per_work_hour=200, max_tokens_per_work_hour=200_000_000,
-        grid_points_per_dimension=17, local_starts_per_attempt=4,
+        grid_points_per_dimension=17, local_starts=4,
     )
 
 
@@ -94,8 +94,6 @@ def boundary_hits(outcomes, settings):
         ):
             if value <= lower * 1.0001 or value >= upper / 1.0001:
                 hits.add(name)
-        if policy.max_attempts == settings.max_attempts:
-            hits.add("k")
     return sorted(hits)
 
 
@@ -111,25 +109,24 @@ def curve_record(industry, axis, values, outcomes, regime):
     baseline_index = list(values).index(baseline)
     assigned = [industry.potential_work_hours * o.adoption_share if regime == "work"
                 else industry.human_attention_hours * o.policy.delegation_hours
-                / (o.expected_attempts * o.verification_hours_per_attempt) for o in outcomes]
+                / o.verification_hours_per_chunk for o in outcomes]
     return {
         "industry": asdict(industry), "axis": axis, "regime": regime,
         "values": list(map(float, values)), "baseline_index": baseline_index,
         "demand": demand, "shape": shape(demand[::-1] if axis == "price" else demand),
         "adoption": [o.adoption_share for o in outcomes],
         "assigned_work": assigned,
-        "completed_work": [amount * o.eventual_success for amount, o in zip(assigned, outcomes)],
-        "tokens_per_assigned_work": [o.policy.tokens_per_work_hour * o.expected_attempts
-                                     for o in outcomes],
+        "completed_work": [amount * o.success_probability for amount, o in zip(assigned, outcomes)],
+        "tokens_per_assigned_work": [o.policy.tokens_per_work_hour for o in outcomes],
+        "success": [o.success_probability for o in outcomes],
         "surplus": [o.surplus_per_work_hour for o in outcomes],
         "attention_value": [o.surplus_per_attention_hour + industry.human_cost_per_hour
                             for o in outcomes],
         "s": [o.policy.delegation_hours for o in outcomes],
         "x": [o.policy.tokens_per_work_hour for o in outcomes],
-        "k": [o.policy.max_attempts for o in outcomes],
-        "leverage": [o.policy.delegation_hours / o.verification_hours_per_attempt
+        "leverage": [o.policy.delegation_hours / o.verification_hours_per_chunk
                      for o in outcomes],
-        "expected_attempts": [o.expected_attempts for o in outcomes],
+        "verification_hours": [o.verification_hours_per_chunk for o in outcomes],
     }
 
 
@@ -139,12 +136,11 @@ def solve_gallery(points=81):
     work = PolicyOptimizer(settings)
     attention = AttentionConstrainedOptimizer(settings)
     strict_settings = replace(
-        settings, grid_points_per_dimension=25, local_starts_per_attempt=8,
+        settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
         min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
-        max_attempts=16,
     )
     strict_work = PolicyOptimizer(strict_settings)
     general_attention = AttentionConstrainedOptimizer(strict_settings)
@@ -179,7 +175,7 @@ def solve_gallery(points=81):
             ordered_adoption = adoption[::-1] if axis == "price" else adoption
             assert np.min(np.diff(ordered_adoption)) >= -1e-8
             # Audit endpoints, baseline, and demand maximum against a denser
-            # search with expanded numerical bounds and additional retry caps.
+            # search with expanded numerical bounds.
             indices = {0, len(values) - 1, record["baseline_index"],
                        int(np.argmax(record["demand"]))}
             for index in sorted(indices):
@@ -215,7 +211,7 @@ def solve_gallery(points=81):
             audit.append(relative)
         curves.append(record)
         print(f"Gallery: {industry.name} / capability: {record['shape']}", flush=True)
-    return {"settings": asdict(settings), "points_per_axis_before_anchors": points,
+    return {"model": "single_attempt", "settings": asdict(settings), "points_per_axis_before_anchors": points,
             "audit": {"boundary_hits": [], "independent_checks": len(audit),
                       "max_relative_objective_error": max(audit)}, "curves": curves}
 
@@ -228,12 +224,11 @@ def _index(record, key="demand"):
 def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
     """Check the main Section 3 samples, with independent extrema re-solves."""
     strict = replace(
-        settings, grid_points_per_dimension=25, local_starts_per_attempt=8,
+        settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
         min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
-        max_attempts=16,
     )
     work = PolicyOptimizer(strict)
     attention = AttentionConstrainedOptimizer(strict)

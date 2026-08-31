@@ -22,9 +22,9 @@ REFERENCE_INDUSTRY = Industry(
     verification_elasticity=0.50,
     value_per_work_hour=100.0,
     human_cost_per_hour=100.0,
-    # This is close to optimized baseline surplus, so baseline adoption is
-    # approximately one half rather than near zero or one.
-    adoption_midpoint=84.0,
+    # Single-attempt baseline surplus is about 75.3. Place the common adoption
+    # midpoint nearby to illustrate takeoff and saturation, not to fit data.
+    adoption_midpoint=76.0,
     adoption_scale=4.0,
 )
 
