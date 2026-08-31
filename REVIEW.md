@@ -81,3 +81,25 @@ The final economic read also makes the existence condition for optimized policie
 Validation: 69 Python tests and 11 JavaScript tests pass. The notebook regenerates all 22 figures and passes its independent optimizer audits. All 12 manuscript figures mount in the browser, with 44 interactive panels, no console warnings or errors, and no unrendered or overflowing equations. All seven tables fit the reading width. The 20 local reading resources and internal section links resolve, and the exported chart fingerprint matches the current numerical sources.
 
 The reference-paper comparison is recorded above so the editorial standard is inspectable rather than an unsupported ranking. The manuscript now leads with its strongest result, makes its counterexamples intelligible, and ties its conclusions to measurements. It remains a qualitative model without empirical calibration, a joint-regime numerical solution, or a general-equilibrium forecast.
+
+## Round 3 — contribution and workflow revision
+
+The user approved two changes after discussing the final draft: sharpen what the paper contributes beyond generic rebound reasoning, and carry concrete workflows through the argument. A subagent then performed an independent editorial and claim-evidence review without editing files.
+
+### Findings and revisions
+
+1. **The mechanism, rather than the price identity, should organize the paper.** Reframe the contribution as a decomposition of token demand into work assigned and inference per work unit. The active constraint identifies the expansion margin—adoption under finite work and supervisory leverage under scarce attention—while its size relative to inference savings determines the sign. Explicitly relate the price-efficiency result to prior direct-rebound work instead of claiming a new rebound principle.
+
+2. **The main result order should answer the title sooner.** Move capability under the two constraints ahead of the price and efficiency diagnostic. Renumber the four main figures accordingly. Remove the repeated display of the demand decomposition and the technical attention-value benchmark from the main text; the latter already appears with its proof in Appendix A.
+
+3. **Examples should fit one-attempt failure accounting.** Replace mandatory reports and generic search with two hypothetical, optional workflows. A fixed catalog of optional content improvements represents limited work; rejected revisions leave existing content in place. A deep queue of optional software improvements represents scarce review attention; rejected changes can be abandoned. Map the model variables to each workflow and state that neither example characterizes its industry as a whole.
+
+4. **The examples expose conditions, not a need for more choices.** Make clear that candidate work is otherwise comparable, review detects success, the software backlog is abundant only relative to review capacity during the period, and review-tool compute and maintenance costs are outside the current specification. Mandatory work, task-dependent policies, partial reuse, repair, undetected damage, and learning remain outside scope.
+
+5. **Add one exact, portable corollary.** Under fixed work, if chosen inference intensity falls to a fraction $r$ of its initial value, token demand must fall whenever initial adoption exceeds $r$, even if every remaining opportunity adopts. This follows from $D=WAx$ and does not rely on the illustrative adoption distribution.
+
+6. **Make the empirical questions follow the contribution.** Ask first which constraint is active, then record assigned work, completed work, inference, and review together, and finally use price variation as a conditional efficiency diagnostic. The conclusion ends with the four objects a forecast must identify: work that can enter, whether review binds, review scaling with scope, and inference per work unit.
+
+### Claim-evidence disposition
+
+The independent review found the analytical claims internally consistent and identified no reason to restore retry choice or add numerical cases. It rejected any statement that a regime alone determines the sign of demand: the regime identifies the offsetting margin, whose magnitude must still be compared with inference savings. Capability humps and valleys remain illustrative; the price-efficiency identity, adoption-saturation bound, and uniform-review scaling retain their explicit conditions.

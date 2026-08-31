@@ -6,11 +6,13 @@
 
 ## Abstract
 
-Better AI can complete more work while using fewer tokens. Whether total demand rises depends on how much additional work becomes worth doing and how much people can supervise. We model users who choose the scope of a delegated task and its inference budget. Every task consumes tokens and review time, including failures. With a finite workload, demand expands through adoption; with abundant work, it expands through work supervised per hour. Three results organize the analysis. A price cut weakly increases token purchases, but increases spending only when demand is sufficiently elastic. An efficiency improvement changes token purchases by exactly the same proportion as an equivalent price cut changes spending. Faster verification expands demand in proportion to the capacity it releases when attention binds. Capability gains can instead produce rising or falling demand as adoption, supervision, and inference savings interact. The numerical examples illustrate these mechanisms; they are not estimates of particular industries or forecasts of aggregate spending.
+Better AI can expand the amount of work assigned to AI while reducing the tokens used per work unit. We provide a mechanism-based decomposition of those two responses. When worthwhile work is finite, the expansion margin is adoption. When worthwhile work is abundant but human attention binds, it is work supervised per review hour. The active constraint identifies what must expand for token demand to rise; it does not determine whether expansion outweighs inference savings. Users choose delegated scope and inference intensity, and every attempt consumes tokens and review time, including failures. Two conditional diagnostics complement this framework. Under a pure efficiency change, the spending response to an equivalent price cut identifies the token-demand response. When attention binds, uniformly faster verification expands token demand and completed work in proportion to the capacity released. The numerical examples illustrate these mechanisms; they are not industry estimates or aggregate forecasts.
 
 ## 1. The economic question
 
-Suppose a team uses AI to prepare a fixed set of monthly reports. A better model might produce the same reports with half as many tokens. If most reports already use AI, token purchases could fall. Now suppose a research team has a long list of worthwhile candidate designs but little time to check them. A better model might let each reviewer handle larger assignments, expanding the amount of work attempted. Token purchases could rise even if each work unit needs fewer tokens.
+Suppose a retailer is considering optional improvements to the descriptions and metadata in a fixed product catalog. A better model might produce each usable revision with fewer tokens. If most eligible listings already use AI, token purchases could fall. A rejected revision leaves the existing listing in place but still consumes inference and editorial attention, so failure is costly without requiring repair inside the model.
+
+Now suppose a software team has a long backlog of worthwhile, optional improvements but little engineering time to check proposed changes. A better model might let each reviewer handle larger coherent assignments, expanding the amount of work attempted. Token purchases could rise even if each work unit needs fewer tokens. Whether they do depends on how review time grows with the amount delegated.
 
 The distinction is not the occupation. It is what limits activity: the amount of worthwhile work, or the attention available to supervise it. Either team can move from one situation to the other.
 
@@ -23,9 +25,11 @@ The accounting is simple:
 
 The economics determines both factors. Higher capability can bring work into use, permit longer assignments, or save inference on existing work. Lower prices encourage extra inference. Greater efficiency supplies the same effective computation with fewer tokens. None of these responses is captured by assigning AI a fixed share of the value of the work it touches.
 
-We develop three conclusions. **Price experiments can diagnose efficiency rebound:** under a precise efficiency assumption, the spending response to cheaper tokens reveals whether more efficient tokens increase or decrease total token use. **Adoption headroom and review technology distinguish demand regimes:** a gain that expands one workflow can save tokens in another. **Verification can expand the usable market:** when review hours bind, reducing review time lets users apply AI to more work, without any increase in model accuracy.
+Efficiency rebound is not new. The energy literature relates efficiency changes to the demand for useful work, input demand, and price elasticities, while emphasizing the assumptions needed to infer one response from another ([Sorrell and Dimitropoulos 2008](https://www.sciencedirect.com/science/article/pii/S0921800907004405)). The organizational-economics literature asks how scarce expert knowledge and communication shape the span of production ([Garicano 2000](https://www.journals.uchicago.edu/doi/10.1086/317671)). This paper connects those ideas at the workflow level by letting users choose inference intensity and delegated scope together. It models review rather than an organizational hierarchy, and direct workflow demand rather than economy-wide rebound.
 
-The argument starts with user choices and the two constraints. We then study price and efficiency, capability, and verification, in that order. Four figures show the mechanisms. Functional forms, proofs, parameter comparisons, and additional experiments are in the appendices.
+The contribution can be stated in one sentence: **the constraint identifies the expansion margin, while its size relative to inference savings determines whether token demand rises**. Under finite work, expansion means adoption; under scarce attention, it means supervisory leverage—work supervised per review hour. Price experiments and uniform-review improvements then provide conditional diagnostics. Capability has no universal quantity effect because it changes both expansion and inference intensity.
+
+The argument starts with user choices and the two constraints. We then study capability, price and efficiency, and verification. Four figures show the mechanisms. Functional forms, proofs, parameter comparisons, and additional experiments are in the appendices.
 
 ## 2. A model of delegated work
 
@@ -76,19 +80,72 @@ The two objectives select different policies because an hour spent on one assign
 
 Tokens and review hours are counted for all assigned work, including failures. Completed work is a separate outcome. Token spending, $S=cD$, is separate again: it is supplier revenue, not supplier profit or the economic value created.
 
+The catalog example maps to the limited-work case. $W$ is the set of eligible revisions during the period, $s$ is revision work delegated before an editorial checkpoint, $x$ is inference per unit of revision work, and $A$ is the adopted share. The hurdle $\phi$ can represent the value of keeping existing content, integration effort, or another switching cost. An unusable revision is discarded, so it creates no incremental output while still using tokens and editor time. The potential revisions are otherwise technically and economically comparable in this model; real catalogs need not be. The example is optional content improvement, not work that must be completed by a deadline.
+
+The software example maps to the attention-limited case when a queue of comparable optional improvements can keep reviewers busy. $H$ is engineering review time, $s$ is the amount of work proposed before the next checkpoint, $x$ is inference per unit of engineering work, and $h(s)$ is the time needed to assess the change. The example is deliberately narrow: a rejected change can be abandoned, review reliably identifies success, and the queue is deep relative to review capacity during the period.
+
 We study these two limiting cases to expose the mechanisms. When both constraints matter, scarce review time changes the policy itself. Appendix A gives their common allocation foundation; applying an attention cap after choosing a work-optimal policy is generally insufficient.
 
-## 3. Cheaper tokens, more efficient tokens
+## 3. Capability: adoption or supervision?
 
-### 3.1 A price cut raises purchases, but need not raise spending
+Capability improves what a given inference budget can accomplish. The old policy remains available, so optimized surplus cannot fall. Token demand can fall because users change the policy. The relevant question is whether activity expands faster than tokens per work unit decline.
+
+For any improvement, $D=Qx$: demand changes through activity and inference intensity. The resource constraint tells us which activity response to investigate; the accounting identity is not itself a prediction.
+
+### 3.1 Finite work: adoption eventually has less room to grow
+
+With fixed $W$, assigned work is $Q=WA$. Demand rises when adoption growth outweighs any reduction in inference intensity. Once adoption is near its ceiling, additional capability has little work left to bring into use. Token savings can then dominate.
+
+This gives a simple saturation test that does not depend on the numerical adoption curve. From an initial policy $(A_0,x_0)$ to a new policy $(A_1,x_1)$,
+
+```math
+\frac{D_1}{D_0}=\frac{A_1}{A_0}\frac{x_1}{x_0}
+\leq \frac{1}{A_0}\frac{x_1}{x_0}.
+```
+
+More generally, if reoptimized inference intensity falls to a fraction $r$ of its initial value, demand must fall whenever initial adoption exceeds $r$. Thus, if more than half of the fixed workload already uses AI and chosen intensity falls by half, total token demand must fall even if every remaining work unit adopts. This is a conditional diagnostic, not a claim that doubling technical efficiency mechanically halves chosen intensity.
+
+**Figure 1 shows both margins, not just their product.** The fixed catalog is the motivating workflow: adoption is the share of eligible revisions assigned to AI, while inference intensity is tokens per unit of revision work. In these examples, inference intensity falls throughout the displayed capability range while adoption rises. Their interaction produces a hump in demand.
+
+![Figure 1. Capability raises adoption while saving tokens per work unit; demand peaks when the balance changes.](figures/capability-work-decomposition.png)
+
+*The finite-work cases hold price, efficiency, and review technology fixed. Adoption is a percentage; the other panels use each case's own $m=1$ baseline. Reference and concentrated-adoption inference curves coincide because their technology and preferred policy are identical.*
+
+The concentration comparison isolates the adoption mechanism: the same technical response produces a sharper demand increase when many opportunities switch together. Early saturation moves the peak earlier. Beyond its baseline, that case completes more work while using fewer tokens.
+
+This is one reason a demand elasticity estimated during adoption takeoff may not persist. The adoption distribution is unchanged in the experiment; the user moves through it. The same workflow can respond differently after most of its work has switched.
+
+Neither an adoption plateau nor a capability score alone establishes a ceiling on token use. Users can still adjust inference, the workload can grow, and other workflows can enter. The plotted humps demonstrate a mechanism under fixed work, not an aggregate forecast.
+
+### 3.2 Abundant work: review determines how far activity can expand
+
+With fixed attention, assigned work is $Q=HL$. Larger chunks can increase $L=s/h(s)$ if review takes less than proportionately more time. If reviewing twice as much work takes almost twice as long, increasing scope releases little capacity.
+
+In the software workflow, slowly growing review could describe a coherent change for which orientation and standard checks are substantially reusable as scope grows. Nearly proportional review could describe a change whose additional components each require separate scrutiny. These are alternative review technologies for a stylized workflow, not claims that software review generally belongs to either case.
+
+**Figure 2 compares those two review technologies.** It uses cases from the same parameter set, but adoption no longer constrains activity. The question is whether growth in work supervised per hour offsets inference savings.
+
+![Figure 2. Capability expands token demand when supervision scales; nearly proportional review can leave token savings dominant.](figures/capability-attention-decomposition.png)
+
+*Attention is fixed and useful work is abundant. Every series uses its own $m=1$ baseline. The first and third panels use logarithmic vertical scales. The cases have the same technical success function; their review technologies differ. Review levels scale demand, while the growth of review time with scope drives these indexed responses.*
+
+When review grows slowly, the reviewer can supervise much more work and token demand rises strongly. With nearly proportional review, that expansion is modest. Inference savings eventually outweigh it, and token demand falls even though completed work and optimized value rise in this example.
+
+The local object to measure is $\theta=d\log h/d\log s$, the percentage increase in review time associated with a one-percent increase in scope. An increase in scope raises work supervised per hour by $(1-\theta)$ times as much, in percentage terms. A long delegation horizon is economically useful only to the extent that it expands this ratio.
+
+## 4. Price and efficiency: a conditional diagnostic
+
+The preceding sections identify what must expand for demand to rise. Price variation provides a separate diagnostic for whether that expansion is large enough to produce direct efficiency rebound.
+
+### 4.1 A price cut raises purchases, but need not raise spending
 
 A lower token price makes additional inference worthwhile and raises the value of using AI. In the work-limited regime, chosen inference intensity and adoption both weakly increase. With attention limited, users weakly increase the tokens they buy per review hour. Thus a pure price cut cannot reduce optimized token quantity in either regime. This follows from revealed preference, without assuming a particular demand curve.
 
 Spending can nevertheless fall. Halving price raises spending only if token purchases more than double. For a small price change, the threshold is a price elasticity of one: the percentage increase in quantity must exceed the percentage reduction in price.
 
-**Figure 1 asks where that expansion can come from.** The reference and concentrated-adoption cases share the same technology. They differ only in how closely work opportunities' switching hurdles are clustered. The early-saturation case has easier tasks and already assigns almost all work to AI at the baseline. All cases are illustrative.
+**Figure 3 asks where that expansion can come from.** The reference and concentrated-adoption cases share the same technology. They differ only in how closely work opportunities' switching hurdles are clustered. The early-saturation case has easier tasks and already assigns almost all work to AI at the baseline. All cases are illustrative.
 
-![Figure 1. Cheaper tokens increase purchases; adoption determines whether spending keeps pace.](figures/price-adoption-and-spending.png)
+![Figure 3. Cheaper tokens increase purchases; adoption determines whether spending keeps pace.](figures/price-adoption-and-spending.png)
 
 *Prices fall from left to right. Adoption is a share of potential work; purchases and spending are indexed to each case's own value at 10 dollars per million tokens. The purchase panel uses a logarithmic vertical scale. Every point reoptimizes scope and inference intensity.*
 
@@ -96,7 +153,7 @@ In the concentrated case, halving the baseline price moves adoption from roughly
 
 The lesson is conditional: a low price is especially effective at expanding the market when much work is near its adoption threshold. A large stock of potentially automatable work is not enough; its distance from that threshold matters.
 
-### 3.2 A spending response identifies efficiency rebound
+### 4.2 Applying direct-rebound logic to inference efficiency
 
 An efficiency gain is different from a price cut: it also reduces the raw tokens required for the same effective inference. But the two are linked exactly in this model.
 
@@ -106,7 +163,7 @@ Write effective inference as $z=\eta x$. A policy using $z$ costs $(c/\eta)z$ in
 D(c,\eta)=\frac{D(c/\eta,1)}{\eta}.
 ```
 
-This gives a particularly useful finite comparison. For an improvement by any factor $k>1$,
+This is the direct-rebound relation specialized to inference. The local elasticity version is familiar from the energy literature; the following finite comparison lets a discrete price experiment reveal the corresponding efficiency response without estimating a local elasticity. For an improvement by any factor $k>1$,
 
 ```math
 \boxed{\frac{D(c,k\eta)}{D(c,\eta)}
@@ -125,55 +182,11 @@ Efficiency produces more raw token use only when effective demand expands more t
 
 It does require efficiency to enter through $\eta x$, with no separate change in feasibility, review requirements, or available policy choices. A model release that changes all of these is not a pure efficiency experiment. Subject to that restriction, price variation can reveal the sign of rebound without separately estimating every technical parameter.
 
-## 4. Capability: adoption or supervision?
-
-Capability improves what a given inference budget can accomplish. The old policy remains available, so optimized surplus cannot fall. Token demand can fall because users change the policy. The relevant question is whether activity expands faster than tokens per work unit decline.
-
-For any improvement, the accounting decomposes as
-
-```math
-d\log D=d\log Q+d\log x.
-```
-
-This identity is not itself a prediction. The resource constraint tells us which activity response to investigate.
-
-### 4.1 Finite work: adoption eventually has less room to grow
-
-With fixed $W$, assigned work is $Q=WA$. Demand rises when adoption growth outweighs any reduction in inference intensity. Once adoption is near its ceiling, additional capability has little work left to bring into use. Token savings can then dominate.
-
-**Figure 2 shows both margins, not just their product.** In these examples, inference intensity falls throughout the displayed capability range while adoption rises. Their interaction produces a hump in demand.
-
-![Figure 2. Capability raises adoption while saving tokens per work unit; demand peaks when the balance changes.](figures/capability-work-decomposition.png)
-
-*The same three cases as Figure 1, with price, efficiency, and review technology fixed. Adoption is a percentage; the other panels use each case's own $m=1$ baseline. Reference and concentrated-adoption inference curves coincide because their technology and preferred policy are identical.*
-
-The concentration comparison isolates the adoption mechanism: the same technical response produces a sharper demand increase when many opportunities switch together. Early saturation moves the peak earlier. Beyond its baseline, that case completes more work while using fewer tokens.
-
-This is one reason a demand elasticity estimated during adoption takeoff may not persist. The adoption distribution is unchanged in the experiment; the user moves through it. The same workflow can respond differently after most of its work has switched.
-
-Neither an adoption plateau nor a capability score alone establishes a ceiling on token use. Users can still adjust inference, the workload can grow, and other workflows can enter. The plotted humps demonstrate a mechanism under fixed work, not an aggregate forecast.
-
-### 4.2 Abundant work: review determines how far activity can expand
-
-With fixed attention, assigned work is $Q=HL$. Larger chunks can increase $L=s/h(s)$ if review takes less than proportionately more time. If reviewing twice as much work takes almost twice as long, increasing scope releases little capacity.
-
-**Figure 3 compares those two review technologies.** It uses cases from the same parameter set, but adoption no longer constrains activity. The question is whether growth in work supervised per hour offsets inference savings.
-
-![Figure 3. Capability expands token demand when supervision scales; nearly proportional review can leave token savings dominant.](figures/capability-attention-decomposition.png)
-
-*Attention is fixed and useful work is abundant. Every series uses its own $m=1$ baseline. The first and third panels use logarithmic vertical scales. The cases have the same technical success function; their review technologies differ. Review levels scale demand, while the growth of review time with scope drives these indexed responses.*
-
-When review grows slowly, the reviewer can supervise much more work and token demand rises strongly. With nearly proportional review, that expansion is modest. Inference savings eventually outweigh it, and token demand falls even though completed work and optimized value rise in this example.
-
-The local object to measure is $\theta=d\log h/d\log s$, the percentage increase in review time associated with a one-percent increase in scope. An increase in scope raises work supervised per hour by $(1-\theta)$ times as much, in percentage terms. A long delegation horizon is economically useful only to the extent that it expands this ratio.
-
-There is a simple benchmark. With no fixed checkpoint overhead, sublinear power-law review, and the horizon-scaling capability used in the examples, optimal scope scales with capability and inference intensity stays constant. Demand then grows as $m^{1-\beta}$, where $\beta<1$ is review's scope elasticity. Fixed overhead allows the balance to change along the path, including the additional valley example in Appendix B.
-
-Under this horizon-scaling capability assumption, interior choices also connect review to economic value: the capability elasticity of an additional review hour's optimized value, before charging for that hour, is $1-\theta$. This is a value result, not a token-volume result. It makes clear why scarce attention does not by itself guarantee rapid growth in either inference purchases or the value of supervision. The review technology matters.
-
 ## 5. Verification expands the usable market
 
 A faster model does not necessarily make its output faster to check. We therefore treat review technology as a separate margin. **Figure 4 asks what happens when every review takes less time**, holding capability, token efficiency, and price fixed.
+
+For the software team, this means improving the checking process itself while keeping the pool of proposed work and model behavior fixed. For the catalog, it means reducing editorial time per attempted revision. The intervention is deliberately stronger than changing the review burden of only some tasks: it multiplies every policy's review time by the same factor.
 
 ![Figure 4. Faster review can expand completed work more than token use; with scarce attention it expands both proportionally.](figures/verification-expansion.png)
 
@@ -188,30 +201,27 @@ Y^H(v)=\frac{Y^H(1)}v.
 
 Halving review time doubles token demand and completed work. This result comes from releasing capacity; it does not require improved success.
 
-With a finite workload, faster review instead changes policy and adoption. In the reference example, halving review time nearly doubles completed work but raises token use by only about 40%. Larger speed gains eventually reduce token demand as adoption saturates and users save inference. Faster verification can therefore be complementary to aggregate token use in one regime and lead to net token savings in another.
+With a finite workload, faster review instead changes policy and adoption. It does not mechanically create more catalog revisions once the eligible set is exhausted. In the reference example, halving review time nearly doubles completed work but raises token use by only about 40%. Larger speed gains eventually reduce token demand as adoption saturates and users save inference. Faster verification can therefore be complementary to aggregate token use in one regime and lead to net token savings in another.
 
-The proportional attention result stops applying when the extra capacity runs out of worthwhile work. A lower wage also has a different effect from faster review: it changes the monetary cost of operating, but does not create additional review hours. Conditional on activity in the attention-limited regime, $w$ affects participation rather than the optimal policy.
+The proportional attention result stops applying when the extra capacity runs out of worthwhile work. A lower wage also has a different effect from faster review: it changes the monetary cost of operating, but does not create additional review hours. Conditional on activity in the attention-limited regime, $w$ affects participation rather than the optimal policy. Changing how review grows with scope is another distinct intervention because it changes which policy is best instead of multiplying every policy's capacity equally. Appendix B examines that case and explains why lowering a review-growth exponent is not a uniform improvement for every task size.
 
-Changing how review grows with scope is another distinct intervention. It changes which policy is best, rather than multiplying the capacity of every policy equally. Appendix B examines that case and explains why lowering a review-growth exponent is not a uniform improvement for every task size.
+## 6. Workflow regimes and what to measure
 
-## 6. Industry regimes and what to measure
+The model suggests classifying workflows by observable constraints rather than assigning an elasticity to an occupation or industry. The same organization can contain several regimes or move between them as adoption and review capacity change.
 
-The model suggests classifying workflows by observable constraints rather than assigning an elasticity to an occupation.
-
-| Workflow conditions | Margin to measure | Conditional demand implication |
+| Hypothetical workflow | Diagnostic condition | Conditional demand implication |
 |---|---|---|
-| Much work is close to switching to AI | Adoption growth relative to inference savings | Capability or efficiency can expand demand rapidly |
-| A finite workload already uses AI extensively | Tokens per work unit | Savings have less adoption growth to offset them |
-| Review queues bind and review grows slowly with scope | Work supervised per hour relative to inference savings | Demand can expand without growth in the number of users |
-| Review queues bind and review is nearly proportional to scope | How little larger assignments release capacity | Capability gains can raise output while token demand stagnates or falls |
+| Optional revisions to a fixed catalog | How much eligible work remains near its switching threshold? | Adoption can drive early expansion, but loses force near saturation |
+| Optional software improvements with reusable orientation and standard checks | Does review grow substantially less than proportionately with delegated scope? | Work supervised per review hour can expand enough to outweigh inference savings |
+| Optional software improvements requiring separate scrutiny of each component | Does review grow almost proportionately with delegated scope? | Output can rise while token demand stagnates or falls |
 
-These are mechanisms to test, not empirical assignments of industries to categories. A report-production workflow and an open-ended search workflow are useful contrasting examples, but either can face both constraints.
+These are mechanisms to test, not empirical descriptions of retail or software as a whole. For the catalog, old content provides a natural outside option and the eligible set supplies a workload boundary. For software, the model applies only to a queue of optional, comparable changes that can be discarded after review. Mandatory repairs, task-dependent difficulty, partial reuse, and learning across attempts require additional structure. Review-tool compute and maintenance costs also lie outside $h(s)$ as currently specified.
 
-Three measurements would make the framework useful in practice. First, **measure the spending response to price**, holding model quality fixed and allowing users to adjust. That identifies the local rebound condition if an efficiency gain preserves the same effective-inference technology.
+Three measurements would make the framework useful in practice. First, **test which constraint is active**. Does more review capacity lead to more worthwhile work, or are existing review hours already sufficient? At the work-optimal policy, required attention is $WA\,h(s)/s$. If available hours are below that amount, the policy must be reconsidered. Faster-review experiments can help separate a supervision limit from limited adoption, provided the intervention does not change other task attributes. Within an attention-limited workflow, compare review time across assignment sizes to estimate whether larger scope actually releases capacity.
 
 Second, **record scope, inference, and review time together**. A drop in tokens per completed task alone is hard to interpret: it can reflect smaller assignments, lower intensity, or higher success. Record assigned and successfully completed work separately, and include failed attempts in tokens and review hours.
 
-Third, **test which constraint is active**. Does more review capacity lead to more worthwhile work, or are existing review hours already sufficient? At the work-optimal policy, required attention is $WA\,h(s)/s$. If available hours are below that amount, the policy must be reconsidered. Faster-review experiments can help separate a supervision limit from limited adoption, provided the intervention does not change other task attributes.
+Third, **measure the spending response to price**, holding model quality fixed and allowing users to adjust. That identifies the local rebound condition if an efficiency gain preserves the same effective-inference technology.
 
 These measurements are more directly informative about token purchases than the dollar value of exposed work. They also separate economic progress from supplier revenue: more completed work can coexist with lower token use, and rising token use can coexist with lower spending.
 
@@ -219,11 +229,14 @@ The model is static. It holds the workload, attention endowment, output values, 
 
 ## 7. Conclusion
 
-The same improvement can expand the market for inference and reduce the inference needed for existing work. The balance depends on adoption headroom when work is limited, and on review technology when attention is limited.
+The same improvement can expand the market for inference and reduce the inference needed for existing work. Standard direct-rebound logic identifies the balance through an elasticity. This paper gives that elasticity two operational sources in delegated AI work: adoption headroom when work is limited, and supervisory leverage when human attention is limited. It also gives two conditional diagnostics: the spending response to a price cut identifies the token response to a pure efficiency gain, and uniformly faster review scales active attention-limited demand with the capacity released. Neither result supplies a universal sign for capability.
 
-Three implications survive without the numerical functional forms: cheaper tokens weakly increase purchases; the spending response to a price cut identifies the token response to an equivalent efficiency gain; and uniformly faster review expands active attention-limited demand in proportion to the capacity released. Capability needs a more specific account of what becomes feasible and how users change scope.
+A useful demand forecast should identify which work can enter, whether review binds, how review scales with scope, and how inference per work unit changes. The fixed catalog and optional software backlog make those questions concrete without assigning an elasticity to an entire industry. A fixed share of economic value cannot answer them, and a falling token bill is not sufficient evidence that AI has stopped becoming useful.
 
-A useful demand forecast should therefore explain which work enters, how supervision scales, and how inference per work unit changes. A fixed share of economic value cannot answer those questions, and a falling token bill is not sufficient evidence that AI has stopped becoming useful.
+## References
+
+- Garicano, Luis. 2000. “Hierarchies and the Organization of Knowledge in Production.” *Journal of Political Economy* 108 (5): 874–904. [Publisher page](https://www.journals.uchicago.edu/doi/10.1086/317671).
+- Sorrell, Steve, and John Dimitropoulos. 2008. “The Rebound Effect: Microeconomic Definitions, Limitations and Extensions.” *Ecological Economics* 65 (3): 636–649. [Publisher page](https://www.sciencedirect.com/science/article/pii/S0921800907004405).
 
 ## Appendix A. Specification and analytical results
 
@@ -300,7 +313,7 @@ In the work-limited objective, write $u_c(s,x)=B(s,x)-cx$, where $B=bP-wh/s$ doe
 
 Thus $x_1\geq x_2$. Optimized surplus and the nondecreasing adoption share also rise weakly, so $WAx$ does too. In the attention objective, price multiplies $Lx$; the identical argument shows that tokens per review hour weakly increase as price falls.
 
-For efficiency, substitute $z=\eta x$ into either objective. Success and review are unchanged, and token spending becomes $(c/\eta)z$. Corresponding policies therefore have the same scope, surplus, adoption or supervised work, and completed work, while raw tokens differ by $1/\eta$. This proves the demand identity and its finite spending counterpart in Section 3.
+For efficiency, substitute $z=\eta x$ into either objective. Success and review are unchanged, and token spending becomes $(c/\eta)z$. Corresponding policies therefore have the same scope, surplus, adoption or supervised work, and completed work, while raw tokens differ by $1/\eta$. This proves the demand identity and its finite spending counterpart in Section 4.
 
 The correspondence requires unrestricted positive choices or nonbinding bounds under the change of units. Hard raw-token caps, review costs tied to raw token count, or simultaneous changes in output value can break it. Fees outside $cD$ also mean total invoices need not satisfy the spending identity: it concerns the variable token charge. At price-induced policy switches, the finite identity still applies to corresponding optima even when a local elasticity does not exist.
 

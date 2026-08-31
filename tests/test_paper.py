@@ -62,8 +62,10 @@ def test_focused_argument_precedes_the_full_parameter_comparisons(plot_data):
     source = (ROOT / 'README.md').read_text()
     main, appendix = source.split('## Appendix A.', 1)
     figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', main)
-    assert figures == ['price-adoption-and-spending.png', 'capability-work-decomposition.png',
-                       'capability-attention-decomposition.png', 'verification-expansion.png']
+    assert figures == ['capability-work-decomposition.png', 'capability-attention-decomposition.png',
+                       'price-adoption-and-spending.png', 'verification-expansion.png']
+    assert main.index('## 3. Capability: adoption or supervision?') < main.index(
+        '## 4. Price and efficiency: a conditional diagnostic')
     assert calibration_tables_markdown() in appendix
     assert calibration_tables_markdown() not in main
     names = {industry.name for industry in illustrative_industries()}
