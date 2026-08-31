@@ -42,9 +42,25 @@ def test_failed_work_still_pays_tokens_and_consumes_scarce_attention() -> None:
     # This is capacity conditional on operating, not a recommendation to
     # operate at negative value. Failure does not free a review slot.
     assert failed.attention_limited_tokens == reliable.attention_limited_tokens == 400_000_000
-    assert failed.work_limited_tokens == pytest.approx(
-        industry.potential_work_hours * failed.adoption_share * 100_000
-    )
+    assert failed.adoption_share == 0
+    assert failed.work_limited_tokens == 0
+
+
+@pytest.mark.parametrize("location, spread", [(76, 16), (0, 4), (-20, 4)])
+def test_adoption_is_a_distribution_of_nonnegative_hurdles(location, spread) -> None:
+    model = IndustryModel(replace(
+        REFERENCE_INDUSTRY, adoption_location=location, adoption_scale=spread,
+    ))
+    assert model.adoption_share(-1e6) == model.adoption_share(0) == 0
+    assert 0 < model.adoption_share(1e-9) < 1e-6
+    values = [model.adoption_share(u) for u in (1e-6, 1, 10, 100, 1e6)]
+    assert values == sorted(values)
+    assert values[-1] == 1
+    # Compare with conditioning the original distribution; do not duplicate
+    # the numerically stable implementation's algebra.
+    cdf = lambda u: 1 / (1 + math.exp((location - u) / spread))
+    expected = (cdf(10) - cdf(0)) / (1 - cdf(0))
+    assert model.adoption_share(10) == pytest.approx(expected)
 
 
 def test_success_combines_feasibility_and_execution_without_discounting_costs() -> None:
@@ -108,6 +124,18 @@ def test_each_regime_selects_policy_for_its_own_scarce_resource() -> None:
     assert outcome.surplus_per_attention_hour > work.surplus_per_attention_hour
     assert work.surplus_per_work_hour > outcome.surplus_per_work_hour
     assert outcome.policy.delegation_hours > work.policy.delegation_hours
+
+
+def test_attention_policy_is_work_policy_at_the_scarcity_price() -> None:
+    industry = REFERENCE_INDUSTRY
+    attention = AttentionConstrainedOptimizer().solve(IndustryModel(industry), Scenario())
+    scarcity_price = attention.surplus_per_attention_hour
+    assert scarcity_price > 0
+    priced = replace(industry, human_cost_per_hour=industry.human_cost_per_hour + scarcity_price)
+    work = PolicyOptimizer().solve(IndustryModel(priced), Scenario())
+    assert work.surplus_per_work_hour == pytest.approx(0, abs=1e-8)
+    assert work.policy.delegation_hours == pytest.approx(attention.policy.delegation_hours, rel=2e-5)
+    assert work.policy.tokens_per_work_hour == pytest.approx(attention.policy.tokens_per_work_hour, rel=2e-5)
 
 
 def test_scalar_attention_solution_matches_general_optimizer() -> None:

@@ -60,9 +60,9 @@ Here $a_i>0$ measures execution ease, and $0<\alpha_i<1$ gives diminishing growt
 P_i(s,x;m,\eta)=q_i(s;m)r_i(s,x;m,\eta).
 ```
 
-Capability $m$ improves both feasibility and execution. Efficiency $\eta$ improves execution at a given token budget without expanding the feasible set. At fixed scope, increasing inference without limit gives $P_i\to q_i$, rather than mechanically making all work successful.
+Feasibility is not known before assignment; otherwise the user could screen out infeasible work before paying its costs. Capability $m$ improves both feasibility and execution. Efficiency $\eta$ improves execution at a given token budget without expanding the feasible set. At fixed scope, increasing inference without limit gives $P_i\to q_i$, rather than mechanically making all work successful.
 
-The parameters $\lambda_i$ and $a_i$ describe task tractability, not a universal return on model intelligence. The local gain from capability depends on the constraints currently facing the chosen task:
+The parameters $\lambda_i$ and $a_i$ describe task tractability, not a universal return on model intelligence. Our $m$ is a proportional extension of the two technical horizons, not a measured intelligence score; real model improvements need not move both horizons equally. The local gain from capability depends on the constraints currently facing the chosen task:
 
 ```math
 \frac{\partial\log P_i}{\partial\log m}
@@ -126,7 +126,7 @@ Parameters run down the rows and conditions across the columns. **Bold values di
 |---|---:|---:|---:|---:|---:|
 | Work value $b$ (dollars) | 100 | **50** | **200** | 100 | 100 |
 | Hurdle spread $\sigma$ (dollars) | 4 | 4 | 4 | **16** | **1** |
-| Hurdle midpoint $\mu$ (dollars) | 76 | 76 | 76 | 76 | 76 |
+| Hurdle location $\mu$ (dollars) | 76 | 76 | 76 | 76 | 76 |
 
 **Singleton conditions**
 
@@ -141,9 +141,9 @@ Parameters run down the rows and conditions across the columns. **Bold values di
 
 All cases use $w_i=100$ dollars per review hour, $W_i=1{,}000{,}000$ potential work units in the work-limited comparison, and $H_i=100{,}000$ review hours in the attention-limited comparison. The scenario baseline is $m=\eta=v=1$, with tokens priced at 10 dollars per million and $x_{\mathrm{ref}}=100{,}000$. These common endowments make the figures comparable; their levels are illustrative.
 
-The adoption midpoint is $\mu=76$, close to the single-attempt reference surplus of about $75.3$. This places the example near an adoption transition. It is a calibration choice, not an estimated industry hurdle, and stays fixed in every comparative static. High, reference, and low adoption concentration use spreads $\sigma=1$, $4$, and $16$. High concentration means work opportunities have similar switching thresholds; it does not mean their thresholds are uniformly higher.
+The location of the underlying adoption distribution is $\mu=76$, close to the single-attempt reference surplus of about $75.3$. This places the example near an adoption transition. It is a calibration choice, not an estimated industry hurdle, and stays fixed in every comparative static. High, reference, and low adoption concentration use spreads $\sigma=1$, $4$, and $16$. High concentration means work opportunities have similar switching thresholds; it does not mean their thresholds are uniformly higher.
 
-The technical high/low settings have the stated same-policy difficulty ordering over the plotted comparisons, which the notebook checks. Shape parameters are not globally ordered. All concentration CDFs cross at their common midpoint: concentration reduces adoption below that point and raises it above that point. The examples establish possible behavior rather than its prevalence across industries.
+The technical high/low settings have the stated same-policy difficulty ordering over the plotted comparisons, which the notebook checks. Shape parameters are not globally ordered. The concentration CDFs cross near their common location: concentration reduces adoption below the transition and raises it above it. Conditioning on positive hurdles shifts the crossings slightly away from $\mu$. The examples establish possible behavior rather than its prevalence across industries.
 
 ### 3.1 Limited work, nonbinding attention
 
@@ -155,14 +155,17 @@ Suppose potential work $W_i$ is fixed and attention is available at opportunity 
 u_i^W=u_i(s_i^W,x_i^W).
 ```
 
-A work opportunity switches to AI if this surplus exceeds its adoption threshold $\phi$, which incorporates the value of its current alternative and any switching hurdle. The threshold does not depend on $(s,x)$, so every opportunity prefers the same policy before deciding whether to adopt. Let the work-weighted threshold distribution be logistic:
+A work opportunity switches to AI if this surplus exceeds its adoption threshold $\phi$, which incorporates the value of its current alternative and any switching hurdle. The threshold is nonnegative and does not depend on $(s,x)$, so every opportunity prefers the same policy before deciding whether to adopt. All heterogeneity here concerns outside options, not task difficulty. For numerical illustrations, use a logistic distribution conditioned on positive thresholds:
 
 ```math
-A_i=F_i(u_i^W)
-=\frac{1}{1+\exp[-(u_i^W-\mu_i)/\sigma_i]}.
+A_i=F_i(u_i^W),\qquad
+F_i(u)=\begin{cases}
+0,&u\leq0,\\
+\displaystyle\frac{1-\exp(-u/\sigma_i)}{1+\exp[-(u-\mu_i)/\sigma_i]},&u>0.
+\end{cases}
 ```
 
-Adoption is work assigned to AI, not successful completion. With $W_iA_i/s_i^W$ chunks, the three relevant outcomes are
+No work is adopted at nonpositive surplus. The location $\mu_i$ is that of the underlying logistic, not the exact median after conditioning. The analytical results require only a nondecreasing distribution of nonnegative hurdles. Adoption is work assigned to AI, not successful completion. With $W_iA_i/s_i^W$ chunks, the three relevant outcomes are
 
 ```math
 \text{Delegated work}=W_iA_i,
@@ -274,19 +277,27 @@ Demand falls when inference savings outweigh increased supervisory leverage. In 
 
 ### 3.3 When both resources matter
 
-For any candidate policy with adopted work $W_iA_i(s,x)$, feasible activity and tokens satisfy
+A scarce review hour has an opportunity cost beyond its wage. Let $\tau\geq0$ be the shadow price of the shared attention constraint. For divisible work with the same technical characteristics and hurdle distribution as above, the policy solves
 
 ```math
-N_i(s,x)=\min\left\{\frac{W_iA_i(s,x)}{s},\frac{H_i}{h_i(s;v)}\right\},
-\qquad
-D_i(s,x)=\min\left\{W_iA_i(s,x)x,H_i\frac{sx}{h_i(s;v)}\right\},
+(s_\tau,x_\tau)\in\arg\max_{s,x}
+\left\{bP(s,x)-cx-(w+\tau)\frac{h(s)}s\right\},
+\qquad u_\tau=\max_{s,x}\left\{bP-cx-(w+\tau)h/s\right\}.
 ```
 
-conditional on operating. These are capacity identities, not a rule for selecting policy.
+Work adopts when its hurdle is below $u_\tau$. The scarcity price must satisfy
 
-For example, if all available work is already eligible for delegation, so $A_i=1$, the joint problem maximizes $N_i s u_i$ subject to $N_i s\leq W_i$ and $N_i h_i\leq H_i$. Its two polar cases recover the objectives above. With endogenous adoption, eligibility and allocation must also be solved consistently with the chosen policy. A capacity cap applied after a separate optimization cannot generally do that.
+```math
+W F(u_\tau)\frac{h(s_\tau)}{s_\tau}\leq H,
+\qquad
+\tau\left[H-WF(u_\tau)\frac{h(s_\tau)}{s_\tau}\right]=0.
+```
 
-The numerical exercises study the two polar regimes; they do not claim to solve a joint allocation with heterogeneous switching hurdles. Aggregate token demand is the sum of industry demand after the applicable policies and constraints have been determined.
+These conditions follow by charging each work opportunity for the attention it consumes. If several policies tie, work can be split among them to clear the attention constraint. This allocation interpretation assumes a common scarcity price within the industry.
+
+With ample attention, $\tau=0$ recovers the work-limited policy. With an increasingly large pool of opportunities and hurdles approaching zero, the limiting policy maximizes surplus per review hour: $\tau\to\max J$. Thus the two regimes have a common economic foundation. The numerical exercises study their polar limits rather than solving every intermediate allocation.
+
+A minimum of work capacity and review capacity can describe feasible throughput at a supplied policy. It cannot select the optimal policy, because a binding attention constraint changes the relevant price of review. Aggregate demand can be added across industries only after their policies and constraints have been determined.
 
 ### 3.4 Interpreting industry regimes
 
@@ -354,6 +365,15 @@ Define the local price elasticity of token quantity at unit efficiency as $\epsi
 \frac{\partial\log D(c,\eta)}{\partial\log\eta}
 =\epsilon_c(c/\eta)-1.
 ```
+
+There is an equally useful result for a finite improvement by a factor $k>1$. Let $S(c,\eta)=cD(c,\eta)$ denote token spending. Then
+
+```math
+\frac{D(c,k\eta)}{D(c,\eta)}
+=\frac{S(c/k,\eta)}{S(c,\eta)}.
+```
+
+A $k$-fold efficiency improvement changes raw-token demand by exactly the same proportion as a $k$-fold price cut changes spending. Price and efficiency therefore need not be separate forecasting exercises under these assumptions: the spending response to a price experiment identifies the sign of efficiency rebound.
 
 An efficiency gain increases raw token demand when the induced expansion is more than proportional to the effective price reduction. In the work-limited case that expansion includes adoption. Once adoption approaches its ceiling, fewer new work opportunities remain to offset token savings, which can produce an efficiency hump. With scarce attention, the corresponding expansion operates through supervisory leverage and inference choices.
 
@@ -497,7 +517,7 @@ Capability, efficiency, and verification can create economic value while having 
 | $J_i$ | Expected net surplus per review hour |
 | $R_i$ | Value per review hour after tokens and before the attention charge |
 | $\rho_i^*$ | Optimized value of $R_i$ |
-| $\phi$, $\mu_i$, $\sigma_i$ | Adoption threshold and its distribution's midpoint and spread |
+| $\phi$, $\mu_i$, $\sigma_i$ | Nonnegative hurdle, underlying logistic location, and spread |
 | $A_i$ | Share of potential work assigned to AI |
 | $W_i$, $H_i$ | Potential work and available review hours |
 | $D_i^W$, $D_i^H$ | Token demand under the two polar constraints |

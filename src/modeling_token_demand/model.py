@@ -43,8 +43,8 @@ class Industry:
     # w: opportunity cost of one hour of human review time.
     human_cost_per_hour: float
 
-    # mu: surplus per work-hour at which half of potential work adopts AI.
-    adoption_midpoint: float
+    # mu: location of the logistic distribution before truncation at zero.
+    adoption_location: float
     # sigma: dispersion of per-unit adoption hurdles across industry work.
     adoption_scale: float
 
@@ -205,15 +205,24 @@ class IndustryModel:
         return scenario.verification_time_multiplier * base_time
 
     def adoption_share(self, surplus_per_work_hour: float) -> float:
-        """A: work-volume-weighted share of industry work delegated to AI."""
+        """A: work-weighted adoption with nonnegative outside-option hurdles.
+
+        The logistic hurdle distribution is conditioned on a positive hurdle.
+        Thus negative-surplus work is never adopted. The equivalent expression
+        below avoids subtracting almost-equal CDF values near zero.
+        """
 
         p = self.industry
-        z = (surplus_per_work_hour - p.adoption_midpoint) / p.adoption_scale
+        if surplus_per_work_hour <= 0:
+            return 0.0
+        z = (surplus_per_work_hour - p.adoption_location) / p.adoption_scale
         # Stable logistic evaluation for very high or low adoption surplus.
         if z >= 0:
-            return 1.0 / (1.0 + math.exp(-z))
-        exp_z = math.exp(z)
-        return exp_z / (1.0 + exp_z)
+            logistic = 1.0 / (1.0 + math.exp(-z))
+        else:
+            exp_z = math.exp(z)
+            logistic = exp_z / (1.0 + exp_z)
+        return -math.expm1(-surplus_per_work_hour / p.adoption_scale) * logistic
 
     def evaluate(self, policy: Policy, scenario: Scenario) -> PolicyOutcome:
         """Evaluate reliability, surplus, adoption, and demand for a policy."""

@@ -155,7 +155,7 @@ def solve_gallery(points=81):
     policy_cache = {}
     for industry in work_paradigms():
         model = IndustryModel(industry)
-        technical = replace(industry, name="", adoption_midpoint=0, adoption_scale=1)
+        technical = replace(industry, name="", adoption_location=0, adoption_scale=1)
         for axis, (field, values) in grids.items():
             outcomes = []
             for value in values:

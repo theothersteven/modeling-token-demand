@@ -64,12 +64,12 @@ def main():
                 hits = boundary_hits(outcomes, settings)
                 # Adoption does not change the optimal work policy. Reuse that
                 # policy to scan its independent threshold distribution exactly.
-                midpoints = tuple(REFERENCE_INDUSTRY.adoption_midpoint + offset
+                midpoints = tuple(REFERENCE_INDUSTRY.adoption_location + offset
                                   for offset in (-9, -1, 3, 7, 11))
                 adoption_grid = product(midpoints, (1, 4, 16)) if regime == "work" \
-                    else [(REFERENCE_INDUSTRY.adoption_midpoint, REFERENCE_INDUSTRY.adoption_scale)]
+                    else [(REFERENCE_INDUSTRY.adoption_location, REFERENCE_INDUSTRY.adoption_scale)]
                 for midpoint, spread in adoption_grid:
-                    variant = replace(industry, adoption_midpoint=midpoint,
+                    variant = replace(industry, adoption_location=midpoint,
                                       adoption_scale=spread)
                     variant_model = IndustryModel(variant)
                     selected = [variant_model.evaluate(o.policy, scenario)

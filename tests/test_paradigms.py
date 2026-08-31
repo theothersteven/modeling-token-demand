@@ -41,7 +41,7 @@ def test_focus_views_are_subsets_of_the_main_configuration_table():
     assert CONCENTRATED_ADOPTION not in singleton_industries()
     assert set(work_paradigms() + attention_paradigms()) <= set(illustrative_industries())
     assert len(work_paradigms()) == len(attention_paradigms()) == 3
-    assert EARLY_SATURATION.adoption_midpoint == CONCENTRATED_ADOPTION.adoption_midpoint
+    assert EARLY_SATURATION.adoption_location == CONCENTRATED_ADOPTION.adoption_location
     assert EARLY_SATURATION.adoption_scale == CONCENTRATED_ADOPTION.adoption_scale
 
 
@@ -54,10 +54,12 @@ def test_concentration_pair_changes_only_spread_and_has_crossing_cdfs():
         < LOW_ADOPTION_CONCENTRATION.adoption_scale
     models = [IndustryModel(industry) for industry in (
         HIGH_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY, LOW_ADOPTION_CONCENTRATION)]
-    midpoint = REFERENCE_INDUSTRY.adoption_midpoint
-    assert [model.adoption_share(midpoint) for model in models] == [.5, .5, .5]
-    below = [model.adoption_share(midpoint - 1) for model in models]
-    above = [model.adoption_share(midpoint + 1) for model in models]
+    location = REFERENCE_INDUSTRY.adoption_location
+    assert all(model.adoption_share(0) == 0 for model in models)
+    # Conditioning on positive hurdles slightly shifts the median; the spread
+    # comparison still reverses around the adoption transition.
+    below = [model.adoption_share(location - 1) for model in models]
+    above = [model.adoption_share(location + 1) for model in models]
     assert below[0] < below[1] < below[2]
     assert above[0] > above[1] > above[2]
 
@@ -67,7 +69,7 @@ def test_value_and_concentration_use_the_requested_geometric_steps():
         LOW_ECONOMIC_VALUE, REFERENCE_INDUSTRY, HIGH_ECONOMIC_VALUE)] == [50, 100, 200]
     assert [industry.adoption_scale for industry in (
         HIGH_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY, LOW_ADOPTION_CONCENTRATION)] == [1, 4, 16]
-    assert all(industry.adoption_midpoint == 76 for industry in illustrative_industries())
+    assert all(industry.adoption_location == 76 for industry in illustrative_industries())
 
 
 def test_parameter_row_tables_match_the_calibrations_and_manuscript():

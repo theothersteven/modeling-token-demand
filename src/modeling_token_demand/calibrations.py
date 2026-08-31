@@ -23,8 +23,8 @@ REFERENCE_INDUSTRY = Industry(
     value_per_work_hour=100.0,
     human_cost_per_hour=100.0,
     # Single-attempt baseline surplus is about 75.3. Place the common adoption
-    # midpoint nearby to illustrate takeoff and saturation, not to fit data.
-    adoption_midpoint=76.0,
+    # location nearby to illustrate takeoff and saturation, not to fit data.
+    adoption_location=76.0,
     adoption_scale=4.0,
 )
 
@@ -94,19 +94,19 @@ LOW_ECONOMIC_VALUE = replace(
 HIGH_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
     name="Adoption hurdle: high",
-    adoption_midpoint=115.0,
+    adoption_location=115.0,
     adoption_scale=10.0,
 )
 LOW_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
     name="Adoption hurdle: low",
-    adoption_midpoint=99.0,
+    adoption_location=99.0,
     adoption_scale=6.0,
 )
 
 # The main adoption comparison varies dispersion alone. A high concentration
-# means a SMALL sigma, not higher hurdles. All three CDFs cross at the common
-# midpoint; their ordering reverses on either side of that point.
+# means a SMALL sigma, not higher hurdles. The untruncated CDFs cross at mu;
+# after truncation at zero, crossings remain nearby, not exactly at mu.
 HIGH_ADOPTION_CONCENTRATION = replace(
     REFERENCE_INDUSTRY, name="Adoption concentration: high", adoption_scale=1.0,
 )
@@ -119,7 +119,7 @@ LOW_ADOPTION_CONCENTRATION = replace(
 SHARP_ADOPTION_THRESHOLD = replace(
     REFERENCE_INDUSTRY,
     name="Adoption threshold: sharp",
-    adoption_midpoint=107.0,
+    adoption_location=107.0,
     adoption_scale=0.4,
 )
 
@@ -215,7 +215,7 @@ def calibration_tables_markdown() -> str:
         "verification_scale": r"Review scale $h_1$",
         "verification_elasticity": r"Review growth $\beta$",
         "value_per_work_hour": r"Work value $b$ (dollars)",
-        "adoption_midpoint": r"Hurdle midpoint $\mu$ (dollars)",
+        "adoption_location": r"Hurdle location $\mu$ (dollars)",
         "adoption_scale": r"Hurdle spread $\sigma$ (dollars)",
     }
     groups = (
@@ -232,7 +232,7 @@ def calibration_tables_markdown() -> str:
             ("Value high", HIGH_ECONOMIC_VALUE),
             ("Concentration low", LOW_ADOPTION_CONCENTRATION),
             ("Concentration high", HIGH_ADOPTION_CONCENTRATION),
-        ), ("value_per_work_hour", "adoption_scale", "adoption_midpoint")),
+        ), ("value_per_work_hour", "adoption_scale", "adoption_location")),
         ("Singleton conditions", tuple((i.name, i) for i in singleton_industries()), (
             "capability_horizon_hours", "execution_scale", "inference_returns",
             "verification_fixed_hours", "verification_elasticity", "adoption_scale",
@@ -267,7 +267,7 @@ SUBLINEAR_VERIFICATION = replace(
     verification_fixed_hours=0.035,
     verification_scale=0.025,
     verification_elasticity=0.35,
-    adoption_midpoint=112.0,
+    adoption_location=112.0,
     adoption_scale=6.0,
 )
 NEAR_LINEAR_VERIFICATION = replace(
@@ -277,7 +277,7 @@ NEAR_LINEAR_VERIFICATION = replace(
     verification_fixed_hours=0.025,
     verification_scale=0.13,
     verification_elasticity=0.95,
-    adoption_midpoint=100.0,
+    adoption_location=100.0,
     adoption_scale=7.0,
 )
 LOW_COST_VERIFICATION = replace(
@@ -292,7 +292,7 @@ LOW_COST_VERIFICATION = replace(
     verification_elasticity=0.25,
     value_per_work_hour=100.0,
     human_cost_per_hour=75.0,
-    adoption_midpoint=30.0,
+    adoption_location=30.0,
 )
 TIGHT_CAPABILITY_FRONTIER = replace(
     REFERENCE_INDUSTRY,
@@ -305,13 +305,13 @@ TIGHT_CAPABILITY_FRONTIER = replace(
     verification_scale=0.08,
     value_per_work_hour=220.0,
     human_cost_per_hour=150.0,
-    adoption_midpoint=152.0,
+    adoption_location=152.0,
     adoption_scale=10.0,
 )
 ADOPTION_THRESHOLD = replace(
     SUBLINEAR_VERIFICATION,
     name="Sharp adoption threshold",
-    adoption_midpoint=111.6,
+    adoption_location=111.6,
     adoption_scale=0.4,
 )
 SOFTWARE = SUBLINEAR_VERIFICATION
