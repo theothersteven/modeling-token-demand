@@ -127,7 +127,7 @@ SHARP_ADOPTION_THRESHOLD = replace(
 def illustrative_industries(
     include_threshold: bool = False, *, include_singletons: bool = True,
 ) -> tuple[Industry, ...]:
-    """Return the Section 3 cases, optionally restricted to paired comparisons."""
+    """Return the complete set of cases, optionally excluding singletons."""
 
     industries = (
         REFERENCE_INDUSTRY,
@@ -149,7 +149,7 @@ def illustrative_industries(
     return industries
 
 
-# Singleton rows in the Section 3 table. These are explicitly not high/low
+# Singleton rows in the parameter table. These are explicitly not high/low
 # comparisons: concentration is not an ordering of hurdle difficulty, and
 # the other shapes require combinations of parameter groups.
 # Compatibility name for the previously separate focused example.
@@ -212,7 +212,7 @@ def calibration_tables_markdown() -> str:
         "execution_scale": r"Execution ease $a$",
         "inference_returns": r"Inference returns $\alpha$",
         "verification_fixed_hours": r"Fixed review $h_0$ (hours)",
-        "verification_scale": r"Review scale $h_1$",
+        "verification_scale": r"Variable review $h_1$ (hours)",
         "verification_elasticity": r"Review growth $\beta$",
         "value_per_work_hour": r"Work value $b$ (dollars)",
         "adoption_location": r"Hurdle location $\mu$ (dollars)",
@@ -220,12 +220,12 @@ def calibration_tables_markdown() -> str:
     }
     groups = (
         ("Technical conditions", (
-            ("Capability low", LOW_CAPABILITY_CONSTRAINT),
-            ("Capability high", HIGH_CAPABILITY_CONSTRAINT),
-            ("Execution low", LOW_EXECUTION_DIFFICULTY),
-            ("Execution high", HIGH_EXECUTION_DIFFICULTY),
-            ("Review low", LOW_VERIFICATION_BURDEN),
-            ("Review high", HIGH_VERIFICATION_BURDEN),
+            ("Frontier constraint low", LOW_CAPABILITY_CONSTRAINT),
+            ("Frontier constraint high", HIGH_CAPABILITY_CONSTRAINT),
+            ("Execution difficulty low", LOW_EXECUTION_DIFFICULTY),
+            ("Execution difficulty high", HIGH_EXECUTION_DIFFICULTY),
+            ("Review burden low", LOW_VERIFICATION_BURDEN),
+            ("Review burden high", HIGH_VERIFICATION_BURDEN),
         ), tuple(parameters)[:7]),
         ("Economic and adoption conditions", (
             ("Value low", LOW_ECONOMIC_VALUE),

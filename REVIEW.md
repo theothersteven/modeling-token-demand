@@ -46,4 +46,38 @@ Completed: 64 Python tests and 11 JavaScript control tests pass. The Python chec
 
 ## Round 2 — presentation, figures, and conclusions
 
-The economic revisions and their numerical validation are complete. The initial presentation failures are clear: the main result arrives after large calibration tables, fourteen-line comparisons obscure mechanisms, some captions label shapes without explaining them, and the conclusion does not turn conditional results into measurement priorities. The second round will rewrite and inspect the paper against these specific deficiencies.
+### Revisions after the second review
+
+1. **Put the question and answers before the machinery.** The opening contrasts a finite reporting workload with a backlog of candidate designs. It states the three conclusions before introducing notation. The result sequence is price, efficiency, capability, then verification: a monotone price benchmark makes the later ambiguous quantity responses easier to understand.
+
+2. **Separate the economic core from the numerical specification.** The main argument uses one success function, a review function, and an adoption distribution. Exponential hazards, the truncated logistic, shape parameters, first-order conditions, and allocation details move to Appendix A. The two policy choices remain unchanged.
+
+3. **Show the mechanism behind a curve.** Four new main figures reuse the already audited outcomes. The price view separates adoption, purchases, and spending. The two capability views separate activity from tokens per work unit and show their product. The verification view separates token use from completed work. Each plot has at most three case curves, an explicit baseline, and a stated resource constraint. The full parameter comparisons remain in Appendix B.
+
+4. **Reduce the emphasis on selected shapes.** The valley moves to the supplement with a statement of its extra assumptions and nearby-parameter checks. There is no claim that the examples establish industry frequencies. Exact numerical readouts support reproducibility in the appendix; rounded magnitudes suffice for the main prose.
+
+5. **Make conclusions operational.** The paper identifies three measurements: the spending response to price, review growth with delegated scope, and the response to additional review capacity. These connect each conclusion to an observation or experiment. A declining token bill is separated from declining economic usefulness, and token purchases are separated from supplier revenue.
+
+6. **Read the rewritten argument for remaining ambiguity.** Clarify that failed work produces no completion during the modeled period; future repair is excluded. Distinguish pure price changes from efficiency changes. State that the attention-value elasticity requires the horizon-scaling capability path. Rename the parameter-table columns so “high” unambiguously means a high constraint or difficulty, rather than high capability. Clarify that beta describes the variable review component, while theta is total review elasticity.
+
+7. **Inspect the reading edition, not just the source.** Use complete numeric labels on logarithmic axes so 0.2 cannot appear as an ambiguous “2.” Preserve independent axes for outcomes with different denominators. Fix the linked notebook and review record so a packaged reading edition contains its advertised reproducibility files without exposing arbitrary checkout files.
+
+### Claims and evidence check
+
+| Claim | What supports it | What would invalidate the stated application? |
+|---|---|---|
+| Cheaper tokens weakly raise purchases | Revealed preference under the appropriate objective; monotonicity audits | Prices also change quality, feasible choices, fees, or other inputs |
+| Efficiency response equals the equivalent spending response | Change of variables in either objective; independent numerical equivalence tests | Efficiency affects feasibility or review separately, or relevant action bounds bind |
+| Uniformly faster review scales attention-limited use | Multiplicative capacity change leaves the conditional policy unchanged; throughput checks | Work runs out, the attention constraint no longer binds, or operation is uneconomic |
+| Capability can raise or lower demand | Audited examples expose both activity and intensity; their product is verified | Not a universal sign prediction; a different capability path can give different responses |
+| Scope and inference are both useful choices | Removing either eliminates one of the competing margins | A narrower application may legitimately hold one of them fixed |
+
+### Validation and final disposition
+
+The rewritten main argument is approximately 3,350 words with four figures. The paper retains eight supplementary figures and the notebook regenerates 22 figures in total. The new figures add no solver, calibrated cases, or economic parameters. Tests verify that their coordinates and denominators reproduce the audited economic outcomes.
+
+The final economic read also makes the existence condition for optimized policies explicit and distinguishes the variable token charge from total invoices with fixed fees.
+
+Validation: 69 Python tests and 11 JavaScript tests pass. The notebook regenerates all 22 figures and passes its independent optimizer audits. All 12 manuscript figures mount in the browser, with 44 interactive panels, no console warnings or errors, and no unrendered or overflowing equations. All seven tables fit the reading width. The 20 local reading resources and internal section links resolve, and the exported chart fingerprint matches the current numerical sources.
+
+The reference-paper comparison is recorded above so the editorial standard is inspectable rather than an unsupported ranking. The manuscript now leads with its strongest result, makes its counterexamples intelligible, and ties its conclusions to measurements. It remains a qualitative model without empirical calibration, a joint-regime numerical solution, or a general-equilibrium forecast.

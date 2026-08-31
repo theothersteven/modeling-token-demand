@@ -75,6 +75,7 @@
       if (!series.has(line.name)) series.set(line.name, line);
     }));
     const visible = new Set(series.keys());
+    const referenceName = series.has(reference) ? reference : series.has('Reference') ? 'Reference' : null;
     let shared = spec.shared_y;
     let scaleSelect = null;
     let ranges = spec.panels.map(panel => originalRange(panel.ylim, panel.yscale));
@@ -126,9 +127,9 @@
     }
     controls.append(
       button('Show all', () => { series.forEach((_, name) => visible.add(name)); updateVisibility(); }),
-      button(series.has(reference) ? 'Reference only' : 'First series only', () => {
+      button(referenceName ? 'Reference only' : 'First series only', () => {
         visible.clear();
-        if (series.has(reference)) visible.add(reference);
+        if (referenceName) visible.add(referenceName);
         else visible.add(series.keys().next().value);
         updateVisibility();
       }),
@@ -246,7 +247,7 @@
           range:originalRange(panel.xlim, panel.xscale), autorange:false,
           tickmode:'array', tickvals:panel.xticks, ticktext:panel.xticks.map(String),
           gridcolor:'#e9ede6', zeroline:false, automargin:true},
-        yaxis:{type:panel.yscale, title:{
+        yaxis:{type:panel.yscale, nticks:6, minorloglabels:'complete', title:{
           text:plainLabel(panel.ylabel).replace(/^(Attention|Work)-limited token demand/, 'Token demand'),
           font:{size:10}, standoff:5},
           range:ranges[index], autorange:false, gridcolor:'#e9ede6', zeroline:false, automargin:true}

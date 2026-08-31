@@ -20,7 +20,7 @@ def source_fingerprint(root: Path) -> str:
     notebook = json.loads((root / "notebooks/comparative_statics.ipynb").read_text())
     sources = ["".join(cell["source"]) for cell in notebook["cells"]
                if cell["cell_type"] == "code"]
-    for name in ("model.py", "optimizer.py", "calibrations.py", "paradigms.py", "interventions.py", "__init__.py", "paper_data.py"):
+    for name in ("model.py", "optimizer.py", "calibrations.py", "paradigms.py", "interventions.py", "paper_figures.py", "__init__.py", "paper_data.py"):
         sources.append((root / "src/modeling_token_demand" / name).read_text())
     return hashlib.sha256("\n".join(sources).encode()).hexdigest()
 

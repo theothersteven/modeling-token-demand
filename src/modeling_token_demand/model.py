@@ -21,21 +21,22 @@ class Industry:
 
     name: str
 
-    # lambda: task horizon at which the capability frontier begins to bind.
+    # lambda: scope scale of capability loss at m=1.
     capability_horizon_hours: float
     # nu: how sharply the solvable share falls as delegation horizon grows.
     capability_shape: float
 
     # a: industry-specific ease of executing a task that is technically solvable.
     execution_scale: float
-    # alpha: diminishing returns to inference intensity; normally between 0 and 1.
+    # alpha: diminishing growth of the execution horizon in effective inference.
     inference_returns: float
 
     # h_0: fixed human time required at every checkpoint.
     verification_fixed_hours: float
     # h_1: scale of the human review time that grows with delegated scope.
     verification_scale: float
-    # beta: elasticity of verification time with respect to delegated scope.
+    # beta: elasticity of the variable review component with respect to scope.
+    # With fixed overhead, the elasticity of total review time is smaller.
     verification_elasticity: float
 
     # b: value of successfully completing one human-hour-equivalent of work.

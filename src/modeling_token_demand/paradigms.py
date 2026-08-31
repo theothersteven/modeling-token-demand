@@ -222,7 +222,7 @@ def _index(record, key="demand"):
 
 
 def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
-    """Check the main Section 3 samples, with independent extrema re-solves."""
+    """Check the complete sweeps, independently resolving their sampled extrema."""
     strict = replace(
         settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,

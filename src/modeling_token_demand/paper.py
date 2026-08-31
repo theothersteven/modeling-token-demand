@@ -140,13 +140,19 @@ def build(root: Path, output: Path, refresh=False) -> Path:
         plotly_path.write_text(get_plotlyjs())
         version_file.write_text(plotly.__version__)
     copy_local_images(root, output, html)
-    # The gallery links its generated, non-executable numerical diagnostics.
-    # Copy this specific artifact, not arbitrary workspace links.
-    for name in ("paradigms.json", "interventions.json"):
-        diagnostics = Path("figures") / name
-        if str(diagnostics) in html and (root / diagnostics).is_file():
-            (output / diagnostics).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(root / diagnostics, output / diagnostics)
+    # Package only explicitly linked, allowlisted reading/reproduction files.
+    # Never serve the checkout or copy arbitrary links from the manuscript.
+    for artifact in (Path("figures/paradigms.json"), Path("figures/interventions.json"),
+                     Path("notebooks/comparative_statics.ipynb"), Path("REVIEW.md")):
+        if f'href="{artifact}"' not in html:
+            continue
+        source = (root / artifact).resolve()
+        if root not in source.parents:
+            raise ValueError(f"Linked artifact must stay inside the project: {artifact}")
+        if not source.is_file():
+            raise FileNotFoundError(f"Missing linked artifact: {source}")
+        (output / artifact).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, output / artifact)
     (output / "README.md").write_text(manuscript)
     # Manual builds and a watch rebuild can overlap. Each stages its own file.
     with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=output,
@@ -166,7 +172,7 @@ def watch_signature(root: Path) -> str:
     from .paper_data import source_fingerprint
 
     digest = hashlib.sha256(source_fingerprint(root).encode())
-    paths = [root / "README.md", Path(__file__), *sorted(ASSETS.glob("*")),
+    paths = [root / "README.md", root / "REVIEW.md", Path(__file__), *sorted(ASSETS.glob("*")),
              *sorted((root / "figures").glob("*.png"))]
     for path in paths:
         if path.is_file():

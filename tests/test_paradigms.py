@@ -206,5 +206,5 @@ def test_manuscript_adoption_numbers_track_the_regenerated_curves():
     baseline, cheaper = price["values"].index(10), price["values"].index(5)
     adoption = [100 * price["adoption"][i] for i in (baseline, cheaper)]
     ratio = price["demand"][cheaper] / price["demand"][baseline]
-    assert f"**{adoption[0]:.1f}% to {adoption[1]:.1f}%**" in source
-    assert f"demand **{ratio:.2f} times**, and revenue **{ratio / 2:.2f} times**" in source
+    assert (f"| 10 to 5 dollars per million | {adoption[0]:.1f}% to {adoption[1]:.1f}% "
+            f"| {ratio:.2f} | {ratio / 2:.2f} |") in source

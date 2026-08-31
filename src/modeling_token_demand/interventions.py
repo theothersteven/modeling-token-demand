@@ -1,4 +1,4 @@
-"""Question-led Section 5 experiments using the paper's existing model.
+"""Question-led Intervention experiments using the paper's existing model.
 
 Each curve changes one parameter, reoptimizes the interaction policy, and
 records demand separately from delegated and successfully completed work.
@@ -153,7 +153,7 @@ def solve_interventions(points=81):
                     assert not boundary_hits([checked], strict_settings)
                     errors.append(error)
                 records.append(record)
-        print(f"Section 5: {experiment['key']} solved and audited.", flush=True)
+        print(f"Intervention: {experiment['key']} solved and audited.", flush=True)
 
     return dict(model="single_attempt", settings=asdict(settings), curves=records, audit=dict(
         boundary_hits=[], independent_checks=len(errors),
@@ -216,5 +216,5 @@ def build_intervention_figures(directory: Path, points=81):
     (directory / "interventions.json").write_text(
         json.dumps(report, separators=(",", ":"), allow_nan=False)
     )
-    print(f"Section 5 audit: {report['audit']}", flush=True)
+    print(f"Intervention audit: {report['audit']}", flush=True)
     return report

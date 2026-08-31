@@ -29,17 +29,18 @@ def plot_data():
 def test_entire_manuscript_renders_with_all_figures(plot_data):
     source = (ROOT / "README.md").read_text()
     html, figures = paper.render_paper(source, plot_data)
-    assert len(figures) == 11
-    assert html.count('class="interactive-figure"') == 11
+    image_names = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', source)
+    assert set(figures) == {Path(name).stem for name in image_names}
+    assert html.count('class="interactive-figure"') == len(image_names)
     assert '<p><figure' not in html
-    assert 'id="32-limited-attention-abundant-work"' in html
-    assert 'href="#32-limited-attention-abundant-work"' in html
-    assert 'id="appendix-b-numerical-implementation"' in html
+    assert 'id="22-what-is-scarce"' in html
+    assert 'href="#22-what-is-scarce"' in html
+    assert 'id="appendix-c-numerical-checks-and-reproduction"' in html
     assert 'language-math' not in html
     assert '<div class="math display-math">\\[' in html
     assert '<span class="math">\\(' in html
     assert '<table>' in html
-    assert 'language-python' in html
+    assert 'language-bash' in html
     assert '{{BODY}}' not in html
     equations = re.findall(r'```math\n(.*?)\n```', source, re.DOTALL)
     assert len(equations) == html.count('class="math display-math"')
@@ -56,20 +57,20 @@ def test_manual_text_and_equation_edits_are_rendered():
     assert r'\eta' in revised
 
 
-def test_all_demand_paradigms_are_in_section_three(plot_data):
-    from modeling_token_demand.calibrations import illustrative_industries
+def test_focused_argument_precedes_the_full_parameter_comparisons(plot_data):
+    from modeling_token_demand.calibrations import calibration_tables_markdown, illustrative_industries
     source = (ROOT / 'README.md').read_text()
-    section_three = source.split('## 3. User behavior')[1].split('## 4. How technology')[0]
-    assert '| Parameter | Reference | Value low | Value high | Concentration low | Concentration high |' in section_three
-    assert '| Adoption hurdle |' not in section_three
-    assert '| Concentrated adoption |' not in section_three
-    assert '### 5.1 A gallery' not in source
-    for filename in ('paradigm-work-demand.png', 'paradigm-adoption-and-revenue.png',
-                     'paradigm-attention-capability.png'):
-        assert filename in section_three
+    main, appendix = source.split('## Appendix A.', 1)
+    figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', main)
+    assert figures == ['price-adoption-and-spending.png', 'capability-work-decomposition.png',
+                       'capability-attention-decomposition.png', 'verification-expansion.png']
+    assert calibration_tables_markdown() in appendix
+    assert calibration_tables_markdown() not in main
     names = {industry.name for industry in illustrative_industries()}
     for regime in ('work', 'attention'):
         for suffix in ('levels', 'indexed'):
+            filename = f'{regime}-limited-token-demand-{suffix}.png'
+            assert filename in appendix and filename not in main
             for panel in plot_data[f'{regime}-limited-token-demand-{suffix}.png']['panels']:
                 plotted = {line['name'] for line in panel['lines']
                            if not line['name'].startswith('Constant revenue')}
@@ -136,7 +137,7 @@ def test_export_retains_unlabeled_second_panel_and_guides():
 def test_fingerprint_ignores_manuscript_and_notebook_outputs(tmp_path):
     source_dir = tmp_path / 'src/modeling_token_demand'
     source_dir.mkdir(parents=True)
-    for name in ('model.py', 'optimizer.py', 'calibrations.py', 'paradigms.py', 'interventions.py', '__init__.py', 'paper_data.py'):
+    for name in ('model.py', 'optimizer.py', 'calibrations.py', 'paradigms.py', 'interventions.py', 'paper_figures.py', '__init__.py', 'paper_data.py'):
         (source_dir / name).write_text('# source')
     notebook_path = tmp_path / 'notebooks/comparative_statics.ipynb'
     notebook_path.parent.mkdir()
@@ -195,6 +196,23 @@ def test_build_copies_linked_gallery_diagnostics(tmp_path, monkeypatch, filename
     output = tmp_path / 'build/paper'
     paper.build(tmp_path, output)
     assert (output / 'figures' / filename).read_text() == payload
+
+
+def test_build_packages_linked_reading_files_without_exposing_other_files(tmp_path, monkeypatch):
+    notebook = tmp_path / 'notebooks/comparative_statics.ipynb'
+    notebook.parent.mkdir()
+    notebook.write_text('{"cells":[]}')
+    (tmp_path / 'REVIEW.md').write_text('# Review')
+    (tmp_path / 'private.txt').write_text('not a paper artifact')
+    (tmp_path / 'README.md').write_text(
+        '# Paper\n\n[Notebook](notebooks/comparative_statics.ipynb)\n\n'
+        '[Review](REVIEW.md)\n\n[Other](private.txt)')
+    monkeypatch.setattr(paper, 'load_plot_data', lambda root, refresh=False: {})
+    output = tmp_path / 'build/paper'
+    paper.build(tmp_path, output)
+    assert (output / 'notebooks/comparative_statics.ipynb').read_text() == notebook.read_text()
+    assert (output / 'REVIEW.md').read_text() == '# Review'
+    assert not (output / 'private.txt').exists()
 
 
 def test_local_images_cannot_escape_output(tmp_path):
