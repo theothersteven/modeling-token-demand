@@ -103,3 +103,7 @@ The user approved two changes after discussing the final draft: sharpen what the
 ### Claim-evidence disposition
 
 The independent review found the analytical claims internally consistent and identified no reason to restore retry choice or add numerical cases. It rejected any statement that a regime alone determines the sign of demand: the regime identifies the offsetting margin, whose magnitude must still be compared with inference savings. Capability humps and valleys remain illustrative; the price-efficiency identity, adoption-saturation bound, and uniform-review scaling retain their explicit conditions.
+
+### Validation
+
+The revised source builds as a 12-figure reading edition. The Python suite passes 68 tests with one environment-dependent live-server test skipped because the sandbox disallows binding a local socket; the JavaScript interaction suite passes all 11 tests. Browser checks confirm the intended section and figure order, 12 mounted figure hosts, valid images and internal links, rendered mathematics, and no horizontal overflow. The 27-page PDF identifies the exact manuscript commit in its metadata and footer; all pages were rendered and inspected for clipping, legibility, and layout integrity.
