@@ -18,6 +18,18 @@ notebook = [
   "matplotlib>=3.7",
 ]
 dev = ["pytest>=7"]
+paper = [
+  "matplotlib>=3.7",
+  "ipython>=8",
+  "mistune>=3.3.4,<4",
+  "plotly>=6,<7",
+]
+
+[project.scripts]
+token-demand-paper = "modeling_token_demand.paper:main"
+
+[tool.setuptools.package-data]
+modeling_token_demand = ["paper_assets/*"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

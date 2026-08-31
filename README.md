@@ -28,7 +28,7 @@ We study an industry-level user who chooses an interaction policy with three com
 
 In practical systems, inference intensity corresponds to the amount of computation allocated to an attempt. In ChatGPT, it is similar to choosing a reasoning-effort setting such as low, medium, high, or xhigh; a higher-compute mode such as Pro is another example of moving along this margin. Choosing among smaller and larger models in the same family can also be represented through $x$ after converting raw tokens to a common compute-equivalent unit, so that one token from a larger model counts as multiple smaller-model-token equivalents. Any remaining difference in the set of tasks the models can solve belongs in capability $m$, while differences in effective inference per compute-equivalent token belong in efficiency $\eta$.
 
-The analysis proceeds in the order needed to determine demand. Section 2 defines the policy, the capability and execution model, retry behavior, verification, and surplus. Section 3 derives optimal policies and token demand under a work constraint, an attention constraint, and both constraints together, taking technology and prices as given. Section 4 examines how those choices and demand respond to changes in capability, efficiency, token prices, and verification. Section 5 illustrates these responses numerically. The numerical exercise is designed to expose model mechanisms; it is not an empirical forecast.
+The analysis proceeds in the order needed to determine demand. Section 2 defines the policy, the capability and execution model, retry behavior, verification, and surplus. Section 3 derives optimal policies and token demand under a work constraint, an attention constraint, and both constraints together, taking technology and prices as given. Section 4 examines how those choices and demand respond to changes in capability, efficiency, token prices, and verification. Section 5 asks how faster verification, slower review growth, expanded task feasibility, and large token-efficiency gains change demand and automation. The numerical exercise is designed to expose model mechanisms; it is not an empirical forecast.
 
 The main results are as follows. First, separating capability from execution prevents pass rates from converging mechanically to one and makes the value of retries depend on the unsolvable share of work. Second, the resource constraint changes the policy objective. Applying an attention cap after optimizing surplus per unit of work generally does not recover the attention-constrained solution. Third, when useful tasks are abundant and interchangeable, retrying a failed task cannot improve expected value per scarce verification hour. Fourth, model capability can raise the value of an additional attention hour even when optimized token demand falls. These results identify the objects that must be estimated before aggregate token demand can be forecast.
 
@@ -167,21 +167,52 @@ The attention cost $w_i$ can represent a wage or the opportunity cost of the rev
 
 ## 3. User behavior under alternative constraints
 
-This section holds technology and prices fixed and derives the policy and token demand implied by each resource constraint. Section 4 then changes technology or prices and compares the resulting optimal choices.
+This section derives the policy and token demand implied by each resource constraint at given technology and prices. Its accompanying figures reoptimize as those inputs vary, illustrating the demand paradigms explained analytically in Section 4.
 
-The figures illustrate both regimes using one reference industry and five high/low pairs. Each pair changes the related parameters in one group together; all other industry parameters stay at the reference. The industry comparisons in Sections 3 and 5 use the same eleven cases. Gray denotes the reference, each group has one color, and solid/dashed lines denote its high/low setting.
+The figures illustrate both regimes using **one shared set of fourteen cases**: the reference, five high/low pairs, and three singleton configurations. Each pair changes one related parameter group; the singletons expose additional shapes without implying a high/low ordering. Every unlisted parameter stays at its reference value. Gray denotes the reference; solid/dashed lines denote high/low settings within each color group, and dash-dot lines denote singletons. The industry comparisons in Sections 3 and 5 use this same set.
 
-| Parameter group | Parameters varied together | Low setting | Reference | High setting | Meaning of the high setting |
-|---|---|---|---|---|---|
-| Capability constraint | $(\lambda,\nu)$ | $(24,1.50)$ | $(12,1.25)$ | $(6,1.00)$ | Shorter capability horizon and more failures at modest task sizes |
-| Execution difficulty | $(a,\alpha)$ | $(8,0.65)$ | $(4,0.50)$ | $(2,0.35)$ | Lower execution ease and weaker returns to extra inference |
-| Verification burden | $(h_0,h_1,\beta)$ | $(0.015,0.025,0.25)$ | $(0.03,0.05,0.50)$ | $(0.06,0.10,0.95)$ | More review time, growing faster with delegated scope |
-| Economic value | $b$ | 100 | 125 | 150 | Greater value from successfully completed work |
-| Adoption hurdle | $(\mu,\sigma)$ | $(99,6)$ | $(107,8)$ | $(115,10)$ | Higher typical adoption hurdle and more dispersed hurdles |
+Parameters run down the rows; each condition has its own column. **Bold values differ from the reference.** The blocks share the same reference and are split only for readability. “Capability” means capability constraint, “execution” means execution difficulty, and “review” means verification burden.
 
-All cases hold $w_i=100$ dollars per verification hour, $W_i=1{,}000{,}000$ potential work hours in the work-limited regime, and $H_i=100{,}000$ verification hours in the attention-limited regime. The values $b_i$, $\mu_i$, and $\sigma_i$ are dollars per unit of underlying work. The common scenario baseline is $m=\eta=v=1$ and a token price of 10 dollars per million, with $x_{\mathrm{ref}}=100{,}000$ tokens per work hour. This is an illustrative central calibration, not an estimated median industry.
+**Technical conditions**
 
-"High" refers to the named feature, not to every parameter being numerically larger or to token demand necessarily being higher. Shape parameters are not globally ordered: changing $\nu$ or $\alpha$ can make reliability curves cross, and increasing $\sigma$ adds both low- and high-hurdle work. The joint settings have the stated difficulty ordering over the policies and adoption surpluses in each comparison, which the notebook checks. For example, the adoption curves cross at surplus 75; above that level, the high-hurdle case has lower adoption than the reference. Each comparison captures a combined change in its group, rather than identifying the effect of one constituent parameter.
+| Parameter | Reference | Capability low | Capability high | Execution low | Execution high | Review low | Review high |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Capability horizon $\lambda$ | 12 | **24** | **6** | 12 | 12 | 12 | 12 |
+| Frontier shape $\nu$ | 1.25 | **1.5** | **1** | 1.25 | 1.25 | 1.25 | 1.25 |
+| Execution ease $a$ | 4 | 4 | 4 | **8** | **2** | 4 | 4 |
+| Inference returns $\alpha$ | 0.5 | 0.5 | 0.5 | **0.65** | **0.35** | 0.5 | 0.5 |
+| Fixed review $h_0$ (hours) | 0.03 | 0.03 | 0.03 | 0.03 | 0.03 | **0.015** | **0.06** |
+| Review scale $h_1$ | 0.05 | 0.05 | 0.05 | 0.05 | 0.05 | **0.025** | **0.1** |
+| Review growth $\beta$ | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | **0.25** | **0.95** |
+
+**Economic and adoption conditions**
+
+| Parameter | Reference | Value low | Value high | Concentration low | Concentration high |
+|---|---:|---:|---:|---:|---:|
+| Work value $b$ (dollars) | 100 | **50** | **200** | 100 | 100 |
+| Hurdle spread $\sigma$ (dollars) | 4 | 4 | 4 | **16** | **1** |
+| Hurdle midpoint $\mu$ (dollars) | 84 | 84 | 84 | 84 | 84 |
+
+**Singleton conditions**
+
+| Parameter | Reference | Early saturation | Capability valley | Offsetting efficiency |
+|---|---:|---:|---:|---:|
+| Capability horizon $\lambda$ | 12 | **36** | **36** | **36** |
+| Execution ease $a$ | 4 | **8** | 4 | **2** |
+| Inference returns $\alpha$ | 0.5 | 0.5 | **0.25** | 0.5 |
+| Fixed review $h_0$ (hours) | 0.03 | 0.03 | **0.001** | 0.03 |
+| Review growth $\beta$ | 0.5 | 0.5 | **0.9** | **0.8** |
+| Hurdle spread $\sigma$ (dollars) | 4 | **1** | 4 | 4 |
+
+All cases hold $w_i=100$ dollars per verification hour, $W_i=1{,}000{,}000$ potential work hours in the work-limited regime, and $H_i=100{,}000$ verification hours in the attention-limited regime. The values $b_i$, $\mu_i$, and $\sigma_i$ are dollars per unit of underlying work. The common scenario baseline is $m=\eta=v=1$ and a token price of 10 dollars per million, with $x_{\mathrm{ref}}=100{,}000$ tokens per work hour. All cases use the common hurdle midpoint $\mu_i=84$; concentration changes only $\sigma_i$. The reference work value is now $b=100$, with low/high values 50 and 200. Lowering the reference value also lowers optimized baseline AI surplus to approximately 83, so the midpoint is recentered from 108 to 84. Keeping the old midpoint above $b$ would leave the concentrated market almost entirely unadopted even when tokens become cheap. This is an illustrative central calibration, not an estimated median industry.
+
+"High" refers to the named feature, not to every parameter being numerically larger or to token demand necessarily being higher. In particular, **high concentration means a small spread** $\sigma$: high, reference, and low concentration use $1$, $4$, and $16$, respectively, with the same midpoint $\mu=84$. Below that midpoint, high concentration gives lower adoption; above it, high concentration gives higher adoption. The CDFs cross at 50% adoption, so concentration is not an ordering of hurdle difficulty. The notebook checks this crossing rather than imposing the old hurdle ordering.
+
+Economic value uses equal multiplicative steps of $\times2$; adoption spread uses steps of $\times4$. The capability-horizon, execution-ease, and review-time scale settings already halve or double their reference values. Shape parameters such as inference returns and review growth are treated separately rather than mechanically doubled.
+
+The technical pairs retain their same-policy difficulty ordering over the policies in each comparison; shape parameters such as $\nu$ and $\alpha$ are not globally ordered. The concentration pair changes only dispersion; the other paired comparisons change the listed parameters together. Singleton settings are explicitly outside those high/low comparisons.
+
+The paired verification settings already span strong growth and a hump; simply making every high/low pair more extreme is not needed. The concentration pair supplies the adoption takeoff; the singletons supply early saturation, a smooth U-shape, and near-offsetting efficiency. Main plots cover $m=0.1$ to $30$, $\eta=0.25$ to $10$, and token prices from 1 to 80 dollars per million. The wider technology ranges expose both sides of turning points that the former 0.35–5 range could truncate. These are existence examples, not an exhaustive classification or empirical estimates of particular industries.
 
 ### 3.1 Limited work, nonbinding attention
 
@@ -220,9 +251,9 @@ W_iA_ix_i^WE_i^W.
 
 The delegation horizon cancels from this accounting identity. Grouping a fixed amount of work into larger chunks does not mechanically create more work. The horizon still matters because it changes capability, reliability, verification, retries, inference intensity, and adoption.
 
-The numerical illustration uses the joint parameter settings in the table above, holding potential work $W_i$ fixed. In particular, verification burden combines higher or lower checkpoint overhead, variable review time, and review growth in one group; it is not just a uniform rescaling of verification time.
+The numerical illustration uses all paired and singleton settings in the table above, holding potential work $W_i$ fixed. In particular, verification burden combines higher or lower checkpoint overhead, variable review time, and review growth in one group; it is not just a uniform rescaling of verification time.
 
-Each curve reoptimizes $(s,x,k)$ and allows adoption to respond. Gray denotes the reference case. Each parameter group has one color, with a solid line for its high setting and a dashed line for its low setting. The first figure reports absolute demand under a common $W_i$.
+Each curve reoptimizes $(s,x,k)$ and allows adoption to respond. Gray denotes the reference case. Each parameter group has one color, with a solid line for its high setting and a dashed line for its low setting; singletons have distinct colors and dash-dot lines. The first figure reports absolute demand under a common $W_i$. Both work-limited figures use independent y-axes: capability and efficiency are linear, while price is logarithmic. Otherwise, the concentrated market's near-zero adoption tail would compress the meaningful variation in every other curve.
 
 ![Work-limited token demand in levels](figures/work-limited-token-demand-levels.png)
 
@@ -237,6 +268,22 @@ The denominator is one constant for each curve, not the reference industry's dem
 ![Indexed work-limited token demand](figures/work-limited-token-demand-indexed.png)
 
 The indexed price panel includes a black dash-dot **constant-revenue benchmark**, $c_0/c$, where $c_0=10$ dollars per million tokens. Above that line, an industry's token revenue exceeds its revenue at the baseline price; below it, revenue is lower. For example, halving the token price requires twice the baseline demand to preserve revenue. Indexing lets the same benchmark apply to every industry despite their different demand levels. This compares revenue with the baseline, rather than predicting the effect of every further small price cut.
+
+#### Adoption takeoff, saturation, and efficiency-induced backfire
+
+All fourteen cases appear in the main figures above. The following focused view isolates the reference, high adoption concentration, and early saturation from the same table, making their shapes easier to read in print. Capability and efficiency range from $0.25$ to $10$; price ranges from 1 to 80 dollars per million tokens. Each curve is indexed to its own demand at the usual baseline. The capability and efficiency panels use linear y-axes to expose peaks without giving nearly unadopted market tails disproportionate visual weight; the price panel uses a logarithmic y-axis. Their y-axes are independent.
+
+![Work-limited demand paradigms across capability, efficiency, and price](figures/paradigm-work-demand.png)
+
+Halving price from 10 to 5 dollars per million in the high-concentration case raises adoption from **27.0% to 49.0%**, demand **3.10 times**, and revenue **1.55 times**. A price cut from 10 to 1 dollars per million raises adoption from approximately **27.0% to 79.4%**, token quantity by **12.7 times**, and token revenue by **1.27 times**. This is a genuine market-unlocking response under the existing model. The median hurdle sits just above baseline optimized surplus, and the narrow distribution places substantial work close to that threshold. The wider spread $\sigma=1$ makes this transition less abrupt than the previous $\sigma=0.4$ example, while preserving an economically meaningful rebound. The reference's broader adoption distribution spreads switching decisions over a much larger surplus range.
+
+The same case has a visible efficiency hump: token demand peaks at approximately $\eta=2.88$, at **1.60 times** baseline demand, before falling to **1.27 times** baseline at $\eta=10$. Initial efficiency improvements induce enough adoption to more than offset fewer tokens per adopted work unit; after most work adopts, further efficiency increasingly saves tokens. Capability produces a separate hump, peaking near $m=1.58$ at **2.64 times** baseline demand. These are sampled turning-point locations, not exact analytical thresholds.
+
+Increasing baseline task tractability does not necessarily strengthen this rebound. Early saturation has the same $(\mu,\sigma)$ but a broader capability frontier and easier execution. Its adoption is approximately **99.44%** at the scenario baseline: much of its market-unlocking response has already occurred. Capability therefore shifts its peak earlier, near $m=0.63$, and further capability growth reduces demand. Efficiency predominantly reduces token use, with discrete retry-policy jumps superimposed. High capability combined with narrow adoption spread can thus remove the remaining extensive margin rather than amplify it.
+
+![Adoption saturation and token revenue as tokens become cheaper](figures/paradigm-adoption-and-revenue.png)
+
+The adoption panel measures **work assigned to AI**, $WA$, as a percentage of potential work; successful AI output is $WAP$. Neither quantity is token demand. Adoption approaches a ceiling while tokens per adopted work unit can continue increasing as price falls. Revenue can first rise and then fall even while token quantity continues to rise. Thus an adoption plateau must not be read as a token-demand plateau, and a revenue hump is not a violation of downward-sloping token demand.
 
 #### Result 2: retries can be worthwhile, but the optimal cap is finite
 
@@ -405,19 +452,42 @@ Expected attempts cancel from demand because each additional attempt consumes bo
 
 This decomposition isolates the attention channel: a fixed human attention budget supports token use through both the work launched per attention hour and the inference devoted to each unit of work.
 
-The following figures mirror Section 3.1: three panels vary model capability, token efficiency, and token price, with all other scenario inputs fixed. Each point solves the attention-constrained problem directly, using the same $H_i=100{,}000$ verification hours for every case. Gray denotes the reference industry; each parameter group has one color, with solid and dashed lines for its high and low settings.
+The following figures mirror Section 3.1: three panels vary model capability, token efficiency, and token price, with all other scenario inputs fixed. Each point solves the attention-constrained problem directly, using the same $H_i=100{,}000$ verification hours for every case. Gray denotes the reference industry; each parameter group has one color, with solid and dashed lines for its high and low settings, while singletons use dash-dot lines.
 
 These figures use exactly the same five parameter-group pairs as Section 3.1, including the combined verification-burden settings. The first figure reports absolute token demand.
 
 ![Attention-limited token demand in levels](figures/attention-limited-token-demand-levels.png)
 
-The second divides each curve by its own demand at $m=1$, $\eta=1$, or a token price of 10 dollars per million. It compares proportional changes from that fixed scenario baseline; a line above gray need not have higher absolute demand. Verification-burden changes now affect both levels and response shapes because they also change $\beta_i$. Adoption-hurdle changes are inactive in this abundant-work regime, so those lines overlap the reference in both figures.
+The second divides each curve by its own demand at $m=1$, $\eta=1$, or a token price of 10 dollars per million. It compares proportional changes from that fixed scenario baseline; a line above gray need not have higher absolute demand. Verification-burden changes now affect both levels and response shapes because they also change $\beta_i$. Adoption-concentration changes are inactive in this abundant-work regime, so those lines overlap the reference in both figures.
 
 ![Indexed attention-limited token demand](figures/attention-limited-token-demand-indexed.png)
 
 As in Section 3.1, the black dash-dot line in the indexed price panel is $c_0/c$. A curve above it has more token revenue than at its own baseline price; a curve below it has less. To the right of the baseline, this shows whether demand growth offsets the price cut.
 
 The verification-burden pair changes the capability response itself. Raising capability from $m=1$ to $m=5$ multiplies demand by about $3.63$ in the low-burden case, $2.40$ in the reference, and $0.89$ in the high-burden case. When fixed verification overhead is negligible, the model approximately scales as $D_i^H(m)\propto m^{1-\beta_i}$: larger delegated tasks create more supervisory leverage when review grows slowly with scope. With positive fixed overhead, the optimal inference response can also matter enough to reverse demand growth when review is nearly proportional to scope. These comparisons change all three verification parameters together; the separate uniform-time experiment in Section 4.4 isolates the pure level effect.
+
+#### Attention-limited growth, a hump, and a smooth U-shape
+
+The next panels isolate the low and high verification-burden settings and the capability-valley singleton from the same table, using independent y-scales to show their shapes rather than compare magnitudes. The first two cover $m=0.25$ to $10$. The capability-valley panel uses the explicitly wider range $m=0.1$ to $30$ to show both sides of its trough. Other scenario variables remain at baseline in every panel.
+
+![Attention-limited capability paradigms: growth, a hump, and a valley](figures/paradigm-attention-capability.png)
+
+The low-burden pair member displays sustained growth, while the high-burden member has a hump and then declining demand. These are exactly the verification settings in the main plots, not separate leverage and bottleneck calibrations. The capability-valley case falls approximately **12.9%** from $m=0.1$ to its sampled trough near $m=1.61$, then rises approximately **16.9%** by $m=30$.
+
+The valley does not require an adoption threshold or a retry switch: $k=1$ throughout. Its local requirement is that
+
+```math
+\frac{d\log D_i^H}{d\log m}
+=
+[1-\theta_i(s_i^H)]\frac{d\log s_i^H}{d\log m}
++\frac{d\log x_i^H}{d\log m}
+```
+
+changes from negative to positive: inference savings dominate first, and supervisory leverage dominates later. Here $\theta_i(s)=d\log h_i(s)/d\log s$. With zero fixed overhead and an interior optimum, the exact scaling $D_i^H\propto m^{1-\beta_i}$ rules out a U-shape for $0\leq\beta_i\leq1$. Positive fixed overhead breaks that scale invariance, but is not by itself sufficient. The table's $(\lambda,\alpha,h_0,\beta)=(36,0.25,0.001,0.90)$ is one verified combination, not a necessary-and-sufficient characterization.
+
+Small fixed checkpoint overhead and near-linear variable review initially allow reductions in inference intensity to dominate the growth in work launched per attention hour. At higher capability, the positive supervisory-leverage contribution dominates. Optimized value per attention hour increases throughout even when token quantity falls. The two-sided valley persists under separate 10% increases and decreases in fixed review overhead, inference returns, and the capability-horizon parameter.
+
+The **offsetting-efficiency** singleton adds a near-flat case to the main efficiency panel: demand varies by less than 10% over $\eta=0.25$ to $10$. This is a finite-range offset between supervisory leverage and inference savings, not a hard token-demand ceiling. In the interactive main figure, isolate this case or the capability valley and use **Fit visible** to inspect small changes.
 
 ### 3.3 Work and attention can both bind
 
@@ -612,34 +682,67 @@ This exact result applies only when useful work is abundant and attention is the
 
 Changing $\beta_i$ is different. It changes how verification scales with the delegation horizon, alters the policy itself, and changes both supervisory leverage and the capability elasticity of scarce attention.
 
-## 5. Numerical illustrations
+## 5. Which improvements increase token demand and automation?
 
-The numerical exercise uses the reference and joint high/low settings tabulated at the beginning of Section 3. It changes one parameter group at a time, keeps industry scale and the attention cost $w_i$ fixed, and uses a single verification-burden pair that varies $(h_{0,i},h_{1,i},\beta_i)$ together. At every point, the optimizer enumerates the retry cap and reoptimizes delegation and inference intensity.
+What happens if verification gets faster, a harness makes more tasks feasible, or each token buys much more effective inference? Section 3 varies capability, efficiency, and price across industry configurations. This section instead isolates specific improvements and asks whether they increase **token demand, work delegated to AI, and work successfully completed**. Those outcomes need not move together.
 
-The primary figures use the abundant-work, binding-attention regime with 100,000 verification hours per case. The single-axis demand and spending figures below are indexed to each case's own value at the common scenario baseline; Sections 3.1 and 3.2 show both absolute and indexed demand. Adoption-hurdle lines overlap the reference by construction because adoption is inactive in the attention-limited problem. The numerical results confirm four features of the analysis:
+Every figure has the same layout. The **top row fixes potential work** at $W=1{,}000{,}000$ hours and lets adoption respond; the **bottom row fixes attention** at $H=100{,}000$ verification hours with abundant work. The columns show token demand, work delegated, and work completed successfully. In the work-limited row, delegated work is the adoption share $A_i$, while completed work is $A_iP_i$, both expressed as percentages of potential work. In the attention-limited row, delegated and completed work are throughput, not market adoption rates:
 
-1. The attention-constrained optimizer selects $k=1$ throughout the price, efficiency, and capability sweeps, as Result 3 predicts.
-2. Capability raises the shadow value of attention in every case. Its token-demand response depends on verification growth: attention-limited demand rises strongly when review grows slowly, but can fall when review is nearly proportional to delegated scope. Work-limited responses also include declining and hump-shaped paths.
-3. Token efficiency can lower demand, raise it, or produce an intermediate rebound. The controlled capability and execution variants show how a single parameter group can change that response; discrete retry choices can create additional kinks in the work-limited curves.
-4. Optimizing surplus per unit of work and then applying an attention cap can produce a substantially different policy and demand path from solving the attention-constrained problem directly.
+```math
+L_i^H=\frac{H_i s_i^H}{E_i^H h_i(s_i^H)},
+\qquad
+C_i^H=L_i^H P_i^H.
+```
 
-![Attention-limited token demand versus model capability](figures/token-demand-vs-capability.png)
+Token demand and attention-limited throughput are indexed to each curve's own baseline; the two work-share panels use percentages. Baselines are $v=1$, $\beta=0.5$, an improvement factor of 1, and $\eta=1$, respectively. All panels use independent linear y-axes. Except for the parameter varied on the x-axis and the explicitly labeled comparison, inputs stay at the Section 3 reference. Policies are reoptimized at every point. “Completed work” means expected successful AI output with human verification still required; it is not a measure of fully autonomous jobs or labor displacement.
 
-![Shadow value of attention versus model capability](figures/shadow-price-of-attention-vs-capability.png)
+### 5.1 What if verification took half as long?
 
-![Attention-limited token demand versus token efficiency](figures/token-demand-vs-efficiency.png)
+Reduce the uniform verification-time multiplier $v$, holding $h_0$, $h_1$, and $\beta$ fixed. Unlike changing review growth, this makes every checkpoint faster regardless of task size. Moving right in the figure reduces verification time from twice the baseline to one tenth of it.
 
-![Attention-limited token demand versus token price](figures/token-demand-vs-price.png)
+![What if verification took less time? Token demand, delegated work, and completed work under each constraint](figures/intervention-verification-speed.png)
 
-![Attention-limited token spend versus token price](figures/token-spend-vs-price.png)
+With scarce attention, halving $v$ **doubles token demand, delegated work, and completed work**, without changing $(s,x,k)$ or success per chunk. This is the exact scaling result from Section 4.4. With fixed work, there is no such proportional response: cheaper verification changes the policy and adoption. In the reference calibration, halving $v$ raises adoption from **43.8% to 79.8%** and the successfully completed share from **42.2% to 77.8%**, while token demand rises only **9.6%**. More automation can therefore accompany a much smaller increase in tokens. The work-limited demand jumps reflect changes in the optimal retry cap.
 
-To isolate the effect of the optimization objective itself, the next comparison uses only the reference industry and indexes each objective's demand to its own value at $m=1$.
+### 5.2 What if review grew more slowly with task size?
 
-![Capability demand under alternative policy objectives](figures/token-demand-vs-capability-objectives.png)
+Reduce $\beta$ while holding the verification-time level parameters fixed. Compare $m=1$ with $m=5$ to ask whether slower review growth matters more when the model supports longer tasks. Moving right lowers $\beta$ from 0.95 to 0.1; each curve is indexed at $\beta=0.5$.
 
-![Optimized per-work surplus versus model capability](figures/optimized-surplus-vs-model-capability.png)
+![What if review grew more slowly? Varying beta at two capability levels](figures/intervention-review-growth.png)
 
-The [analysis notebook](notebooks/comparative_statics.ipynb) records the parameter values, numerical bounds, optimizer checks, and figure-generation code.
+With scarce attention, reducing $\beta$ from 0.5 to 0.25 raises token demand to **1.61 times** baseline at $m=1$ and **2.44 times** baseline at $m=5$. Completed work rises to **1.32 times** and **1.90 times** baseline, respectively. Slower review growth makes larger chunks less costly to supervise, especially when capability already supports a longer delegation horizon. The demand increase is larger than the completed-work increase because the optimized policy also changes inference intensity and reliability.
+
+There is an important qualification to calling lower $\beta$ “easier verification.” In $h(s)=v(h_0+h_1s^\beta)$, review time is unchanged at $s=1$ hour. Lower $\beta$ reduces review time for longer chunks but increases it for shorter chunks. The work-limited reference chooses chunks shorter than one hour near baseline: lowering $\beta$ to 0.25 slightly **reduces** adoption, from 43.8% to 42.7%. At $m=5$, the chosen chunks are longer and adoption instead rises from 88.2% to 90.1%. This experiment isolates review growth; the preceding $v$ experiment is the appropriate comparison for an improvement that saves verification time on every task.
+
+### 5.3 What if a better harness made more tasks feasible?
+
+Represent a harness that expands the feasible task set by increasing $\lambda$ alone, with execution ease $a$, inference returns $\alpha$, and model capability $m$ held fixed. The x-axis is the proportional improvement: a factor of five raises $\lambda$ from 12 to 60 hours. Compare this with increasing $m$ by the same factor.
+
+![What if a harness expanded feasibility? Increasing lambda alone versus increasing model capability](figures/intervention-harness-feasibility.png)
+
+These interventions produce the **same capability share $q$ at a fixed horizon**, because it depends on the product $\lambda m$. They are not equivalent for demand: increasing $m$ also improves conditional execution $r$, while increasing $\lambda$ alone does not. The harness experiment consequently isolates feasibility; a real harness that also improves execution or verification would require changing those parameters separately.
+
+With fixed work, a fivefold increase in $\lambda$ raises token demand to **2.36 times** baseline and adoption to **75.0%**. A fivefold increase in $m$ instead lowers token demand to **0.85 times** baseline even though adoption reaches **88.2%** and more work is completed. Expanding the feasible set can create demand for additional inference; improving execution as well can save enough tokens per delegated unit to outweigh greater adoption. With scarce attention, both interventions increase demand in this calibration, but the broader capability improvement produces substantially more completed work.
+
+Lowering $\nu$ would answer a different question about the *shape* of the frontier. From $\log q=-(s/(\lambda m))^\nu$, lower $\nu$ raises feasibility when $s>\lambda m$ but lowers it when $s<\lambda m$; it leaves $q=e^{-1}$ unchanged at the threshold. It therefore cannot represent a uniform expansion of feasible tasks. The $\lambda$ sweep supplies that clean comparison without combining a frontier shift with a shape change.
+
+### 5.4 What if each token became 100 times more efficient?
+
+Increase $\eta$ from 1 to 100, holding capability and the price per raw token fixed. Compare $\alpha=0.25$, $0.5$, and $0.75$, changing no other industry parameter. This asks how the response to efficiency depends on diminishing returns to inference, without also changing execution ease $a$ as in Section 3's execution-difficulty pair. Each curve is indexed to its own outcome at $\eta=1$.
+
+![What if tokens became much more efficient? Varying eta at three inference-return settings](figures/intervention-efficiency-returns.png)
+
+In all three cases, 100-fold efficiency leaves **fewer tokens consumed but more work successfully completed** than at baseline. The size of the token saving depends strongly on $\alpha$:
+
+| Inference returns $\alpha$ | Fixed-work token demand at $\eta=100$ (baseline = 1) | Scarce-attention token demand at $\eta=100$ (baseline = 1) | Successfully completed share of potential work, $\eta=1\to100$ |
+|---|---:|---:|---:|
+| 0.25 | 0.48 | 0.86 | 43.1% → 57.7% |
+| 0.50 | 0.35 | 0.43 | 42.2% → 61.9% |
+| 0.75 | 0.18 | 0.22 | 43.5% → 63.9% |
+
+Efficiency improves execution at a given token budget, but it does not expand the capability frontier $q$. Users respond by reducing raw token intensity, changing retries, and delegating more work. They do not simply divide token use by 100: those behavioral responses offset much of the mechanical saving. Work-limited demand can jump upward when the user switches to fewer, more intensive attempts, even as its longer-run path declines. These results concern this controlled reference experiment, not a universal ranking of $\alpha$ or a claim that efficiency always lowers demand; Section 3's concentrated-adoption case already supplies a counterexample over a smaller efficiency range.
+
+The [analysis notebook](notebooks/comparative_statics.ipynb) regenerates all four experiments. The [Section 5 diagnostics](figures/interventions.json) record the inputs, policies, unindexed outcomes, and numerical checks, including wider-bound checks at endpoints, baselines, and sampled extrema. No policy bound or maximum retry cap binds in these figures.
 
 ## 6. Measurement and limitations
 
@@ -714,6 +817,8 @@ The code separates the economic model from the numerical optimizer:
 - `IndustryModel` evaluates a candidate policy without choosing it.
 - `PolicyOptimizer` maximizes $u_i$ for the work-limited polar case.
 - `AttentionConstrainedOptimizer` maximizes $J_i$ for the attention-limited polar case. It also implements the exact one-dimensional interior characterization used to verify the capability result.
+- `illustrative_industries()` in `calibrations.py` supplies all fourteen Section 3 cases. `include_singletons=False` returns the reference and ten paired variants; `singleton_industries()` returns the three additional table rows. `work_paradigms()` and `attention_paradigms()` select subsets of this same table for the focused views.
+- `paradigms.py` generates the focused views through the notebook and independently audits endpoints, baselines, and extrema of the main curves. `scripts/scan_paradigms.py` reproduces the exploratory search without changing the economic model.
 
 ```python
 from modeling_token_demand import (
@@ -744,3 +849,50 @@ uv sync --extra notebook --extra dev
 uv run pytest
 uv run jupyter lab notebooks/comparative_statics.ipynb
 ```
+
+To repeat the broader configuration scan, run `uv run python scripts/scan_paradigms.py`. It writes the full search diagnostics to `build/paradigm-scan.json`; this optional exploration is not required for ordinary paper builds. The Section 3 figures and diagnostics and the controlled Section 5 experiments are regenerated by the notebook or the paper refresh command below.
+
+### Search coverage and numerical checks
+
+The reproducible [parameter scan](scripts/scan_paradigms.py) first crosses three frontier scales, three execution scales, and four verification elasticities: **36 technical configurations**, each with **15 adoption distributions** for the work-limited regime. It then examines **512 additional attention configurations**, varying fixed overhead, frontier size, verification elasticity, and inference returns over the wider capability range. Candidates with binding policy bounds or nonpositive attention operating value are not used as attention-side evidence. These grid counts describe search coverage, not frequencies in the economy, and the search is not exhaustive.
+
+The scan also finds retry-driven demand jumps and more complicated sampled reversals. These should not be conflated with smooth U-shaped responses: replacing several cheap attempts with fewer more intensive attempts can change total tokens discontinuously. The figures join actual optimized samples without fitting or smoothing a curve.
+
+Not every imaginable shape belongs on every axis. A pure token-price reduction cannot reduce optimized token quantity in either polar regime. Capability and efficiency can produce nonmonotonic quantities, while price cuts can produce nonmonotonic spending. Near-flat behavior over a finite range is not evidence of an asymptotic demand ceiling. Adoption saturation is an explicit feature of the work-limited model; a token-demand ceiling imposed by an optimizer bound is not an economic finding.
+
+The main and focused figures use 81 logarithmically spaced samples per axis plus exact baseline and comparison anchors. No continuous policy bound or maximum retry cap binds. Endpoints, baselines, and sampled extrema are rechecked with a denser multistart search, tenfold wider continuous bounds, and a higher retry cap; attention solutions are additionally compared with the exact scalar characterization. The main and focused configurations, outcomes, and audit results are saved in [the numerical diagnostics](figures/paradigms.json). The checks verify the selected examples rather than treating every coarse-scan classification as established.
+
+### Interactive reading edition
+
+`README.md` is the source of truth for the paper's prose, equations, tables, and figure placement. The HTML edition is generated from it; do not edit the generated page separately.
+
+Install the optional paper dependencies and start the local live preview:
+
+```bash
+uv sync --extra notebook --extra dev --extra paper
+uv run token-demand-paper serve
+```
+
+Open [the local paper preview](http://127.0.0.1:8000). While this command is running, saving the README rebuilds the page and refreshes the browser. Press Ctrl-C in the terminal to stop it. Use `--port 8001` if port 8000 is already in use.
+
+If a rebuild fails, the preview keeps the last successful page visible and reports the error in the terminal. Correct the source and save again to retry.
+
+Section 5 keeps the same two-row, three-column layout in print and in the interactive edition: constraint regimes run down the rows, and demand, delegation, and completion run across the columns.
+
+Each figure supports line toggles, double-click isolation, hover values, zooming, and an expanded panel view. Line visibility is linked across the panels of that figure. The main attention-limited three-panel figures start with shared logarithmic y-scales; choose **Independent scales** to fit each separately. Work-limited and focused comparisons use independent axes, including mixed linear and logarithmic scales where labeled. Each subfigure also has its own **Fit visible** button: it fits only that panel's y-axis, switches to independent scales, and leaves the other panels unchanged. **Fit all visible** fits all panels using the selected scale mode. Hiding lines alone keeps the scale fixed. Adoption-concentration high and low retain separate toggles even when they coincide with the reference; double-click either label to isolate its curve. Printing uses the original static figures.
+
+To produce a static HTML edition without starting a server:
+
+```bash
+uv run token-demand-paper build
+```
+
+The output is `build/paper/index.html`. Open it directly in a browser, or copy the entire `build/paper/` folder to share the edition and its assets. Plotly and chart coordinates are included locally; equation typesetting loads a pinned MathJax version from its CDN and requires an internet connection. If JavaScript is unavailable, the original PNG figures remain visible.
+
+Chart coordinates are exported from the notebook's actual Matplotlib figures, not from a separate browser implementation of the model. The tracked cache `figures/interactive.json` makes prose-only rebuilds fast. Changing the notebook's code or the model sources invalidates that cache and reruns the notebook, including its numerical audits; this can take several minutes. To force a numerical refresh:
+
+```bash
+uv run token-demand-paper refresh
+```
+
+Editing a written equation changes the manuscript, not the Python model. Model changes belong in `src/modeling_token_demand/` or the notebook. The local preview only serves generated files on this computer; it does not publish the paper. A shared static copy updates only when you rebuild and replace it.

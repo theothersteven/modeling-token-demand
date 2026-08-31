@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive edition of the token-demand working paper, generated from its Markdown source.">
+  <title>{{TITLE}} · Interactive paper</title>
+  <link rel="stylesheet" href="assets/paper.css">
+  <script>
+    window.MathJax = {
+      tex: {inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']]},
+      options: {skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                ignoreHtmlClass: 'chart-panels|chart-legend'},
+      startup: {typeset: true}
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+  <script defer src="assets/plotly.min.js"></script>
+  <script defer src="assets/paper.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#paper">Skip to paper</a>
+  <header class="topbar">
+    <a class="wordmark" href="#paper">TOKEN DEMAND <span>/ working paper</span></a>
+    <div class="source-status"><span class="status-dot"></span><span id="live-status" role="status">Generated from README.md</span></div>
+    <a class="source-link" href="README.md" download>Markdown source ↓</a>
+  </header>
+  <div class="reading-layout">
+    <aside>
+      <nav aria-label="Paper contents">
+        <div class="nav-heading">IN THIS PAPER</div>
+        {{TOC}}
+      </nav>
+      <p class="nav-note">One manuscript.<br>Two ways to read it.</p>
+    </aside>
+    <main id="paper">
+      <div class="edition-label">RESEARCH NOTE <span>INTERACTIVE EDITION</span></div>
+      <div class="reader-note">The complete manuscript, with explorable figures. Toggle a line to hide it; double-click to isolate it. Text and equations come directly from the README.</div>
+      <article>{{BODY}}</article>
+      <footer>Generated from README.md. Numerical curves are exported from the audited comparative-statics notebook; the browser does not re-solve the model.</footer>
+    </main>
+  </div>
+  <script type="application/json" id="chart-data">{{CHART_DATA}}</script>
+</body>
+</html>
