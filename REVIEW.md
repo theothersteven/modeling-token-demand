@@ -131,3 +131,5 @@ This short draft deliberately stops after the six comparative statics. It does n
 ### Validation before PDF export
 
 The manuscript is about 1,800 words and contains six figures. The notebook exports 24 figures and again passes all optimizer and boundary audits. The Python suite passes 70 tests with one environment-dependent live-server test skipped; all 11 JavaScript interaction tests pass. The HTML build contains six interactive figure hosts, no broken static images, no math rendering errors, and no horizontal overflow in the checked desktop layout.
+
+The final print edition is 11 pages and identifies manuscript commit `48632d9` in its metadata and footer. All pages were rendered and inspected. Equations, tables, figures, headers, footers, and page transitions are legible, with no clipping or repeated browser controls. Each footer links to the exact committed manuscript source.
