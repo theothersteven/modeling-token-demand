@@ -29,8 +29,8 @@ class OptimizationSettings:
     min_delegation_hours: float = 0.02
     max_delegation_hours: float = 80.0
 
-    # Smallest and largest normalized model effort level per work-hour.
-    min_tokens_per_work_hour: float = 0.02
+    # The normalized minimum viable model effort is an economic constraint.
+    min_tokens_per_work_hour: float = 1.0
     max_tokens_per_work_hour: float = 20.0
 
     # Grid resolution and number of promising grid points refined locally.
@@ -42,8 +42,11 @@ class OptimizationSettings:
             raise ValueError("min_delegation_hours must be positive")
         if self.max_delegation_hours <= self.min_delegation_hours:
             raise ValueError("max_delegation_hours must exceed its minimum")
-        if self.min_tokens_per_work_hour <= 0:
-            raise ValueError("min_tokens_per_work_hour must be positive")
+        if self.min_tokens_per_work_hour < 1:
+            raise ValueError(
+                "min_tokens_per_work_hour cannot be below the normalized "
+                "minimum viable effort of one"
+            )
         if self.max_tokens_per_work_hour <= self.min_tokens_per_work_hour:
             raise ValueError("max_tokens_per_work_hour must exceed its minimum")
         if self.grid_points_per_dimension < 2:
@@ -197,10 +200,11 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
         """Find the token price that delivers a target optimized user value.
 
         Every price evaluation reoptimizes delegation scope and inference
-        effort with :meth:`solve_interior`. The root is solved in log price,
-        which preserves positivity and gives a relative rather than absolute
-        price tolerance. Starting at ``scenario.token_price``, the method
-        expands a factor-of-two bracket in whichever direction is required.
+        effort subject to the minimum viable effort constraint. The root is
+        solved in log price, which preserves positivity and gives a relative
+        rather than absolute price tolerance. Starting at
+        ``scenario.token_price``, the method expands a factor-of-two bracket
+        in whichever direction is required.
         """
 
         if not math.isfinite(target_surplus_per_attention_hour):
@@ -214,7 +218,7 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
 
         def gap(log_price: float) -> float:
             price = math.exp(float(log_price))
-            outcome = self.solve_interior(
+            outcome = self.solve(
                 model, replace(scenario, token_price=price)
             )
             evaluations[float(log_price)] = outcome
@@ -358,18 +362,20 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
         log_x = -math.log(scenario.token_efficiency) + (
             log_s - log_execution_scale - math.log(execution_exponent)
         ) / alpha
-        policy = Policy(
-            delegation_hours=math.exp(log_s),
-            tokens_per_work_hour=math.exp(log_x),
-        )
+        delegation_hours = math.exp(log_s)
+        tokens_per_work_hour = math.exp(log_x)
         settings = self.settings
         if not (
-            settings.min_delegation_hours <= policy.delegation_hours
+            settings.min_delegation_hours <= delegation_hours
             <= settings.max_delegation_hours
-            and settings.min_tokens_per_work_hour <= policy.tokens_per_work_hour
+            and settings.min_tokens_per_work_hour <= tokens_per_work_hour
             <= settings.max_tokens_per_work_hour
         ):
             raise ValueError(
                 "Interior optimum lies outside configured policy bounds; use solve()"
             )
+        policy = Policy(
+            delegation_hours=delegation_hours,
+            tokens_per_work_hour=tokens_per_work_hour,
+        )
         return model.evaluate(policy, scenario)

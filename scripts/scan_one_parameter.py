@@ -148,7 +148,7 @@ def main():
     settings = OptimizationSettings(
         min_delegation_hours=.002,
         max_delegation_hours=800,
-        min_tokens_per_work_hour=.002,
+        min_tokens_per_work_hour=1,
         max_tokens_per_work_hour=2_000,
         grid_points_per_dimension=11,
         local_starts=2,

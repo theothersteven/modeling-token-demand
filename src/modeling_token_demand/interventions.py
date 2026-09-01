@@ -100,7 +100,6 @@ def solve_interventions(points=81):
         settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
-        min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
     )
     strict = {"work": PolicyOptimizer(strict_settings),
@@ -127,7 +126,7 @@ def solve_interventions(points=81):
                     current, scenario = configuration(record, value)
                     model = IndustryModel(current)
                     outcome = (work.solve(model, scenario) if regime == "work"
-                               else attention.solve_interior(model, scenario))
+                               else attention.solve(model, scenario))
                     outcomes.append(outcome)
                 hits = boundary_hits(outcomes, settings)
                 if hits:

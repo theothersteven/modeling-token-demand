@@ -20,6 +20,14 @@ def test_policy_has_only_scope_and_model_effort() -> None:
     ]
 
 
+def test_normalized_model_effort_has_a_minimum_of_one() -> None:
+    with pytest.raises(ValueError, match="at least one"):
+        Policy(delegation_hours=1, tokens_per_work_hour=.99)
+    with pytest.raises(ValueError, match="minimum viable effort"):
+        OptimizationSettings(min_tokens_per_work_hour=.99)
+    assert OptimizationSettings().min_tokens_per_work_hour == 1
+
+
 def test_failed_work_still_pays_tokens_and_consumes_scarce_attention() -> None:
     industry = replace(
         REFERENCE_INDUSTRY, verification_fixed_hours=.1,
@@ -176,6 +184,43 @@ def test_attention_reservation_price_returns_the_starting_price_at_target() -> N
     assert result.token_price == pytest.approx(2)
     assert result.iterations == 0
     assert result.function_calls == 1
+
+
+def test_attention_reservation_price_respects_the_effort_floor() -> None:
+    optimizer = AttentionConstrainedOptimizer(
+        OptimizationSettings(max_tokens_per_work_hour=2_000)
+    )
+    industry = replace(REFERENCE_INDUSTRY, human_attention_hours=100_000)
+    model = IndustryModel(industry)
+    target = optimizer.solve(model, Scenario()).surplus_per_attention_hour
+
+    result = optimizer.solve_reservation_price(
+        model,
+        Scenario(model_capability=5),
+        target,
+    )
+
+    assert result.token_price == pytest.approx(31.2133, rel=2e-4)
+    assert result.outcome.policy.tokens_per_work_hour == pytest.approx(1)
+    assert result.outcome.surplus_per_attention_hour == pytest.approx(
+        target, rel=1e-6
+    )
+    execution_exponent = (
+        result.outcome.policy.delegation_hours
+        / (
+            industry.execution_scale
+            * 5
+            * result.outcome.policy.tokens_per_work_hour ** industry.inference_returns
+        )
+    )
+    marginal_value_of_effort = (
+        industry.value_per_work_hour
+        * result.outcome.success_probability
+        * industry.inference_returns
+        * execution_exponent
+        / result.outcome.policy.tokens_per_work_hour
+    )
+    assert marginal_value_of_effort <= result.token_price
 
 
 def test_each_regime_selects_policy_for_its_own_scarce_resource() -> None:

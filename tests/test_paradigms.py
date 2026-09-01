@@ -129,6 +129,16 @@ def test_zero_overhead_makes_shifted_review_prefer_the_smallest_scope():
     ) for outcome in outcomes)
 
 
+def test_economic_effort_floor_is_not_reported_as_a_numerical_bound_hit():
+    model = IndustryModel(REFERENCE_INDUSTRY)
+    settings = gallery_settings()
+    outcome = PolicyOptimizer(settings).solve(
+        model, Scenario(model_capability=30)
+    )
+    assert outcome.policy.tokens_per_work_hour == pytest.approx(1)
+    assert boundary_hits([outcome], settings) == []
+
+
 @pytest.fixture(scope="module")
 def work_outcomes():
     model = IndustryModel(CONCENTRATED_ADOPTION)
@@ -248,3 +258,39 @@ def test_main_curves_include_all_cases_and_audited_paradigms():
         HARD_EXECUTION.name: "rising",
         HIGH_CAPABILITY_REQUIREMENT.name: "hump",
     }
+
+
+def test_published_effort_floor_solutions_satisfy_the_kkt_inequality():
+    root = Path(__file__).resolve().parents[1]
+    curves = json.loads(
+        (root / "figures/paradigms.json").read_text()
+    )["main"]["curves"]
+    bindings = 0
+    for curve in curves:
+        industry = curve["industry"]
+        for value, scope, effort, success in zip(
+            curve["values"], curve["s"], curve["x"], curve["success"]
+        ):
+            assert effort >= 1
+            if effort > 1.0001:
+                continue
+            bindings += 1
+            capability = value if curve["axis"] == "capability" else 1
+            efficiency = value if curve["axis"] == "efficiency" else 1
+            price = value if curve["axis"] == "price" else 1
+            execution_exponent = scope / (
+                industry["execution_scale"]
+                * capability
+                * (efficiency * effort) ** industry["inference_returns"]
+            )
+            marginal_value = (
+                industry["value_per_work_hour"]
+                * success
+                * industry["inference_returns"]
+                * execution_exponent
+                / effort
+            )
+            # At a lower-bound optimum, increasing effort cannot add more
+            # value than its token price.
+            assert marginal_value <= price + 1e-6
+    assert bindings > 0

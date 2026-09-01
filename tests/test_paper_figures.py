@@ -201,6 +201,8 @@ def test_attention_value_figure_shows_hourly_and_token_reservation_prices(data):
         )
         assert reservation["y"][0] == pytest.approx(1)
         assert np.all(np.diff(reservation["y"]) >= 0)
+        assert record["reservation_x"][-1] == pytest.approx(1)
+        assert record["reservation_effort_floor_bindings"] > 0
         assert record["reservation_max_relative_gap"] < 2e-6
 
 

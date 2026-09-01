@@ -69,7 +69,7 @@ def _industry_line_options(name, *, linewidth=2, colors=COLORS):
 def gallery_settings():
     return OptimizationSettings(
         min_delegation_hours=.002, max_delegation_hours=800,
-        min_tokens_per_work_hour=.002, max_tokens_per_work_hour=2_000,
+        min_tokens_per_work_hour=1, max_tokens_per_work_hour=2_000,
         grid_points_per_dimension=17, local_starts=4,
     )
 
@@ -116,18 +116,31 @@ def shape(values, excursion=0.08):
 
 
 def boundary_hits(outcomes, settings):
+    """Return numerical-bound hits, excluding the economic effort floor."""
+
     hits = set()
     for outcome in outcomes:
         policy = outcome.policy
-        for name, value, lower, upper in (
+        for name, value, lower, upper, check_lower in (
             ("s", policy.delegation_hours, settings.min_delegation_hours,
-             settings.max_delegation_hours),
+             settings.max_delegation_hours, True),
             ("x", policy.tokens_per_work_hour, settings.min_tokens_per_work_hour,
-             settings.max_tokens_per_work_hour),
+             settings.max_tokens_per_work_hour, False),
         ):
-            if value <= lower * 1.0001 or value >= upper / 1.0001:
+            if (check_lower and value <= lower * 1.0001) \
+                    or value >= upper / 1.0001:
                 hits.add(name)
     return sorted(hits)
+
+
+def effort_floor_bindings(outcomes, settings):
+    """Count policies that optimally choose the minimum viable effort."""
+
+    return sum(
+        outcome.policy.tokens_per_work_hour
+        <= settings.min_tokens_per_work_hour * 1.0001
+        for outcome in outcomes
+    )
 
 
 def axis_values(lower, upper, baseline, points=81, extra=()):
@@ -179,7 +192,7 @@ def reservation_price_record(
     user reoptimizes scope and inference effort.
     """
 
-    baseline = optimizer.solve_interior(
+    baseline = optimizer.solve(
         model,
         Scenario(
             model_capability=baseline_capability,
@@ -221,6 +234,15 @@ def reservation_price_record(
     return {
         "reservation_capability": selected.tolist(),
         "reservation_price": prices.tolist(),
+        "reservation_x": [
+            result.outcome.policy.tokens_per_work_hour for result in results
+        ],
+        "reservation_s": [
+            result.outcome.policy.delegation_hours for result in results
+        ],
+        "reservation_effort_floor_bindings": effort_floor_bindings(
+            [result.outcome for result in results], optimizer.settings
+        ),
         "reservation_price_baseline": float(baseline_price),
         "reservation_target_surplus": float(target),
         "reservation_max_relative_gap": float(np.max(relative_gaps)),
@@ -236,7 +258,6 @@ def solve_gallery(points=81):
         settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
-        min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
     )
     strict_work = PolicyOptimizer(strict_settings)
@@ -323,7 +344,6 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
         settings, grid_points_per_dimension=25, local_starts=8,
         min_delegation_hours=settings.min_delegation_hours / 10,
         max_delegation_hours=settings.max_delegation_hours * 10,
-        min_tokens_per_work_hour=settings.min_tokens_per_work_hour / 10,
         max_tokens_per_work_hour=settings.max_tokens_per_work_hour * 10,
     )
     work = PolicyOptimizer(strict)
@@ -350,7 +370,7 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
                 for index in sorted(indices):
                     scenario = Scenario(**{field: float(values[index])})
                     checked = work.solve(model, scenario) if regime == "work" \
-                        else attention.solve_interior(model, scenario)
+                        else attention.solve(model, scenario)
                     metric = "surplus_per_work_hour" if regime == "work" else "surplus_per_attention_hour"
                     expected = getattr(checked, metric)
                     error = abs(expected - getattr(outcomes[index], metric)) / max(1, abs(expected))

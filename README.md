@@ -7,7 +7,7 @@
 For each task, the user chooses two things:
 
 - $s$: the scope of the task as measured in work units. A work unit can be thought of as the work a reference human completes in one hour. "Implement this function" would be a relatively small task, while "Refactor this entire system and ensure the test coverage is good" would be a large task.
-- $x$: model's effort level. This is measured in a normalized token unit. i.e. higher x means model tries harder on a given task. Given a task with scope $s$ we assume the model spends $sx$ number of normalized tokens. One can think of $x$ is the "low, medium, high, pro, ultra" settings one have in ChatGPT for example.
+- $x$: the model's normalized effort level per work unit; a task of scope $s$ consumes $sx$ token units. Higher settings correspond loosely to labels such as "low," "medium," or "pro." We normalize minimum viable effort to $x=1$; choosing any other positive minimum only changes units and leaves the qualitative results unchanged.
 
 After the model attempts each task, the user needs to verify the correctness of its output. All else being equal, the bigger the task, the less reliable the model is. On the other hand, assigning bigger tasks reduces the number of times the user has to manually review the model's output. For example, one can use AI in "tab complete" mode, where each task is simply to complete the next line of code. In this case, the success rate is likely very high and each verification step is quick, but the workflow requires many human verification steps over the course of a day. The other extreme is to assign the AI an entire project. This reduces the number of human verification steps, but each step takes longer, and the AI is much less likely to complete the work correctly.
 
@@ -104,7 +104,7 @@ Here is a summary of the modeling parameters that are using.
 | Parameter | Name | Category | How it is used in the model |
 |---|---|---|---|
 | $s$ | Delegated scope | User action | Work units assigned before the next review. It enters feasibility $q(s;m)$, execution reliability $r(s,x;m,\eta)$, and review time $h(s)$. |
-| $x$ | Model effort level | User action | Normalized token units used per work unit. Effective inference is $\eta x$, token cost per work unit is $cx$, and one assignment uses $sx$ token units. |
+| $x$ | Model effort level | User action | Normalized token units used per work unit, with minimum viable effort $x=1$. Effective inference is $\eta x$, token cost per work unit is $cx$, and one assignment uses $sx$ token units. |
 | $m$ | Model capability | Model parameter | Expands both the capability horizon $\lambda m$ in $q(s;m)$ and the execution horizon in $r(s,x;m,\eta)$. |
 | $\eta$ | Token efficiency | Model parameter | Converts token units into effective inference, $\eta x$, in the execution-reliability function. |
 | $c$ | Token price | Model parameter | Dollar price of one normalized token unit. It determines token cost $cx$ and total token spending $R=cD$. |
@@ -265,7 +265,7 @@ This is the highest per-token price at which the user weakly prefers capability 
 
 *Panel (a) reports $\rho^*(m,c_0)$ in dollars per review hour. Panel (b) reports the fully reoptimized reservation token price relative to a baseline normalized to one. Both vertical axes are logarithmic, efficiency is fixed at $\eta=1$, and the comparison covers capability improvements from $m=1$ through $m=5$.*
 
-From $m=1$ to $m=5$, the maximum hourly attention price rises from $2{,}112$ to $4{,}711$ in the reference industry and from $4{,}278$ to $15{,}830$ with slow-growing review. The exact reservation token price reaches $69.2c_0$ and $79.4c_0$, respectively. With nearly proportional review it still reaches $55.7c_0$, even though Figure 4 shows token revenue falling over the same interval. The low-inference-returns case rises to almost $10{,}000c_0$: when $\alpha=0.2$, the user can cut token effort especially sharply as capability improves. This outlier reflects continuous effort, not a posted-price forecast. A better model can therefore support a much higher price per token even when the user buys fewer tokens.
+From $m=1$ to $m=5$, the maximum hourly attention price rises from $2{,}112$ to $4{,}711$ in the reference industry and from $4{,}278$ to $15{,}830$ with slow-growing review. The exact reservation token price reaches $31.2c_0$ and $36.6c_0$, respectively. With nearly proportional review it still reaches $22.3c_0$, even though Figure 4 shows token revenue falling over the same interval. The low-inference-returns case reaches $39.5c_0$. At these reservation prices the user chooses the minimum viable effort $x=1$, so the price premium cannot be supported by purchasing an arbitrarily small token quantity. A better model can therefore support a much higher price per token even when the user buys fewer tokens.
 
 ## 4. Other technical levers for adoption and revenue
 
@@ -301,7 +301,7 @@ h_{\kappa}(s)=\kappa_h\left\{h_0+h_1\left[(1+s)^\beta-1\right]\right\}.
 
 *Each token-revenue curve is normalized to 1 at $\kappa_h=1$ to show its trend rather than its absolute level. Lower $\kappa_h$ is shown to the right; $\kappa_h=0.1$ means that both $h_0$ and $h_1$ are effectively one tenth as large. The dotted line marks the reference $\kappa_h=1$.*
 
-This is a uniform level shift, whereas changing $\beta$ changes how review scales with scope. Faster review makes checkpoints cheaper, so users delegate smaller chunks $s^*$, which are easier to execute and require less effort $x^*$. Since work-limited revenue is $cWAx^*$, it rises while adoption gains dominate and falls once adoption saturates and lower effort dominates. Hence reference revenue peaks at an intermediate improvement. Hard execution has more adoption headroom and yields a several-fold increase; higher-capability adoption is already near its ceiling, so faster review primarily saves tokens.
+This is a uniform level shift, whereas changing $\beta$ changes how review scales with scope. Faster review makes checkpoints cheaper, so users delegate smaller chunks $s^*$, which are easier to execute and require less effort $x^*$. Since work-limited revenue is $cWAx^*$, it rises while adoption gains dominate and falls once adoption saturates and lower effort dominates. Hence reference revenue peaks at an intermediate improvement. Hard execution has more adoption headroom and yields a several-fold increase; higher-capability adoption is already near its ceiling, so faster review primarily saves tokens until minimum effort binds.
 
 ### Higher inference returns matter most when execution binds
 

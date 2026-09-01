@@ -115,8 +115,9 @@ class Policy:
 
     delegation_hours (s) is work delegated before a checkpoint,
     and tokens_per_work_hour (x) is the model effort level in normalized token
-    units. Every chunk consumes sx token units and h(s) review hours, whether
-    it succeeds or fails. Failed work produces no output in this model.
+    units. The normalization sets the minimum viable effort to one. Every
+    chunk consumes sx token units and h(s) review hours, whether it succeeds
+    or fails. Failed work produces no output in this model.
     """
 
     delegation_hours: float
@@ -125,8 +126,8 @@ class Policy:
     def __post_init__(self) -> None:
         if self.delegation_hours <= 0:
             raise ValueError("delegation_hours must be positive")
-        if self.tokens_per_work_hour <= 0:
-            raise ValueError("tokens_per_work_hour must be positive")
+        if self.tokens_per_work_hour < 1:
+            raise ValueError("tokens_per_work_hour must be at least one")
 
 
 @dataclass(frozen=True)
