@@ -1,4 +1,4 @@
-"""Publication views must preserve audited outcomes and economic denominators."""
+"""The six paper figures must preserve audited quantities and dollar units."""
 
 import json
 from pathlib import Path
@@ -6,71 +6,61 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from modeling_token_demand.paper_figures import ATTENTION_CASES, AXES, WORK_CASES
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope="module")
 def data():
-    return tuple(json.loads((ROOT / f"figures/{name}.json").read_text())
-                 for name in ("interactive", "paradigms", "interventions"))
+    plots = json.loads((ROOT / "figures/interactive.json").read_text())["plots"]
+    curves = json.loads((ROOT / "figures/paradigms.json").read_text())["main"]["curves"]
+    return plots, curves
 
 
-WORK_NAMES = {"Reference": "Reference industry", "Concentrated adoption": "Adoption concentration: high",
-              "Early saturation": "Early saturation"}
-ATTENTION_NAMES = {"Review grows slowly": "Verification burden: low",
-                   "Review nearly proportional": "Verification burden: high"}
+@pytest.mark.parametrize(
+    "regime,cases",
+    (("work", WORK_CASES), ("attention", ATTENTION_CASES)),
+)
+@pytest.mark.parametrize("axis", ("capability", "efficiency", "price"))
+def test_pair_figures_show_absolute_token_demand_and_spending(data, regime, cases, axis):
+    plots, curves = data
+    panels = plots[f"{regime}-{axis}-demand-spending.png"]["panels"]
+    assert len(panels) == 2
+    assert panels[0]["ylabel"] == "Token demand (trillion tokens)"
+    assert panels[1]["ylabel"] == "Token spending (USD millions)"
+    assert panels[0]["yscale"] == panels[1]["yscale"] == "log"
+    expected_labels = {case[1] for case in cases}
+    assert {line["name"] for line in panels[0]["lines"]} == expected_labels
+    assert {line["name"] for line in panels[1]["lines"]} == expected_labels
+
+    lower, upper = AXES[axis]["limits"]
+    for name, label, _, _ in cases:
+        record = next(
+            curve for curve in curves
+            if curve["industry"]["name"] == name
+            and curve["regime"] == regime
+            and curve["axis"] == axis
+        )
+        x_values = np.asarray(record["values"])
+        selected = (x_values >= lower) & (x_values <= upper)
+        demand = np.asarray(record["demand"])[selected]
+        prices = x_values[selected] if axis == "price" else np.full(selected.sum(), 10.0)
+        demand_line = next(line for line in panels[0]["lines"] if line["name"] == label)
+        spending_line = next(line for line in panels[1]["lines"] if line["name"] == label)
+        assert demand_line["x"] == pytest.approx(x_values[selected])
+        assert spending_line["x"] == pytest.approx(x_values[selected])
+        assert demand_line["y"] == pytest.approx(demand / 1e12)
+        assert spending_line["y"] == pytest.approx(demand * prices / 1e12)
+
+    reverse = panels[0]["xlim"][0] > panels[0]["xlim"][1]
+    assert reverse == AXES[axis]["reverse"]
 
 
-def test_price_view_separates_adoption_purchases_and_spending(data):
-    plots, comparisons, _ = data
-    panels = plots["plots"]["price-adoption-and-spending.png"]["panels"]
-    for line in panels[0]["lines"]:
-        record = next(r for r in comparisons["curves"] if r["axis"] == "price"
-                      and r["industry"]["name"] == WORK_NAMES[line["name"]])
-        points = [record["values"].index(value) for value in line["x"]]
-        assert line["x"] == [value for value in record["values"] if value <= 20]
-        assert line["y"] == pytest.approx(100 * np.asarray(record["adoption"])[points])
-        purchase = next(l for l in panels[1]["lines"] if l["name"] == line["name"])
-        spending = next(l for l in panels[2]["lines"] if l["name"] == line["name"])
-        assert purchase["x"] == spending["x"] == line["x"]
-        expected = np.asarray(record["demand"])[points] / record["demand"][record["baseline_index"]]
-        assert purchase["y"] == pytest.approx(expected)
-        assert spending["y"] == pytest.approx(expected * np.asarray(line["x"]) / 10)
-    assert all(panel["xlim"] == [20, 1] for panel in panels)
-
-
-@pytest.mark.parametrize("regime, names", [("work", WORK_NAMES), ("attention", ATTENTION_NAMES)])
-def test_capability_panels_reconstruct_demand_from_its_two_margins(data, regime, names):
-    plots, comparisons, _ = data
-    panels = plots["plots"][f"capability-{regime}-decomposition.png"]["panels"]
-    assert {line["name"] for line in panels[0]["lines"]} == set(names)
-    for label, name in names.items():
-        record = next(r for r in comparisons["curves"] if r["axis"] == "capability"
-                      and r["regime"] == regime and r["industry"]["name"] == name)
-        lines = [next(line for line in panel["lines"] if line["name"] == label) for panel in panels]
-        assert all(line["x"] == record["values"] for line in lines)
-        baseline = record["baseline_index"]
-        activity = np.asarray(record["adoption"] if regime == "work" else record["leverage"])
-        expected = activity * 100 if regime == "work" else activity / activity[baseline]
-        assert lines[0]["y"] == pytest.approx(expected)
-        assert lines[1]["y"] == pytest.approx(np.asarray(record["x"]) / record["x"][baseline])
-        assert lines[2]["y"] == pytest.approx(np.asarray(record["demand"]) / record["demand"][baseline])
-        indexed_activity = np.asarray(lines[0]["y"]) / lines[0]["y"][baseline]
-        assert lines[2]["y"] == pytest.approx(indexed_activity * np.asarray(lines[1]["y"]))
-
-
-def test_review_view_preserves_speed_direction_and_distinct_outcomes(data):
-    plots, _, interventions = data
-    panels = plots["plots"]["verification-expansion.png"]["panels"]
-    for panel, regime in zip(panels, ("work", "attention")):
-        record = next(r for r in interventions["curves"]
-                      if r["experiment"] == "verification-speed" and r["regime"] == regime)
-        assert panel["xlim"] == [.5, 10]
-        for line in panel["lines"]:
-            metric = "demand" if line["name"] == "Tokens" else "completed_work"
-            raw = np.asarray(record[metric])
-            assert line["x"] == pytest.approx(1 / np.asarray(record["values"]))
-            assert line["y"] == pytest.approx(raw / raw[record["baseline_index"]])
-            if regime == "attention":
-                assert line["x"] == pytest.approx(line["y"])
+def test_work_and_attention_figures_use_different_industry_mechanisms(data):
+    plots, _ = data
+    work = {line["name"] for line in plots["work-capability-demand-spending.png"]["panels"][0]["lines"]}
+    attention = {line["name"] for line in plots["attention-capability-demand-spending.png"]["panels"][0]["lines"]}
+    assert work == {"Gradual adoption", "Clustered adoption", "Early saturation"}
+    assert attention == {"Reusable review", "Balanced review", "Proportional review"}

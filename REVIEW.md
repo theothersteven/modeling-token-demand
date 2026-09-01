@@ -1,6 +1,6 @@
 # Manuscript self-review
 
-Branch: `simplify-single-attempt-model`. Neither review authorizes a merge to `main`.
+Branch: `simplify-single-attempt-model`. No review authorizes a merge to `main`. Rounds 1–3 document superseded drafts; Round 4 describes the current short draft.
 
 ## Standard and reference reading
 
@@ -107,3 +107,27 @@ The independent review found the analytical claims internally consistent and ide
 ### Validation
 
 The revised source builds as a 12-figure reading edition. The Python suite passes 68 tests with one environment-dependent live-server test skipped because the sandbox disallows binding a local socket; the JavaScript interaction suite passes all 11 tests. Browser checks confirm the intended section and figure order, 12 mounted figure hosts, valid images and internal links, rendered mathematics, and no horizontal overflow. The 27-page PDF identifies the exact manuscript commit in its metadata and footer; all pages were rendered and inspected for clipping, legibility, and layout integrity.
+
+## Round 4 — short model-first draft
+
+The user found the prior version too long and difficult to read. This round resets the exposition rather than polishing that structure.
+
+### Structural decisions
+
+1. **Begin with the model.** Remove the abstract and opening essay. Define scope, tokens, feasibility, conditional reliability, total reliability, review time, surplus, adoption, token demand, and token spending before presenting results.
+
+2. **Use the same questions in both regimes.** The work-limited and attention-limited sections each study capability, token efficiency, and token price in that order. Each result heading states the observation instead of naming a parameter or method.
+
+3. **Show absolute units.** Each of the six figures pairs token demand in trillions of tokens with token spending in millions of dollars. Price falls from left to right. Logarithmic vertical scales keep industries with very different market sizes visible.
+
+4. **Use three intuitive cases per regime.** The work-limited figures compare gradual adoption, clustered adoption, and early saturation. The attention-limited figures compare reusable, balanced, and nearly proportional review. The manuscript states the parameter changes immediately before the results.
+
+5. **Keep this pass small.** Remove the conclusion, literature review, empirical agenda, proofs, and supplementary figures from the manuscript. They remain available in version history and the numerical repository, but they no longer interrupt the first explanation of the model.
+
+### Current limitations
+
+This short draft deliberately stops after the six comparative statics. It does not yet explain which results are general, connect the model to evidence, or defend the functional forms against alternatives. Those are the next editorial questions. The current goal is a readable base that makes later additions easy to evaluate.
+
+### Validation before PDF export
+
+The manuscript is about 1,800 words and contains six figures. The notebook exports 24 figures and again passes all optimizer and boundary audits. The Python suite passes 70 tests with one environment-dependent live-server test skipped; all 11 JavaScript interaction tests pass. The HTML build contains six interactive figure hosts, no broken static images, no math rendering errors, and no horizontal overflow in the checked desktop layout.

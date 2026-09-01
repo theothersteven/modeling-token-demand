@@ -33,14 +33,13 @@ def test_entire_manuscript_renders_with_all_figures(plot_data):
     assert set(figures) == {Path(name).stem for name in image_names}
     assert html.count('class="interactive-figure"') == len(image_names)
     assert '<p><figure' not in html
-    assert 'id="22-what-is-scarce"' in html
-    assert 'href="#22-what-is-scarce"' in html
-    assert 'id="appendix-c-numerical-checks-and-reproduction"' in html
+    assert 'id="1-modeling-assumptions"' in html
+    assert 'href="#1-modeling-assumptions"' in html
+    assert 'id="3-human-attention-is-limited"' in html
     assert 'language-math' not in html
     assert '<div class="math display-math">\\[' in html
     assert '<span class="math">\\(' in html
     assert '<table>' in html
-    assert 'language-bash' in html
     assert '{{BODY}}' not in html
     equations = re.findall(r'```math\n(.*?)\n```', source, re.DOTALL)
     assert len(equations) == html.count('class="math display-math"')
@@ -57,26 +56,26 @@ def test_manual_text_and_equation_edits_are_rendered():
     assert r'\eta' in revised
 
 
-def test_focused_argument_precedes_the_full_parameter_comparisons(plot_data):
-    from modeling_token_demand.calibrations import calibration_tables_markdown, illustrative_industries
+def test_short_manuscript_uses_six_ordered_absolute_unit_figures(plot_data):
     source = (ROOT / 'README.md').read_text()
-    main, appendix = source.split('## Appendix A.', 1)
-    figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', main)
-    assert figures == ['capability-work-decomposition.png', 'capability-attention-decomposition.png',
-                       'price-adoption-and-spending.png', 'verification-expansion.png']
-    assert main.index('## 3. Capability: adoption or supervision?') < main.index(
-        '## 4. Price and efficiency: a conditional diagnostic')
-    assert calibration_tables_markdown() in appendix
-    assert calibration_tables_markdown() not in main
-    names = {industry.name for industry in illustrative_industries()}
-    for regime in ('work', 'attention'):
-        for suffix in ('levels', 'indexed'):
-            filename = f'{regime}-limited-token-demand-{suffix}.png'
-            assert filename in appendix and filename not in main
-            for panel in plot_data[f'{regime}-limited-token-demand-{suffix}.png']['panels']:
-                plotted = {line['name'] for line in panel['lines']
-                           if not line['name'].startswith('Constant revenue')}
-                assert plotted == names
+    figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', source)
+    assert figures == [
+        'work-capability-demand-spending.png',
+        'work-efficiency-demand-spending.png',
+        'work-price-demand-spending.png',
+        'attention-capability-demand-spending.png',
+        'attention-efficiency-demand-spending.png',
+        'attention-price-demand-spending.png',
+    ]
+    assert '## Abstract' not in source
+    assert source.index('## 1. Modeling assumptions') < source.index('## 2. Work is limited')
+    assert source.index('## 2. Work is limited') < source.index('## 3. Human attention is limited')
+    assert len(source.split()) < 3000
+    for filename in figures:
+        panels = plot_data[filename]['panels']
+        assert len(panels) == 2
+        assert panels[0]['ylabel'] == 'Token demand (trillion tokens)'
+        assert panels[1]['ylabel'] == 'Token spending (USD millions)'
 
 
 def test_math_currency_code_and_duplicate_headings():
