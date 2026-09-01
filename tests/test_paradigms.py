@@ -10,6 +10,10 @@ import pytest
 from modeling_token_demand import AttentionConstrainedOptimizer, IndustryModel, PolicyOptimizer, Scenario
 from modeling_token_demand.calibrations import (
     CAPABILITY_VALLEY, CONCENTRATED_ADOPTION, EARLY_SATURATION,
+    HARD_EXECUTION, HIGH_ADOPTION_HURDLE, HIGH_CAPABILITY_REQUIREMENT,
+    LOW_ADOPTION_HURDLE, LOW_INFERENCE_RETURNS,
+    PROPORTIONAL_REVIEW,
+    SLOW_REVIEW_GROWTH,
     HIGH_ADOPTION_CONCENTRATION, LOW_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY,
     HIGH_ECONOMIC_VALUE, LOW_ECONOMIC_VALUE, calibration_tables_markdown,
     attention_paradigms, illustrative_industries, singleton_industries, work_paradigms,
@@ -34,15 +38,43 @@ def test_shape_rejects_invalid_inputs(values):
 
 
 def test_focus_views_are_subsets_of_the_main_configuration_table():
-    assert len(illustrative_industries()) == 14
-    assert len(illustrative_industries(include_singletons=False)) == 11
+    assert len(illustrative_industries()) == 8
+    assert len(illustrative_industries(include_singletons=True)) == 11
     assert len(singleton_industries()) == 3
     assert CONCENTRATED_ADOPTION == HIGH_ADOPTION_CONCENTRATION
     assert CONCENTRATED_ADOPTION not in singleton_industries()
     assert set(work_paradigms() + attention_paradigms()) <= set(illustrative_industries())
-    assert len(work_paradigms()) == len(attention_paradigms()) == 3
-    assert EARLY_SATURATION.adoption_location == CONCENTRATED_ADOPTION.adoption_location
-    assert EARLY_SATURATION.adoption_scale == CONCENTRATED_ADOPTION.adoption_scale
+    assert len(work_paradigms()) == 5
+    assert len(attention_paradigms()) == 5
+    assert work_paradigms() == (
+        REFERENCE_INDUSTRY, LOW_ADOPTION_HURDLE, HIGH_ADOPTION_HURDLE,
+        HARD_EXECUTION, HIGH_CAPABILITY_REQUIREMENT,
+    )
+    assert attention_paradigms() == (
+        REFERENCE_INDUSTRY, HARD_EXECUTION, LOW_INFERENCE_RETURNS,
+        SLOW_REVIEW_GROWTH, PROPORTIONAL_REVIEW,
+    )
+
+
+def test_every_active_alternative_changes_exactly_one_industry_parameter():
+    reference = asdict(REFERENCE_INDUSTRY)
+    expected = {
+        LOW_ADOPTION_HURDLE.name: {"name", "adoption_location"},
+        HIGH_ADOPTION_HURDLE.name: {"name", "adoption_location"},
+        HARD_EXECUTION.name: {"name", "execution_scale"},
+        HIGH_CAPABILITY_REQUIREMENT.name: {"name", "capability_horizon_hours"},
+        LOW_INFERENCE_RETURNS.name: {"name", "inference_returns"},
+        SLOW_REVIEW_GROWTH.name: {"name", "verification_elasticity"},
+        PROPORTIONAL_REVIEW.name: {"name", "verification_elasticity"},
+    }
+    for industry in illustrative_industries():
+        if industry == REFERENCE_INDUSTRY:
+            continue
+        changed = {
+            field for field, value in asdict(industry).items()
+            if value != reference[field]
+        }
+        assert changed == expected[industry.name]
 
 
 def test_concentration_pair_changes_only_spread_and_has_crossing_cdfs():
@@ -55,63 +87,67 @@ def test_concentration_pair_changes_only_spread_and_has_crossing_cdfs():
     models = [IndustryModel(industry) for industry in (
         HIGH_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY, LOW_ADOPTION_CONCENTRATION)]
     location = REFERENCE_INDUSTRY.adoption_location
-    assert all(model.adoption_share(0) == 0 for model in models)
-    # Conditioning on positive hurdles slightly shifts the median; the spread
-    # comparison still reverses around the adoption transition.
+    assert all(model.adoption_share(location) == pytest.approx(.5) for model in models)
+    # Logistic CDFs with a common location cross exactly at their median.
     below = [model.adoption_share(location - 1) for model in models]
     above = [model.adoption_share(location + 1) for model in models]
     assert below[0] < below[1] < below[2]
     assert above[0] > above[1] > above[2]
 
 
-def test_value_and_concentration_use_the_requested_geometric_steps():
+def test_hurdle_cases_order_the_extensive_margin_around_the_reference():
     assert [industry.value_per_work_hour for industry in (
         LOW_ECONOMIC_VALUE, REFERENCE_INDUSTRY, HIGH_ECONOMIC_VALUE)] == [50, 100, 200]
     assert [industry.adoption_scale for industry in (
         HIGH_ADOPTION_CONCENTRATION, REFERENCE_INDUSTRY, LOW_ADOPTION_CONCENTRATION)] == [1, 4, 16]
-    assert all(industry.adoption_location == 76 for industry in illustrative_industries())
+    assert [industry.adoption_location for industry in work_paradigms()] == [81, 40, 95, 81, 81]
+    assert all(industry.adoption_scale == 4 for industry in work_paradigms())
 
 
 def test_parameter_row_tables_match_the_calibrations():
     block = calibration_tables_markdown()
-    headers = [line for line in block.splitlines() if line.startswith("| Parameter |")]
-    assert len(headers) == 3
-    assert all("Reference" in line for line in headers)
-    assert "Value low | Value high | Concentration low | Concentration high" in headers[1]
-    assert "| Work value $b$ (dollars) | 100 | **50** | **200** | 100 | 100 |" in block
+    headers = [line for line in block.splitlines() if line.startswith("| Plot line |")]
+    assert len(headers) == 2
+    assert all("$\\lambda$" in line and "$\\sigma$" in line for line in headers)
+    assert "| Low adoption hurdle | 12 | 1.25 | 4 |" in block
+    assert "| Hard execution | 12 | 1.25 | **1** |" in block
+    assert "| High capability requirement | **3** | 1.25 |" in block
+    assert "| Low inference returns | 12 | 1.25 | 4 | **0.2** |" in block
+    assert "| Slow-growing review |" in block and "**0.15**" in block
+    assert "| Nearly proportional review |" in block and "**0.95**" in block
 
 
-def test_zero_overhead_removes_the_capability_valley():
+def test_zero_overhead_makes_shifted_review_prefer_the_smallest_scope():
     industry = replace(CAPABILITY_VALLEY, verification_fixed_hours=0,
                        human_attention_hours=100_000)
     optimizer = AttentionConstrainedOptimizer(gallery_settings())
     outcomes = [optimizer.solve(IndustryModel(industry), Scenario(model_capability=m))
                 for m in (1, 2, 4)]
-    demand = [outcome.attention_limited_tokens for outcome in outcomes]
-    assert not boundary_hits(outcomes, gallery_settings())
-    assert demand[1] / demand[0] == pytest.approx(2 ** (1 - industry.verification_elasticity), rel=1e-4)
-    assert demand[2] / demand[0] == pytest.approx(4 ** (1 - industry.verification_elasticity), rel=1e-4)
+    assert boundary_hits(outcomes, gallery_settings()) == ["s"]
+    assert all(outcome.policy.delegation_hours == pytest.approx(
+        gallery_settings().min_delegation_hours
+    ) for outcome in outcomes)
 
 
 @pytest.fixture(scope="module")
 def work_outcomes():
     model = IndustryModel(CONCENTRATED_ADOPTION)
     optimizer = PolicyOptimizer(gallery_settings())
-    prices = {price: optimizer.solve(model, Scenario(token_price_per_million=price))
-              for price in (1, 2, 5, 10, 20)}
+    prices = {price: optimizer.solve(model, Scenario(token_price=price))
+              for price in (.1, .2, .5, 1, 2)}
     efficient = {eta: optimizer.solve(model, Scenario(token_efficiency=eta)) for eta in (2, 5, 10)}
     return prices, efficient
 
 
 def test_concentrated_adoption_unlocks_large_market_and_revenue(work_outcomes):
     prices, _ = work_outcomes
-    assert .2 < prices[10].adoption_share < .5
-    assert prices[5].adoption_share > .75
-    assert prices[1].adoption_share > .95
-    ratio = prices[5].work_limited_tokens / prices[10].work_limited_tokens
+    assert .2 < prices[1].adoption_share < .5
+    assert prices[.5].adoption_share > .75
+    assert prices[.1].adoption_share > .95
+    ratio = prices[.5].work_limited_tokens / prices[1].work_limited_tokens
     assert ratio > 2  # Adoption expansion more than offsets the price cut.
     assert ratio / 2 > 1.5
-    assert prices[1].work_limited_tokens / prices[10].work_limited_tokens > 10
+    assert prices[.1].work_limited_tokens / prices[1].work_limited_tokens > 10
     assert not boundary_hits(list(prices.values()), gallery_settings())
     demand = [prices[p].work_limited_tokens for p in sorted(prices)]
     assert np.all(np.diff(demand) <= 0)
@@ -123,8 +159,8 @@ def test_efficiency_rebound_is_real_not_just_a_price_plot(work_outcomes):
         # z = eta*x maps a technology improvement to an effective price cut.
         # Interior solutions should reproduce this identity independently.
         assert outcome.work_limited_tokens == pytest.approx(
-            prices[10 / eta].work_limited_tokens / eta, rel=1e-5)
-    assert efficient[5].work_limited_tokens > prices[10].work_limited_tokens * 1.3
+            prices[1 / eta].work_limited_tokens / eta, rel=1e-5)
+    assert efficient[5].work_limited_tokens > prices[1].work_limited_tokens * 1.3
 
 
 @pytest.mark.parametrize("field, factor", [
@@ -173,7 +209,7 @@ def test_generated_gallery_matches_configuration_and_model_accounting():
 def test_main_curves_include_all_cases_and_audited_paradigms():
     root = Path(__file__).resolve().parents[1]
     main = json.loads((root / "figures/paradigms.json").read_text())["main"]
-    assert main["audit"]["independent_checks"] >= 250
+    assert main["audit"]["independent_checks"] >= 90
     assert main["audit"]["max_relative_objective_error"] < 1e-8
     assert main["audit"]["boundary_hits"] == []
     cases = {industry.name: asdict(replace(industry, human_attention_hours=100_000))
@@ -185,9 +221,30 @@ def test_main_curves_include_all_cases_and_audited_paradigms():
         indexed[curve["industry"]["name"], curve["regime"], curve["axis"]] = curve
         assert curve["demand"] == pytest.approx(np.array(curve["assigned_work"]) *
                                                np.array(curve["tokens_per_assigned_work"]))
-    assert indexed[HIGH_ADOPTION_CONCENTRATION.name, "work", "efficiency"]["shape"] == "hump"
-    valley = indexed[CAPABILITY_VALLEY.name, "attention", "capability"]
-    assert valley["shape"] == "U-shape"
-    assert all(np.diff(valley["attention_value"]) > 0)
-    offset = indexed["Offsetting efficiency", "attention", "efficiency"]
-    assert max(offset["demand"]) / min(offset["demand"]) < 1.10
+    assert indexed[LOW_ADOPTION_HURDLE.name, "work", "capability"]["shape"] == "falling"
+    assert indexed[REFERENCE_INDUSTRY.name, "work", "capability"]["shape"] == "hump"
+    assert indexed[HIGH_ADOPTION_HURDLE.name, "work", "capability"]["shape"] == "rising"
+    assert indexed[LOW_ADOPTION_HURDLE.name, "work", "efficiency"]["shape"] == "falling"
+    assert indexed[HIGH_ADOPTION_HURDLE.name, "work", "efficiency"]["shape"] == "rising"
+    assert indexed[HARD_EXECUTION.name, "attention", "efficiency"]["shape"] == "rising"
+    assert indexed[HARD_EXECUTION.name, "work", "efficiency"]["shape"] == "rising"
+    assert indexed[HIGH_CAPABILITY_REQUIREMENT.name, "work", "capability"]["shape"] == "hump"
+    assert indexed[HIGH_CAPABILITY_REQUIREMENT.name, "work", "efficiency"]["shape"] == "hump"
+    assert indexed[LOW_INFERENCE_RETURNS.name, "attention", "efficiency"]["shape"] == "approximately flat"
+    assert indexed[SLOW_REVIEW_GROWTH.name, "attention", "efficiency"]["shape"] == "falling"
+    assert indexed[PROPORTIONAL_REVIEW.name, "attention", "capability"]["shape"] == "hump"
+
+    # The price quantity itself rises as price falls. Spending can rise, fall,
+    # or peak depending on whether demand crosses the constant-revenue line.
+    spending_shapes = {}
+    for industry in work_paradigms():
+        curve = indexed[industry.name, "work", "price"]
+        spending = np.asarray(curve["demand"])[::-1] * np.asarray(curve["values"])[::-1]
+        spending_shapes[industry.name] = shape(spending)
+    assert spending_shapes == {
+        LOW_ADOPTION_HURDLE.name: "falling",
+        REFERENCE_INDUSTRY.name: "hump",
+        HIGH_ADOPTION_HURDLE.name: "rising",
+        HARD_EXECUTION.name: "rising",
+        HIGH_CAPABILITY_REQUIREMENT.name: "hump",
+    }

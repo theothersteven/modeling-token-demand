@@ -8,7 +8,7 @@ const plots = JSON.parse(fs.readFileSync(path.join(__dirname, '../figures/intera
 
 test('only identical adoption curves receive an overlap note', () => {
   assert.deepEqual(overlappingAdoption(plots['attention-limited-token-demand-indexed.png']),
-    ['Adoption concentration: high', 'Adoption concentration: low']);
+    ['High adoption hurdle', 'Low adoption hurdle']);
   assert.deepEqual(overlappingAdoption(plots['work-limited-token-demand-indexed.png']), []);
 });
 
@@ -43,7 +43,10 @@ test('linear elasticity axes are not converted into log scales', () => {
   const range = axisRange([0, .5, 1], 'linear');
   assert.ok(range[0] < 0 && range[1] > 1);
   assert.equal(plainLabel('Token efficiency, $\\eta$'), 'Token efficiency, η');
-  assert.equal(plainLabel('Token price, $ per million tokens'), 'Token price, USD / million tokens');
+  assert.equal(plainLabel('Review elasticity, $\\beta$'), 'Review elasticity, β');
+  assert.equal(plainLabel('Review-cost multiplier, $\\kappa_h$'), 'Review-cost multiplier, κₕ');
+  assert.equal(plainLabel('Marginal inference returns, $\\alpha$'), 'Marginal inference returns, α');
+  assert.equal(plainLabel('Normalized token price, $c$'), 'Normalized token price, c');
 });
 
 // A deliberately small DOM/Plotly test double exercises the actual event
@@ -128,19 +131,104 @@ async function mountedFigure(spec = plots['attention-limited-token-demand-indexe
 test('actual controls mount, link visibility, isolate and restore traces', async () => {
   const {figure, rendered} = await mountedFigure();
   assert.equal(rendered.length, 3);
-  assert.equal(rendered[0].data.length, 14); // each adoption case is individually selectable
-  assert.equal(rendered[2].data.length, 15); // includes revenue benchmark
+  assert.equal(rendered[0].data.length, 8); // each one-parameter case is selectable
+  assert.equal(rendered[2].data.length, 9); // includes revenue benchmark
   const legend = figure.querySelectorAll('.legend-item');
-  const execution = legend.find(node => node.getAttribute('aria-label') === 'Execution difficulty: high');
+  const execution = legend.find(node => node.getAttribute('aria-label') === 'Hard execution');
   const initialRanges = JSON.stringify(rendered.map(plot => plot.layout.yaxis.range));
   await execution.dispatch('click');
   assert.equal(execution.getAttribute('aria-pressed'), 'false');
-  assert.ok(rendered.every(plot => plot.data.find(line => line.name === 'Execution difficulty: high').visible === false));
+  assert.ok(rendered.every(plot => plot.data.find(line => line.name === 'Hard execution').visible === false));
   assert.equal(JSON.stringify(rendered.map(plot => plot.layout.yaxis.range)), initialRanges);
   await execution.dispatch('dblclick');
   assert.ok(rendered.every(plot => plot.data.filter(line => line.visible).length === 1));
   await figure.querySelectorAll('button').find(node => node.textContent === 'Show all').dispatch('click');
   assert.ok(rendered.every(plot => plot.data.every(line => line.visible)));
+});
+
+test('paper figures preserve solid reference, marked alternatives, and dotted benchmark', async () => {
+  const {figure, rendered} = await mountedFigure(plots['work-price-demand-spending.png']);
+  const demand = rendered[1].data;
+  const reference = demand.find(line => line.name === 'Reference industry');
+  assert.equal(reference.mode, 'lines');
+  assert.equal(reference.line.color, '#595959');
+  assert.equal(reference.line.dash, 'solid');
+
+  const alternatives = demand.filter(line =>
+    !['Reference industry', 'Constant revenue'].includes(line.name));
+  assert.ok(alternatives.every(line => line.mode === 'lines+markers'));
+  assert.ok(alternatives.every(line => line.line.dash === 'dash'));
+  assert.equal(new Set(alternatives.map(line => line.marker.symbol)).size, alternatives.length);
+
+  const benchmark = demand.find(line => line.name === 'Constant revenue');
+  assert.equal(benchmark.mode, 'lines');
+  assert.equal(benchmark.line.color, '#000000');
+  assert.equal(benchmark.line.dash, 'dot');
+  assert.ok(benchmark.line.width < reference.line.width);
+
+  const markerLabels = figure.querySelectorAll('.legend-item')
+    .filter(node => node.querySelector('.line-marker'));
+  assert.equal(markerLabels.length, alternatives.length);
+});
+
+test('figure one demand-peak stars match and follow their adoption curves', async () => {
+  const {figure, rendered} = await mountedFigure(plots['work-capability-demand-spending.png']);
+  const stars = rendered[0].data.filter(trace => trace.marker?.symbol === 'star');
+  assert.equal(stars.length, 5);
+  assert.equal(rendered[1].data.filter(trace => trace.marker?.symbol === 'star').length, 0);
+  for (const star of stars) {
+    const line = rendered[0].data.find(trace => trace.name === star.name && trace !== star);
+    assert.equal(star.marker.color, line.line.color);
+    assert.equal(star.x.length, 1);
+    assert.equal(star.y.length, 1);
+  }
+
+  const reference = figure.querySelectorAll('.legend-item')
+    .find(node => node.getAttribute('aria-label') === 'Reference industry');
+  await reference.dispatch('click');
+  assert.ok(rendered[0].data.filter(trace => trace.name === 'Reference industry')
+    .every(trace => trace.visible === false));
+});
+
+test('figure two square exposes physical and effective inference mechanisms', async () => {
+  const {figure, rendered} = await mountedFigure(plots['work-efficiency-demand-spending.png']);
+  assert.equal(rendered.length, 4);
+  assert.equal(figure.querySelector('.chart-panels').style['--panels'], 2);
+
+  const neutral = rendered[1].data.find(trace => trace.name === 'Revenue neutral (price fixed)');
+  assert.ok(neutral.y.every(value => value === 1));
+  const physical = rendered[2].data.find(trace => trace.name === 'Hard execution');
+  const effective = rendered[3].data.find(trace => trace.name === 'Hard execution');
+  assert.ok(physical.y[physical.y.length - 1] < physical.y[0]);
+  assert.ok(effective.y[effective.y.length - 1] > effective.y[0]);
+
+  const hard = figure.querySelectorAll('.legend-item')
+    .find(node => node.getAttribute('aria-label') === 'Hard execution');
+  await hard.dispatch('click');
+  assert.ok(rendered.every(plot => plot.data
+    .filter(trace => trace.name === 'Hard execution')
+    .every(trace => trace.visible === false)));
+});
+
+test('figure three is square and shows adoption, effort, and spending', async () => {
+  const spec = plots['work-price-demand-spending.png'];
+  const {figure, rendered} = await mountedFigure(spec);
+  assert.equal(rendered.length, 4);
+  const panels = figure.querySelector('.chart-panels');
+  assert.equal(panels.style['--panels'], 2);
+  assert.ok(!panels.classList.contains('center-last-panel'));
+
+  const adoption = rendered[0].data.find(trace => trace.name === 'Reference industry');
+  assert.equal(rendered[0].layout.yaxis.type, 'linear');
+  assert.ok(adoption.y.every(value => value >= 0 && value <= 100));
+
+  const effort = rendered[2].data.find(trace => trace.name === 'Reference industry');
+  assert.ok(effort.x[0] < effort.x[effort.x.length - 1]);
+  assert.ok(effort.y[0] > effort.y[effort.y.length - 1]);
+  assert.ok(rendered[2].layout.xaxis.range[0] > rendered[2].layout.xaxis.range[1]);
+
+  const spending = rendered[3].data.find(trace => trace.name === 'Reference industry');
+  assert.ok(spending.y.every(value => value > 0));
 });
 
 test('actual scale selector, linked zoom, and expand/escape handlers work', async () => {
@@ -190,10 +278,10 @@ test('each panel fits only itself and unlocks shared scales without moving its n
   }
 });
 
-test('both adoption-concentration labels can be toggled or isolated in all three panels', async () => {
+test('both adoption-hurdle labels can be toggled or isolated in all three panels', async () => {
   const {figure, rendered} = await mountedFigure();
   assert.match(figure.querySelector('.overlap-note').textContent, /separate toggles/);
-  for (const name of ['Adoption concentration: high', 'Adoption concentration: low']) {
+  for (const name of ['High adoption hurdle', 'Low adoption hurdle']) {
     const node = figure.querySelectorAll('.legend-item').find(item => item.getAttribute('aria-label') === name);
     assert.ok(node);
     await node.dispatch('dblclick');
@@ -206,13 +294,13 @@ test('both adoption-concentration labels can be toggled or isolated in all three
 
 test('paradigm gallery preserves mixed axes and linked case isolation', async () => {
   const {figure, rendered} = await mountedFigure(plots['paradigm-work-demand.png']);
-  assert.deepEqual(rendered.map(plot => plot.layout.yaxis.type), ['linear', 'linear', 'log']);
+  assert.deepEqual(rendered.map(plot => plot.layout.yaxis.type), ['log', 'log', 'log']);
   assert.equal(figure.querySelector('select'), undefined);
   const adoption = figure.querySelectorAll('.legend-item')
-    .find(node => node.getAttribute('aria-label') === 'Adoption concentration: high');
+    .find(node => node.getAttribute('aria-label') === 'High adoption hurdle');
   await adoption.dispatch('dblclick');
   assert.ok(rendered.every(plot => plot.data.filter(line => line.visible).length === 1));
-  assert.ok(rendered.every(plot => plot.data.find(line => line.name === 'Adoption concentration: high').visible));
+  assert.ok(rendered.every(plot => plot.data.find(line => line.name === 'High adoption hurdle').visible));
   const before = rendered.map(plot => JSON.stringify(plot.layout.yaxis.range));
   await figure.querySelectorAll('.fit-panel')[1].dispatch('click');
   assert.equal(JSON.stringify(rendered[0].layout.yaxis.range), before[0]);

@@ -56,17 +56,23 @@ figcaption { font-size:15px; color:var(--ink); font-weight:650; margin-bottom:14
 .legend-item { border:1px solid transparent; display:flex; align-items:center; gap:6px; border-radius:4px; padding:4px 6px; background:transparent; color:#455149; font-size:10px; }
 .legend-item:hover { background:#f2f4ef; border-color:#d7ddd4; }
 .legend-item[aria-pressed=false] { opacity:.35; text-decoration:line-through; }
-.line-swatch { width:20px; border-top:2px solid var(--swatch); display:inline-block; }
-.line-swatch.dash { border-top-style:dashed; }
-.line-swatch.dashdot { border-top-style:dashed; border-top-width:3px; }
+.line-swatch { width:20px; height:12px; display:inline-block; position:relative; flex:none; }
+.line-swatch::before { content:""; position:absolute; left:0; right:0; top:5px; border-top:2px solid var(--swatch); }
+.line-swatch.dash::before { border-top-style:dashed; }
+.line-swatch.dashdot::before { border-top-style:dashed; border-top-width:3px; }
+.line-swatch.dot::before { border-top-style:dotted; }
+.line-marker { position:absolute; left:50%; top:5px; transform:translate(-50%,-50%); background:#fff; font-size:13px; line-height:1; font-weight:700; }
 .overlap-note { flex-basis:100%; color:var(--muted); font-size:10px; margin:4px 0 0; }
 .chart-panels { display:grid; grid-template-columns:repeat(var(--panels,1),minmax(0,1fr)); gap:8px; margin-top:18px; }
 .chart-panel { min-width:0; background:#fff; }
+.chart-panels.center-last-panel .chart-panel:last-child { grid-column:1 / -1; width:calc((100% - 8px)/2); justify-self:center; }
 .panel-heading { display:flex; align-items:center; gap:8px; justify-content:space-between; min-height:28px; padding:0 4px; font-weight:600; font-size:11px; }
 .panel-actions { display:flex; gap:5px; flex-shrink:0; }
 .expand-panel, .fit-panel { font-size:10px; padding:3px 7px; }
 .plot { height:340px; width:100%; }
-.chart-help { color:var(--muted); font-size:10px; margin:8px 4px 4px; }
+.chart-help { display:grid; gap:3px; color:var(--muted); font-size:10px; margin:8px 4px 4px; }
+.chart-context { color:var(--ink); font-size:11px; font-weight:550; }
+.chart-instructions { color:var(--muted); }
 .chart-fallback { display:block; }
 .chart-ready .chart-fallback { display:none; }
 .chart-panel.expanded { position:fixed; inset:84px 24px 24px; z-index:60; padding:20px; border:1px solid #bfcbbb; border-radius:8px; box-shadow:0 0 0 100vmax #22312890; }
@@ -77,6 +83,6 @@ footer { max-width:800px; margin:60px auto 0; padding-top:20px; border-top:1px s
 .skip-link { position:fixed; top:-100px; left:20px; z-index:100; background:white; padding:10px; }
 .skip-link:focus { top:10px; }
 @media(min-width:1500px) { .plot { height:390px; } }
-@media(max-width:1100px) { .reading-layout { grid-template-columns:170px minmax(0,1fr); gap:22px; padding:30px 20px; } .chart-panels { grid-template-columns:1fr; } .plot { height:360px; } }
+@media(max-width:1100px) { .reading-layout { grid-template-columns:170px minmax(0,1fr); gap:22px; padding:30px 20px; } .chart-panels { grid-template-columns:1fr; } .chart-panels.center-last-panel .chart-panel:last-child { grid-column:auto; width:100%; } .plot { height:360px; } }
 @media(max-width:760px) { .topbar { padding:0 16px; gap:12px; height:58px; } .wordmark span, .source-link { display:none; } .source-status { font-size:10px; } .reading-layout { display:block; padding:24px 14px; } aside { position:static; height:auto; max-height:180px; margin-bottom:25px; border-bottom:1px solid var(--line); } .nav-note { display:none; } .interactive-figure { padding:14px 8px 8px; } body { font-size:16px; } .chart-panel.expanded { inset:68px 8px 8px; padding:10px; } }
-@media print { .topbar,aside,.reader-note,.edition-label,.chart-controls,.chart-legend,.chart-panels,.chart-help,.skip-link { display:none!important; } .reading-layout { display:block; padding:0; } body { background:#fff; font-size:11pt; } .chart-fallback { display:block!important; } .interactive-figure { break-inside:avoid; border:0; } h2,h3,h4 { break-after:avoid; } .display-math,div.math { break-before:avoid; break-inside:avoid; } }
+@media print { .topbar,aside,.reader-note,.edition-label,.chart-controls,.chart-legend,.chart-panels,.chart-instructions,.skip-link { display:none!important; } .reading-layout { display:block; padding:0; } body { background:#fff; font-size:11pt; } .chart-fallback { display:block!important; } .interactive-figure { break-inside:avoid; border:0; } h2,h3,h4 { break-after:avoid; } .display-math,div.math { break-before:avoid; break-inside:avoid; } }

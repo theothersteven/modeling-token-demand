@@ -1,12 +1,12 @@
 """Numerical solution of the user's policy problem.
 
-The optimizer searches over delegation horizon and inference intensity in log
+The optimizer searches over delegation horizon and model effort level in log
 space. A coarse grid supplies several starting points to a bounded local
 optimizer.  This is deterministic and robust enough for comparative statics
 without coupling the economic model to one particular solver.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from typing import Iterable, Optional
 
@@ -29,9 +29,9 @@ class OptimizationSettings:
     min_delegation_hours: float = 0.02
     max_delegation_hours: float = 80.0
 
-    # Smallest and largest token budget per work-hour.
-    min_tokens_per_work_hour: float = 2_000.0
-    max_tokens_per_work_hour: float = 2_000_000.0
+    # Smallest and largest normalized model effort level per work-hour.
+    min_tokens_per_work_hour: float = 0.02
+    max_tokens_per_work_hour: float = 20.0
 
     # Grid resolution and number of promising grid points refined locally.
     grid_points_per_dimension: int = 15
@@ -50,6 +50,17 @@ class OptimizationSettings:
             raise ValueError("grid_points_per_dimension must be at least two")
         if self.local_starts < 1:
             raise ValueError("local_starts must be at least one")
+
+
+@dataclass(frozen=True)
+class ReservationPriceResult:
+    """Token price that leaves the optimized user at a target value."""
+
+    token_price: float
+    outcome: PolicyOutcome
+    objective_gap: float
+    iterations: int
+    function_calls: int
 
 
 class PolicyOptimizer:
@@ -174,6 +185,98 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
 
         return outcome.surplus_per_attention_hour
 
+    def solve_reservation_price(
+        self,
+        model: IndustryModel,
+        scenario: Scenario,
+        target_surplus_per_attention_hour: float,
+        *,
+        log_price_tolerance: float = 1e-6,
+        max_bracket_steps: int = 48,
+    ) -> ReservationPriceResult:
+        """Find the token price that delivers a target optimized user value.
+
+        Every price evaluation reoptimizes delegation scope and inference
+        effort with :meth:`solve_interior`. The root is solved in log price,
+        which preserves positivity and gives a relative rather than absolute
+        price tolerance. Starting at ``scenario.token_price``, the method
+        expands a factor-of-two bracket in whichever direction is required.
+        """
+
+        if not math.isfinite(target_surplus_per_attention_hour):
+            raise ValueError("target surplus must be finite")
+        if log_price_tolerance <= 0:
+            raise ValueError("log_price_tolerance must be positive")
+        if max_bracket_steps < 1:
+            raise ValueError("max_bracket_steps must be positive")
+
+        evaluations: dict[float, PolicyOutcome] = {}
+
+        def gap(log_price: float) -> float:
+            price = math.exp(float(log_price))
+            outcome = self.solve_interior(
+                model, replace(scenario, token_price=price)
+            )
+            evaluations[float(log_price)] = outcome
+            return (
+                outcome.surplus_per_attention_hour
+                - target_surplus_per_attention_hour
+            )
+
+        log_initial = math.log(scenario.token_price)
+        initial_gap = gap(log_initial)
+        value_tolerance = 1e-10 * max(
+            1.0, abs(target_surplus_per_attention_hour)
+        )
+        if abs(initial_gap) <= value_tolerance:
+            outcome = evaluations[log_initial]
+            return ReservationPriceResult(
+                token_price=scenario.token_price,
+                outcome=outcome,
+                objective_gap=initial_gap,
+                iterations=0,
+                function_calls=1,
+            )
+
+        step = math.log(2.0)
+        if initial_gap > 0:
+            lower, upper = log_initial, log_initial + step
+            for _ in range(max_bracket_steps):
+                if gap(upper) <= 0:
+                    break
+                upper += step
+            else:
+                raise ValueError("could not bracket a finite reservation price")
+        else:
+            lower, upper = log_initial - step, log_initial
+            for _ in range(max_bracket_steps):
+                if gap(lower) >= 0:
+                    break
+                lower -= step
+            else:
+                raise ValueError(
+                    "target value is unattainable at a positive token price"
+                )
+
+        root, details = brentq(
+            gap,
+            lower,
+            upper,
+            xtol=log_price_tolerance,
+            rtol=4 * np.finfo(float).eps,
+            maxiter=64,
+            full_output=True,
+        )
+        final_gap = gap(root)
+        outcome = evaluations[root]
+        return ReservationPriceResult(
+            token_price=math.exp(root),
+            outcome=outcome,
+            objective_gap=final_gap,
+            iterations=details.iterations,
+            function_calls=details.function_calls + 1,
+        )
+
     def solve_interior(
         self, model: IndustryModel, scenario: Scenario
     ) -> PolicyOutcome:
@@ -207,7 +310,7 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
             p.execution_scale * scenario.model_capability
         )
         cost_constant = alpha * math.log(
-            scenario.token_price * p.token_reference
+            scenario.token_price
             / (alpha * p.value_per_work_hour * scenario.token_efficiency)
         )
 
@@ -215,12 +318,18 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
             # A = -log(q); B = -log(r), implied by the horizon FOC after
             # substituting the inference FOC cx = alpha * B * b * q * r.
             capability_exponent = math.exp(nu * (log_s - log_capability_horizon))
-            variable_review = p.verification_scale * math.exp(
-                p.verification_elasticity * log_s
+            s = math.exp(log_s)
+            review_growth = math.exp(
+                p.verification_elasticity * math.log1p(s)
             )
+            variable_review = p.verification_scale * (review_growth - 1.0)
+            review_hours = p.verification_fixed_hours + variable_review
             review_elasticity = (
-                p.verification_elasticity * variable_review
-                / (p.verification_fixed_hours + variable_review)
+                p.verification_elasticity
+                * p.verification_scale
+                * s
+                * review_growth
+                / ((1.0 + s) * review_hours)
             )
             delta = 1.0 - review_elasticity
             execution_exponent = (
@@ -246,7 +355,7 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
             lower -= 8.0
         log_s = brentq(residual, lower, upper, xtol=1e-12, rtol=1e-12)
         _, execution_exponent = exponents(log_s)
-        log_x = math.log(p.token_reference / scenario.token_efficiency) + (
+        log_x = -math.log(scenario.token_efficiency) + (
             log_s - log_execution_scale - math.log(execution_exponent)
         ) / alpha
         policy = Policy(

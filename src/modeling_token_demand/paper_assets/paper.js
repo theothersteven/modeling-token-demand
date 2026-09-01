@@ -2,11 +2,12 @@
 (() => {
   'use strict';
   const reference = 'Reference industry';
-  const adoptionNames = ['Adoption concentration: high', 'Adoption concentration: low'];
+  const adoptionNames = ['High adoption hurdle', 'Low adoption hurdle'];
 
   function plainLabel(text) {
     return text.replace(/\$ per million/g, 'USD / million').replace(/\$|\\left|\\right/g, '')
-      .replace(/\\eta/g, 'η').replace(/\\rho/g, 'ρ')
+      .replace(/\\kappa_h/g, 'κₕ').replace(/\\alpha/g, 'α')
+      .replace(/\\beta/g, 'β').replace(/\\eta/g, 'η').replace(/\\rho/g, 'ρ')
       .replace(/\\star/g, '*').replace(/\\log/g, ' log ')
       .replace(/c_0/g, 'c₀').replace(/[{}^]/g, '').replace(/\s+/g, ' ').trim();
   }
@@ -87,6 +88,7 @@
     const help = figure.querySelector('.chart-help');
     const caption = figure.querySelector('figcaption').textContent;
     panels.style.setProperty('--panels', spec.columns || spec.panels.length);
+    panels.classList.toggle('center-last-panel', Boolean(spec.center_last));
     figure.setAttribute('aria-label', caption);
 
     function updateLegend() {
@@ -95,8 +97,11 @@
 
     async function updateVisibility() {
       updateLegend();
-      await Promise.all(charts.map(({plot, lines}) => Plotly.restyle(plot, {
-        visible: lines.map(line => visible.has(line.name))
+      await Promise.all(charts.map(({plot, lines, points}) => Plotly.restyle(plot, {
+        visible: [
+          ...lines.map(line => visible.has(line.name)),
+          ...points.map(point => visible.has(point.name))
+        ]
       })));
     }
 
@@ -160,6 +165,16 @@
       const swatch = element('span', `line-swatch ${line.dash}`);
       swatch.style.setProperty('--swatch', line.color);
       swatch.setAttribute('aria-hidden', 'true');
+      const markerGlyph = {
+        circle: '○', square: '□', 'triangle-up': '△',
+        'triangle-down': '▽', 'triangle-left': '◁',
+        'triangle-right': '▷', diamond: '◇', x: '×'
+      }[line.marker];
+      if (markerGlyph) {
+        const marker = element('span', 'line-marker', markerGlyph);
+        marker.style.color = line.color;
+        swatch.append(marker);
+      }
       node.append(swatch, element('span', '', label));
       node.addEventListener('dblclick', () => {
         visible.clear(); visible.add(name); updateVisibility();
@@ -226,10 +241,25 @@
       heading.append(titleNode, actions); section.append(heading, plot); panels.append(section);
       const lines = [...panel.lines].sort((a, b) => a.order - b.order);
       const traces = lines.map(line => ({
-        type: 'scatter', mode: 'lines', name: plainLabel(line.name), x: line.x, y: line.y,
+        type: 'scatter', mode: line.marker ? 'lines+markers' : 'lines',
+        name: plainLabel(line.name), x: line.x, y: line.y,
         line: {color: line.color, dash: line.dash, width: line.width},
+        ...(line.marker ? {marker: {
+          symbol: `${line.marker}-open`, size: 7, color: line.color,
+          line: {color: line.color, width: 1}, maxdisplayed: 10
+        }} : {}),
         hovertemplate: '%{x:.4g}<br>%{y:.5g}<extra>%{fullData.name}</extra>'
       }));
+      const points = panel.points || [];
+      traces.push(...points.map(point => ({
+        type:'scatter', mode:'markers', name:plainLabel(point.name),
+        x:[point.x], y:[point.y], showlegend:false, cliponaxis:false,
+        marker:{
+          symbol:point.marker, size:point.size, color:point.color,
+          line:{color:'#fff', width:1}
+        },
+        hovertemplate:'Maximum token demand in plotted range<br>%{x:.4g}<br>%{y:.5g}<extra>%{fullData.name}</extra>'
+      })));
       const shapes = panel.guides.map(guide => guide.axis === 'x' ? {
         type:'line', xref:'x', yref:'paper', x0:guide.value, x1:guide.value, y0:0, y1:1,
         line:{color:'#9ba59a', width:1, dash:'dot'}
@@ -242,7 +272,7 @@
         font:{family:'system-ui, sans-serif', size:10, color:'#596359'},
         margin:{l:65, r:12, t:16, b:70}, hovermode:'closest', dragmode:'zoom', shapes,
         xaxis:{type:panel.xscale, title:{
-          text:panel.xlabel.startsWith('Token price,') ? 'Token price (USD / million)<br>cheaper →' : plainLabel(panel.xlabel),
+          text:plainLabel(panel.xlabel),
           font:{size:10}, standoff:14},
           range:originalRange(panel.xlim, panel.xscale), autorange:false,
           tickmode:'array', tickvals:panel.xticks, ticktext:panel.xticks.map(String),
@@ -258,7 +288,7 @@
         toImageButtonOptions:{format:'png', filename:figure.id + '-' + (index + 1), scale:2},
         doubleClick:false
       });
-      charts.push({plot, lines});
+      charts.push({plot, lines, points});
       if (fit) fit.disabled = false;
       plot.on('plotly_relayout', async update => {
         if (synchronizing) return;
@@ -271,7 +301,8 @@
       });
     }
     const benchmark = [...series.keys()].some(name => name.startsWith('Constant revenue'));
-    help.textContent = 'Click a line label to toggle; double-click to isolate. Drag to zoom. '
+    const instructions = help.querySelector('.chart-instructions') || help;
+    instructions.textContent = 'Click a line label to toggle; double-click to isolate. Drag to zoom. '
       + (spec.panels.length > 1
         ? 'Each panel’s Fit visible changes only its y-axis and switches to independent scales. Fit all visible fits the whole figure.'
         : 'Hiding lines keeps the scale fixed; choose Fit visible to rescale.')
@@ -287,7 +318,9 @@
         observer.unobserve(entry.target);
         if (typeof Plotly === 'undefined') return;
         mountChart(entry.target, data[entry.target.dataset.chart]).catch(error => {
-          entry.target.querySelector('.chart-help').textContent =
+          const help = entry.target.querySelector('.chart-help');
+          const instructions = help.querySelector('.chart-instructions') || help;
+          instructions.textContent =
             'Interactive chart unavailable; the original figure is shown. ' + error.message;
           entry.target.querySelector('.chart-panels').replaceChildren();
           entry.target.querySelector('.chart-controls').replaceChildren();

@@ -17,25 +17,37 @@ from .optimizer import AttentionConstrainedOptimizer, PolicyOptimizer
 from .paradigms import axis_values, boundary_hits, gallery_settings
 
 
+CAPABILITY_LEVER_CASES = (
+    dict(label="Reference model", scenario_overrides=dict(model_capability=1.0)),
+    dict(label="Higher capability (m = 5)",
+         scenario_overrides=dict(model_capability=5.0)),
+    dict(label="Hard execution (a = 1)",
+         industry_overrides=dict(execution_scale=1.0)),
+)
+
+
+def _lever_cases(parameter, target):
+    """Apply the same comparison cases to one isolated capability lever."""
+    return [dict(case, parameter=parameter, target=target)
+            for case in CAPABILITY_LEVER_CASES]
+
+
 def experiments(points=81):
     """Axis values and isolated changes; all unmentioned inputs stay fixed."""
     return (
         dict(
             key="verification-speed", baseline=1.0,
             values=axis_values(.1, 2, 1, points, [.25, .5]),
-            xlabel="Verification time multiplier, v (faster to the right)",
+            xlabel=r"Review-cost multiplier, $\kappa_h$ (lower is better)",
             ticks=[.1, .25, .5, 1, 2], scale="log", reverse=True,
-            cases=[dict(label="Reference industry", target="scenario",
-                        parameter="verification_time_multiplier")],
+            cases=_lever_cases("verification_time_multiplier", "scenario"),
         ),
         dict(
             key="review-growth", baseline=.5,
-            values=np.unique(np.r_[np.linspace(.1, .95, points), .25, .5]),
-            xlabel="Review growth, β (slower growth to the right)",
-            ticks=[.1, .25, .5, .75, .95], scale="linear", reverse=True,
-            cases=[dict(label=f"Capability m = {m:g}", target="industry",
-                        parameter="verification_elasticity",
-                        scenario_overrides=dict(model_capability=m)) for m in (1, 5)],
+            values=np.unique(np.r_[np.linspace(.05, .95, points), .1, .25, .5, .75]),
+            xlabel=r"Review elasticity, $\beta$ (more scalable to the right)",
+            ticks=[.05, .25, .5, .75, .95], scale="linear", reverse=True,
+            cases=_lever_cases("verification_elasticity", "industry"),
         ),
         dict(
             key="harness-feasibility", baseline=1.0,
@@ -58,6 +70,13 @@ def experiments(points=81):
                         parameter="token_efficiency",
                         industry_overrides=dict(inference_returns=alpha))
                    for alpha in (.25, .5, .75)],
+        ),
+        dict(
+            key="inference-returns", baseline=.5,
+            values=np.unique(np.r_[np.linspace(.1, .9, points), .25, .5, .75]),
+            xlabel=r"Marginal inference returns, $\alpha$",
+            ticks=[.1, .3, .5, .7, .9], scale="linear", reverse=False,
+            cases=_lever_cases("inference_returns", "industry"),
         ),
     )
 
@@ -123,12 +142,16 @@ def solve_interventions(points=81):
                 ])
                 demand = np.array([o.work_limited_tokens if regime == "work"
                                    else o.attention_limited_tokens for o in outcomes])
-                intensity = np.array([o.policy.tokens_per_work_hour for o in outcomes])
-                np.testing.assert_allclose(demand, assigned * intensity, rtol=1e-12)
+                effort_level = np.array(
+                    [o.policy.tokens_per_work_hour for o in outcomes]
+                )
+                np.testing.assert_allclose(
+                    demand, assigned * effort_level, rtol=1e-12
+                )
                 record.update(
                     demand=demand.tolist(), assigned_work=assigned.tolist(),
                     completed_work=(assigned * [o.success_probability for o in outcomes]).tolist(),
-                    tokens_per_assigned_work=intensity.tolist(),
+                    tokens_per_assigned_work=effort_level.tolist(),
                     success=[o.success_probability for o in outcomes],
                     adoption=[o.adoption_share for o in outcomes] if regime == "work" else None,
                     s=[o.policy.delegation_hours for o in outcomes],

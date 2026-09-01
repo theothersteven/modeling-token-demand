@@ -30,7 +30,7 @@ The comparison concerns exposition and analytical usefulness. These papers addre
 
 | Ingredient | What is lost if it is removed? | Decision |
 |---|---|---|
-| Choice of inference intensity | Users cannot save tokens or spend more inference as prices change | Keep |
+| Choice of model effort level | Users cannot save tokens or spend more inference as prices change | Keep |
 | Choice of delegated scope | Capability cannot change the amount of work supervised per hour | Keep |
 | Work adoption or an equivalent extensive margin | A finite workload cannot undergo adoption takeoff and saturation | Keep a general hurdle distribution in the argument |
 | Review overhead and scope-dependent review | Cannot distinguish amortizing checkpoints from review that grows with the task | Keep; state which results need each part |
@@ -38,7 +38,7 @@ The comparison concerns exposition and analytical usefulness. These papers addre
 | Particular exponential and logistic functions | Not needed for the general price, efficiency, and uniform-review results | Confine to numerical illustrations |
 | A full joint allocation, dynamic diffusion, or endogenous supply model | Needed for intermediate constraints or an aggregate time forecast, not these comparative statics | Explain the boundary; do not add these models |
 
-The zero-overhead benchmark is especially informative: with a homogeneous review function and horizon-scaling capability, optimal scope scales with capability, inference intensity stays fixed, and attention-limited demand scales with `m^(1-beta)`. The unusual valley needs additional structure; it should not receive the same prominence as the general price-efficiency identity.
+The zero-overhead benchmark is especially informative: with a homogeneous review function and horizon-scaling capability, optimal scope scales with capability, model effort stays fixed, and attention-limited demand scales with `m^(1-beta)`. The unusual valley needs additional structure; it should not receive the same prominence as the general price-efficiency identity.
 
 ### Validation and disposition
 
@@ -69,7 +69,7 @@ Completed: 64 Python tests and 11 JavaScript control tests pass. The Python chec
 | Cheaper tokens weakly raise purchases | Revealed preference under the appropriate objective; monotonicity audits | Prices also change quality, feasible choices, fees, or other inputs |
 | Efficiency response equals the equivalent spending response | Change of variables in either objective; independent numerical equivalence tests | Efficiency affects feasibility or review separately, or relevant action bounds bind |
 | Uniformly faster review scales attention-limited use | Multiplicative capacity change leaves the conditional policy unchanged; throughput checks | Work runs out, the attention constraint no longer binds, or operation is uneconomic |
-| Capability can raise or lower demand | Audited examples expose both activity and intensity; their product is verified | Not a universal sign prediction; a different capability path can give different responses |
+| Capability can raise or lower demand | Audited examples expose both activity and effort; their product is verified | Not a universal sign prediction; a different capability path can give different responses |
 | Scope and inference are both useful choices | Removing either eliminates one of the competing margins | A narrower application may legitimately hold one of them fixed |
 
 ### Validation and final disposition
@@ -96,7 +96,7 @@ The user approved two changes after discussing the final draft: sharpen what the
 
 4. **The examples expose conditions, not a need for more choices.** Make clear that candidate work is otherwise comparable, review detects success, the software backlog is abundant only relative to review capacity during the period, and review-tool compute and maintenance costs are outside the current specification. Mandatory work, task-dependent policies, partial reuse, repair, undetected damage, and learning remain outside scope.
 
-5. **Add one exact, portable corollary.** Under fixed work, if chosen inference intensity falls to a fraction $r$ of its initial value, token demand must fall whenever initial adoption exceeds $r$, even if every remaining opportunity adopts. This follows from $D=WAx$ and does not rely on the illustrative adoption distribution.
+5. **Add one exact, portable corollary.** Under fixed work, if the chosen model effort level falls to a fraction $r$ of its initial value, token demand must fall whenever initial adoption exceeds $r$, even if every remaining opportunity adopts. This follows from $D=WAx$ and does not rely on the illustrative adoption distribution.
 
 6. **Make the empirical questions follow the contribution.** Ask first which constraint is active, then record assigned work, completed work, inference, and review together, and finally use price variation as a conditional efficiency diagnostic. The conclusion ends with the four objects a forecast must identify: work that can enter, whether review binds, review scaling with scope, and inference per work unit.
 

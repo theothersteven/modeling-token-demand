@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--points", type=int, default=25)
     args = parser.parse_args()
     settings = OptimizationSettings(
-        max_tokens_per_work_hour=20_000_000,
+        max_tokens_per_work_hour=200,
         grid_points_per_dimension=11, local_starts=2,
     )
     work = PolicyOptimizer(settings)

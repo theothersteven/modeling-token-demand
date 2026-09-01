@@ -12,15 +12,20 @@ from pathlib import Path
 
 import numpy as np
 
-from .calibrations import (
-    CAPABILITY_VALLEY, attention_paradigms, work_paradigms,
-)
+from .calibrations import attention_paradigms, work_paradigms
 from .model import IndustryModel, Scenario
 from .optimizer import AttentionConstrainedOptimizer, OptimizationSettings, PolicyOptimizer
 
 
 COLORS = {
     "Reference industry": "#595959",
+    "Low adoption hurdle": "#1f77b4",
+    "High adoption hurdle": "#ff7f0e",
+    "Hard execution": "#2ca02c",
+    "High capability requirement": "#d62728",
+    "Low inference returns": "#9467bd",
+    "Slow-growing review": "#8c564b",
+    "Nearly proportional review": "#e377c2",
     "Adoption concentration: high": "#D55E00",
     "Adoption concentration: low": "#D55E00",
     "Early saturation": "#008B8B",
@@ -32,11 +37,39 @@ COLORS = {
     "Offsetting efficiency": "#6B6B00",
 }
 
+MARKERS = {
+    "Low adoption hurdle": "o",
+    "High adoption hurdle": "s",
+    "Hard execution": "^",
+    "High capability requirement": "x",
+    "Low inference returns": "o",
+    "Slow-growing review": "s",
+    "Nearly proportional review": "x",
+}
+
+ATTENTION_COLORS = {
+    "Reference industry": "#595959",
+    "Hard execution": "#1f77b4",
+    "Low inference returns": "#ff7f0e",
+    "Slow-growing review": "#2ca02c",
+    "Nearly proportional review": "#d62728",
+}
+
+
+def _industry_line_options(name, *, linewidth=2, colors=COLORS):
+    if name == "Reference industry":
+        return {"color": colors[name], "linestyle": "-", "linewidth": linewidth + .5}
+    return {
+        "color": colors[name], "linestyle": "--", "linewidth": linewidth,
+        "marker": MARKERS.get(name, "o"), "markevery": 9, "markersize": 5.5,
+        "markerfacecolor": "white", "markeredgewidth": 1,
+    }
+
 
 def gallery_settings():
     return OptimizationSettings(
         min_delegation_hours=.002, max_delegation_hours=800,
-        min_tokens_per_work_hour=200, max_tokens_per_work_hour=200_000_000,
+        min_tokens_per_work_hour=.002, max_tokens_per_work_hour=2_000,
         grid_points_per_dimension=17, local_starts=4,
     )
 
@@ -105,7 +138,7 @@ def axis_values(lower, upper, baseline, points=81, extra=()):
 def curve_record(industry, axis, values, outcomes, regime):
     demand = [o.work_limited_tokens if regime == "work" else o.attention_limited_tokens
               for o in outcomes]
-    baseline = 10.0 if axis == "price" else 1.0
+    baseline = 1.0
     baseline_index = list(values).index(baseline)
     assigned = [industry.potential_work_hours * o.adoption_share if regime == "work"
                 else industry.human_attention_hours * o.policy.delegation_hours
@@ -130,6 +163,70 @@ def curve_record(industry, axis, values, outcomes, regime):
     }
 
 
+def reservation_price_record(
+    model,
+    optimizer,
+    capabilities,
+    *,
+    baseline_capability=1.0,
+    baseline_price=1.0,
+    maximum_capability=5.0,
+):
+    """Solve exact token prices that match baseline optimized user value.
+
+    The plotted comparison focuses on improvements from the baseline through
+    ``maximum_capability``. At every candidate price the attention-constrained
+    user reoptimizes scope and inference effort.
+    """
+
+    baseline = optimizer.solve_interior(
+        model,
+        Scenario(
+            model_capability=baseline_capability,
+            token_price=baseline_price,
+        ),
+    )
+    target = baseline.surplus_per_attention_hour
+    selected = np.asarray(capabilities, dtype=float)
+    selected = selected[
+        (selected >= baseline_capability) & (selected <= maximum_capability)
+    ]
+    results = [
+        optimizer.solve_reservation_price(
+            model,
+            Scenario(
+                model_capability=float(capability),
+                token_price=baseline_price,
+            ),
+            target,
+        )
+        for capability in selected
+    ]
+    prices = np.asarray([result.token_price for result in results])
+    relative_gaps = np.asarray([
+        abs(result.objective_gap) / max(1.0, abs(target))
+        for result in results
+    ])
+    if len(prices) == 0 or not math.isclose(selected[0], baseline_capability):
+        raise AssertionError("reservation-price curve must include its baseline")
+    if not math.isclose(prices[0], baseline_price, rel_tol=1e-9):
+        raise AssertionError("reservation price must equal token price at baseline")
+    if np.min(np.diff(prices)) < -1e-8:
+        raise AssertionError("reservation price must rise with capability")
+    if np.max(relative_gaps) >= 2e-6:
+        raise AssertionError("reservation-price root did not match target value")
+    hits = boundary_hits([result.outcome for result in results], optimizer.settings)
+    if hits:
+        raise AssertionError(f"reservation-price policy bound hits: {hits}")
+    return {
+        "reservation_capability": selected.tolist(),
+        "reservation_price": prices.tolist(),
+        "reservation_price_baseline": float(baseline_price),
+        "reservation_target_surplus": float(target),
+        "reservation_max_relative_gap": float(np.max(relative_gaps)),
+    }
+
+
 def solve_gallery(points=81):
     """Solve all panels; reject bound-driven shapes and audit selected optima."""
     settings = gallery_settings()
@@ -147,7 +244,7 @@ def solve_gallery(points=81):
     grids = {
         "capability": ("model_capability", axis_values(.25, 10, 1, points, [2, 5])),
         "efficiency": ("token_efficiency", axis_values(.25, 10, 1, points, [2, 5])),
-        "price": ("token_price_per_million", axis_values(1, 80, 10, points, [2, 5, 20, 40])),
+        "price": ("token_price", axis_values(.1, 8, 1, points, [.2, .5, 2, 4])),
     }
     curves, audit = [], []
     # Only adoption differs between the first two work cases, so reuse the
@@ -192,8 +289,7 @@ def solve_gallery(points=81):
     for base in attention_paradigms():
         industry = replace(base, human_attention_hours=100_000)
         model = IndustryModel(industry)
-        values = axis_values(.1, 30, 1, points, [2, 5, 10]) if base == CAPABILITY_VALLEY \
-            else grids["capability"][1]
+        values = grids["capability"][1]
         outcomes = [attention.solve_interior(model, Scenario(model_capability=float(value)))
                     for value in values]
         assert not boundary_hits(outcomes, settings), industry.name
@@ -233,16 +329,24 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
     work = PolicyOptimizer(strict)
     attention = AttentionConstrainedOptimizer(strict)
     configurations = {industry.name: industry for industry in industries}
-    curves, errors = [], []
+    curves, errors, reservation_errors = [], [], []
     for axis, field, values in scenario_axes:
         for regime in ("work", "attention"):
             for name, outcomes in sweep_sets[f"{regime} {axis}"].items():
                 industry = configurations[name]
                 assert not boundary_hits(outcomes, settings), (name, regime, axis)
+                model = IndustryModel(industry)
                 record = curve_record(industry, axis, values, outcomes, regime)
+                if regime == "attention" and axis == "capability":
+                    reservation = reservation_price_record(
+                        model, attention, values
+                    )
+                    record.update(reservation)
+                    reservation_errors.append(
+                        reservation["reservation_max_relative_gap"]
+                    )
                 indices = {0, len(values) - 1, record["baseline_index"],
                            int(np.argmin(record["demand"])), int(np.argmax(record["demand"]))}
-                model = IndustryModel(industry)
                 for index in sorted(indices):
                     scenario = Scenario(**{field: float(values[index])})
                     checked = work.solve(model, scenario) if regime == "work" \
@@ -257,7 +361,10 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
                 curves.append(record)
         print(f"Main-figure independent audit: {axis} passed.", flush=True)
     return {"curves": curves, "audit": {"boundary_hits": [],
-            "independent_checks": len(errors), "max_relative_objective_error": max(errors)}}
+            "independent_checks": len(errors) + len(reservation_errors),
+            "max_relative_objective_error": max(errors),
+            "reservation_price_checks": len(reservation_errors),
+            "reservation_price_max_relative_gap": max(reservation_errors)}}
 
 
 def _format_axis(ax, xlabel, ticks, baseline, ylabel, log_y=False, reverse=False):
@@ -286,22 +393,20 @@ def build_paradigm_figures(directory: Path, points=81):
         axes, ("capability", "efficiency", "price"),
         ("(a) Adoption can create a capability hump", "(b) Efficiency: rebound, then savings",
          "(c) Cheaper tokens unlock new work"),
-        ("Model capability, m", "Token efficiency, eta", "Token price, USD / million"),
-        ((.25, .5, 1, 2, 5, 10), (.25, .5, 1, 2, 5, 10), (1, 2, 5, 10, 20, 40, 80)),
-        (1, 1, 10),
+        ("Model capability, m", r"Token efficiency, $\eta$", "Normalized token price, c"),
+        ((.25, .5, 1, 2, 5, 10), (.25, .5, 1, 2, 5, 10), (.1, .2, .5, 1, 2, 4, 8)),
+        (1, 1, 1),
     ):
         for record in (r for r in work if r["axis"] == axis):
             name = record["industry"]["name"]
-            ax.plot(record["values"], _index(record), label=name, color=COLORS[name], linewidth=2,
-                    linestyle="-" if name == "Reference industry" or name.endswith(": high") else "-.")
+            ax.plot(record["values"], _index(record), label=name,
+                    **_industry_line_options(name))
         if axis == "price":
             prices = next(r["values"] for r in work if r["axis"] == "price")
-            ax.plot(prices, 10 / np.array(prices), color="black", linestyle="-.",
-                    label="Constant revenue (10 / price)", linewidth=1.4)
+            ax.plot(prices, 1 / np.array(prices), color="black", linestyle=":",
+                    marker=None, label="Constant revenue (1 / price)", linewidth=1.4)
         _format_axis(ax, xlabel, ticks, baseline, "Token demand index (baseline = 1)",
-                     log_y=axis == "price", reverse=axis == "price")
-        if axis != "price":
-            ax.set_ylim(bottom=0)
+                     log_y=True, reverse=axis == "price")
         ax.axhline(1, color=".75", linestyle=":", linewidth=.9)
         ax.set_title(title, loc="left", fontsize=10)
     fig.legend(*axes[-1].get_legend_handles_labels(), loc="outside upper center",
@@ -314,16 +419,14 @@ def build_paradigm_figures(directory: Path, points=81):
         name = record["industry"]["name"]
         prices = np.asarray(record["values"])
         axes[0].plot(prices, 100 * np.array(record["adoption"]), label=name,
-                     color=COLORS[name], linewidth=2,
-                     linestyle="-" if name == "Reference industry" or name.endswith(": high") else "-.")
-        axes[1].plot(prices, prices / 10 * _index(record), label=name,
-                     color=COLORS[name], linewidth=2,
-                     linestyle="-" if name == "Reference industry" or name.endswith(": high") else "-.")
+                     **_industry_line_options(name))
+        axes[1].plot(prices, prices * _index(record), label=name,
+                     **_industry_line_options(name))
     for ax, title, ylabel in zip(axes,
         ("(a) Work assigned to AI approaches a ceiling", "(b) Revenue can rise and then fall"),
-        ("Adopted share of potential work (%)", "Token revenue index (price = 10 baseline)")):
-        _format_axis(ax, "Token price, USD / million (cheaper to the right)",
-                     (1, 2, 5, 10, 20, 40, 80), 10, ylabel, reverse=True)
+        ("Adopted share of potential work (%)", "Token revenue index (c = 1 baseline)")):
+        _format_axis(ax, "Normalized token price, c (cheaper to the right)",
+                     (.1, .2, .5, 1, 2, 4, 8), 1, ylabel, reverse=True)
         ax.set_title(title, loc="left", fontsize=10)
         ax.set_ylim(bottom=0)
     axes[0].set_ylim(0, 102)
@@ -333,20 +436,22 @@ def build_paradigm_figures(directory: Path, points=81):
     fig.savefig(directory / "paradigm-adoption-and-revenue.png", dpi=180, bbox_inches="tight")
     plt.close(fig)
 
-    fig, axes = plt.subplots(1, 3, figsize=(15.8, 4.8), constrained_layout=True)
-    titles = ("(a) Low verification burden: rising", "(b) High verification burden: hump",
-              "(c) Capability valley: fall, then rise")
-    for ax, record, title in zip(axes,
-            (r for r in report["curves"] if r["regime"] == "attention"), titles):
+    attention_records = [r for r in report["curves"] if r["regime"] == "attention"]
+    fig, axes = plt.subplots(
+        1, len(attention_records), figsize=(4.2 * len(attention_records), 4.8),
+        constrained_layout=True,
+    )
+    for index, (ax, record) in enumerate(zip(axes, attention_records)):
         name = record["industry"]["name"]
-        ax.plot(record["values"], _index(record), label=name, color=COLORS[name], linewidth=2.3,
-                linestyle="--" if name.endswith(": low") else "-" if name.endswith(": high") else "-.")
-        ticks = (.1, .25, 1, 2, 5, 10, 30) if name == "Capability valley" \
-            else (.25, .5, 1, 2, 5, 10)
-        _format_axis(ax, "Model capability, m", ticks, 1,
-                     "Token demand index (m = 1 baseline)")
+        ax.plot(record["values"], _index(record), label=name,
+                **_industry_line_options(name, linewidth=2.3, colors=ATTENTION_COLORS))
+        _format_axis(ax, "Model capability, m", (.25, .5, 1, 2, 5, 10), 1,
+                     "Token demand index (m = 1 baseline)", log_y=True)
         ax.axhline(1, color=".7", linestyle=":", linewidth=.9)
-        ax.set_title(title, loc="left", fontsize=10)
+        ax.set_title(
+            f"({chr(97 + index)}) {name}: {record['shape']}",
+            loc="left", fontsize=10,
+        )
     fig.legend([ax.lines[0] for ax in axes], [r.name for r in attention_paradigms()],
                loc="outside upper center", ncol=3, frameon=False, fontsize=9)
     fig.savefig(directory / "paradigm-attention-capability.png", dpi=180, bbox_inches="tight")

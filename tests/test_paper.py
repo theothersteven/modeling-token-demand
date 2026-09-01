@@ -48,6 +48,24 @@ def test_entire_manuscript_renders_with_all_figures(plot_data):
     assert payload['fingerprint'] == source_fingerprint(ROOT)
 
 
+def test_indexed_figure_notes_move_into_interactive_footer(plot_data):
+    source = (ROOT / "README.md").read_text()
+    html, _ = paper.render_paper(source, plot_data)
+    assert html.count('class="chart-context"') == 10
+    assert html.count('class="chart-instructions"') == 10
+    for identifier in paper.INDEXED_FIGURE_NOTES:
+        figure = re.search(
+            rf'<figure class="interactive-figure" id="{identifier}".*?</figure>',
+            html,
+            re.DOTALL,
+        ).group(0)
+        if identifier != 'attention-capability-value':
+            assert 'rather than its absolute level' in figure \
+                or 'rather than their absolute levels' in figure
+        assert 'class="chart-context"' in figure
+        assert 'class="chart-instructions"' in figure
+
+
 def test_manual_text_and_equation_edits_are_rendered():
     original, _ = paper.render_paper('# Paper\n\nOld text.\n\n```math\nx^2\n```', {})
     revised, _ = paper.render_paper('# Paper\n\nNew text and $\\eta$.\n\n```math\nx^3\n```', {})
@@ -56,7 +74,7 @@ def test_manual_text_and_equation_edits_are_rendered():
     assert r'\eta' in revised
 
 
-def test_short_manuscript_uses_six_ordered_absolute_unit_figures(plot_data):
+def test_manuscript_uses_ten_ordered_indexed_figures(plot_data):
     source = (ROOT / 'README.md').read_text()
     figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', source)
     assert figures == [
@@ -66,21 +84,45 @@ def test_short_manuscript_uses_six_ordered_absolute_unit_figures(plot_data):
         'attention-capability-demand-spending.png',
         'attention-efficiency-demand-spending.png',
         'attention-price-demand-spending.png',
+        'attention-capability-value.png',
+        'lever-review-elasticity-adoption-revenue.png',
+        'lever-review-cost-adoption-revenue.png',
+        'lever-inference-returns-adoption-revenue.png',
     ]
     assert '## Abstract' not in source
     assert source.index('## 1. Modeling assumptions') < source.index('## 2. Work is limited')
     assert source.index('## 2. Work is limited') < source.index('## 3. Human attention is limited')
-    assert len(source.split()) < 3000
+    assert source.index('## 3. Human attention is limited') < source.index(
+        '## 4. Other technical levers for adoption and revenue')
+    assert source.index('## 4. Other technical levers for adoption and revenue') < source.index(
+        '## 5. Conclusion')
+    assert len(source.split()) < 4400
     for filename in figures:
         panels = plot_data[filename]['panels']
-        assert len(panels) == 2
-        assert panels[0]['ylabel'] == 'Token demand (trillion tokens)'
-        assert panels[1]['ylabel'] == 'Token spending (USD millions)'
+        if filename == 'work-efficiency-demand-spending.png':
+            expected_panels = 4
+        elif filename == 'work-price-demand-spending.png':
+            expected_panels = 4
+        else:
+            expected_panels = 2
+        assert len(panels) == expected_panels
+        if filename == 'attention-capability-value.png':
+            assert panels[1]['ylabel'] == (
+                r'Reservation token price, $c_{\rm res}(m)/c_0$'
+            )
+        else:
+            assert panels[1]['ylabel'].endswith('index (baseline = 1)')
+    work_price = plot_data['work-price-demand-spending.png']['panels']
+    assert work_price[1]['ylabel'] == 'Token demand index (baseline = 1)'
+    assert work_price[3]['ylabel'] == 'Token spending index (baseline = 1)'
+    attention_price = plot_data['attention-price-demand-spending.png']['panels']
+    assert attention_price[0]['ylabel'] == 'Token demand index (baseline = 1)'
+    assert attention_price[1]['ylabel'] == 'Token spending index (baseline = 1)'
 
 
 def test_math_currency_code_and_duplicate_headings():
     html, _ = paper.render_paper(
-        '# Paper\n\n## Same\n\n## Same\n\nPrice is $10; intensity is $x_i$. '
+        '# Paper\n\n## Same\n\n## Same\n\nPrice is $10; effort is $x_i$. '
         'Code is `$not_math$`.\n\n```math\na < b\n```', {})
     assert 'Price is $10;' in html
     assert '<span class="math">\\(x_i\\)</span>' in html
@@ -103,18 +145,18 @@ def test_notebook_cache_preserves_baselines_overlap_and_price_direction(plot_dat
         assert [panel['yscale'] for panel in spec['panels']] == (
             ['log', 'log', 'log'] if regime == 'attention' else ['linear', 'linear', 'log'])
         for index, panel in enumerate(spec['panels']):
-            baseline = 10 if index == 2 else 1
+            baseline = 1
             for line in panel['lines']:
                 point = line['x'].index(baseline)
                 assert line['y'][point] == pytest.approx(1)
         assert spec['panels'][2]['xlim'][0] > spec['panels'][2]['xlim'][1]
         benchmark = spec['panels'][2]['lines'][-1]
         assert benchmark['name'].startswith('Constant revenue')
-        assert benchmark['y'] == pytest.approx([10 / x for x in benchmark['x']])
+        assert benchmark['y'] == pytest.approx([1 / x for x in benchmark['x']])
     for suffix in ('levels', 'indexed'):
         for panel in plot_data[f'attention-limited-token-demand-{suffix}.png']['panels']:
             lines = {line['name']: line for line in panel['lines']}
-            for name in ('Adoption concentration: high', 'Adoption concentration: low'):
+            for name in ('High adoption hurdle', 'Low adoption hurdle'):
                 assert lines[name]['y'] == pytest.approx(lines['Reference industry']['y'])
 
 
@@ -159,19 +201,21 @@ def test_fingerprint_ignores_manuscript_and_notebook_outputs(tmp_path):
 def test_gallery_uses_independent_axes_and_separate_adoption_and_revenue(plot_data):
     work = plot_data['paradigm-work-demand.png']
     assert not work['shared_y']
-    assert [panel['yscale'] for panel in work['panels']] == ['linear', 'linear', 'log']
+    assert [panel['yscale'] for panel in work['panels']] == ['log', 'log', 'log']
     assert work['panels'][2]['xlim'][0] > work['panels'][2]['xlim'][1]
     for index, panel in enumerate(work['panels']):
-        baseline = 10 if index == 2 else 1
+        baseline = 1
         for line in panel['lines']:
             assert line['y'][line['x'].index(baseline)] == pytest.approx(1)
     adoption = plot_data['paradigm-adoption-and-revenue.png']['panels'][0]
     for line in adoption['lines']:
         assert all(0 <= value <= 100 for value in line['y'])
     attention = plot_data['paradigm-attention-capability.png']['panels']
-    assert len(attention) == 3
-    assert len(attention[2]['lines']) == 1
-    assert attention[2]['lines'][0]['name'] == 'Capability valley'
+    assert len(attention) == 5
+    assert [panel['lines'][0]['name'] for panel in attention] == [
+        'Reference industry', 'Hard execution', 'Low inference returns',
+        'Slow-growing review', 'Nearly proportional review',
+    ]
 
 
 def test_build_reuses_data_and_updates_text(tmp_path, monkeypatch):

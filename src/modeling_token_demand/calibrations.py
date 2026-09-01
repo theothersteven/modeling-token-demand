@@ -1,9 +1,9 @@
-"""Reference, paired comparisons, and singleton demand archetypes.
+"""Reference calibration and one-parameter comparative-static cases.
 
-The main experiment starts from one reference industry and changes one related
-parameter group at a time. The high/low labels describe the named feature over
-the illustrated policy range, not a global ordering of shape parameters.
-These are stylized comparative statics, not empirical industry estimates.
+Every industry used in the main figures starts from ``REFERENCE_INDUSTRY`` and
+changes exactly one industry parameter.  This keeps the qualitative mechanism
+behind each line identifiable.  The cases are stylized comparative statics,
+not empirical industry estimates.
 """
 
 from dataclasses import replace
@@ -22,9 +22,9 @@ REFERENCE_INDUSTRY = Industry(
     verification_elasticity=0.50,
     value_per_work_hour=100.0,
     human_cost_per_hour=100.0,
-    # Single-attempt baseline surplus is about 75.3. Place the common adoption
+    # Single-attempt baseline surplus is about 80.3. Place the common adoption
     # location nearby to illustrate takeoff and saturation, not to fit data.
-    adoption_location=76.0,
+    adoption_location=81.0,
     adoption_scale=4.0,
 )
 
@@ -88,25 +88,51 @@ LOW_ECONOMIC_VALUE = replace(
     value_per_work_hour=50.0,
 )
 
-# Higher typical hurdles are also more dispersed. These CDFs cross at surplus
-# 75, below the surplus range in the adoption comparisons; dispersion alone
-# would not define an unambiguously harder adoption environment.
+# Work-limited comparisons move only the location of the adoption hurdle.  The
+# low-hurdle case is nearly saturated at the reference technology, while the
+# high-hurdle case still has a large adoption margin.
 HIGH_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
-    name="Adoption hurdle: high",
-    adoption_location=115.0,
-    adoption_scale=10.0,
+    name="High adoption hurdle",
+    adoption_location=95.0,
 )
 LOW_ADOPTION_HURDLE = replace(
     REFERENCE_INDUSTRY,
-    name="Adoption hurdle: low",
-    adoption_location=99.0,
-    adoption_scale=6.0,
+    name="Low adoption hurdle",
+    adoption_location=40.0,
+)
+
+# Attention-limited comparisons isolate execution and review mechanisms one
+# parameter at a time.
+HARD_EXECUTION = replace(
+    REFERENCE_INDUSTRY,
+    name="Hard execution",
+    execution_scale=1.0,
+)
+HIGH_CAPABILITY_REQUIREMENT = replace(
+    REFERENCE_INDUSTRY,
+    name="High capability requirement",
+    capability_horizon_hours=3.0,
+)
+PROPORTIONAL_REVIEW = replace(
+    REFERENCE_INDUSTRY,
+    name="Nearly proportional review",
+    verification_elasticity=0.95,
+)
+SLOW_REVIEW_GROWTH = replace(
+    REFERENCE_INDUSTRY,
+    name="Slow-growing review",
+    verification_elasticity=0.15,
+)
+LOW_INFERENCE_RETURNS = replace(
+    REFERENCE_INDUSTRY,
+    name="Low inference returns",
+    inference_returns=0.20,
 )
 
 # The main adoption comparison varies dispersion alone. A high concentration
 # means a SMALL sigma, not higher hurdles. The untruncated CDFs cross at mu;
-# after truncation at zero, crossings remain nearby, not exactly at mu.
+# dispersion therefore changes the shape of adoption, not its value at mu.
 HIGH_ADOPTION_CONCENTRATION = replace(
     REFERENCE_INDUSTRY, name="Adoption concentration: high", adoption_scale=1.0,
 )
@@ -125,22 +151,19 @@ SHARP_ADOPTION_THRESHOLD = replace(
 
 
 def illustrative_industries(
-    include_threshold: bool = False, *, include_singletons: bool = True,
+    include_threshold: bool = False, *, include_singletons: bool = False,
 ) -> tuple[Industry, ...]:
-    """Return the complete set of cases, optionally excluding singletons."""
+    """Return the eight one-at-a-time cases used in the numerical gallery."""
 
     industries = (
         REFERENCE_INDUSTRY,
-        HIGH_CAPABILITY_CONSTRAINT,
-        LOW_CAPABILITY_CONSTRAINT,
-        HIGH_EXECUTION_DIFFICULTY,
-        LOW_EXECUTION_DIFFICULTY,
-        HIGH_VERIFICATION_BURDEN,
-        LOW_VERIFICATION_BURDEN,
-        HIGH_ECONOMIC_VALUE,
-        LOW_ECONOMIC_VALUE,
-        HIGH_ADOPTION_CONCENTRATION,
-        LOW_ADOPTION_CONCENTRATION,
+        LOW_ADOPTION_HURDLE,
+        HIGH_ADOPTION_HURDLE,
+        HARD_EXECUTION,
+        HIGH_CAPABILITY_REQUIREMENT,
+        LOW_INFERENCE_RETURNS,
+        SLOW_REVIEW_GROWTH,
+        PROPORTIONAL_REVIEW,
     )
     if include_singletons:
         industries += singleton_industries()
@@ -165,11 +188,7 @@ SUPERVISORY_LEVERAGE = replace(
     name="Supervisory leverage",
     verification_elasticity=0.25,
 )
-REVIEW_BOTTLENECK = replace(
-    REFERENCE_INDUSTRY,
-    name="Review bottleneck",
-    verification_elasticity=0.95,
-)
+REVIEW_BOTTLENECK = PROPORTIONAL_REVIEW
 CAPABILITY_VALLEY = replace(
     REFERENCE_INDUSTRY,
     name="Capability valley",
@@ -192,68 +211,72 @@ def singleton_industries() -> tuple[Industry, ...]:
 
 
 def work_paradigms() -> tuple[Industry, ...]:
-    return REFERENCE_INDUSTRY, CONCENTRATED_ADOPTION, EARLY_SATURATION
+    return (
+        REFERENCE_INDUSTRY,
+        LOW_ADOPTION_HURDLE,
+        HIGH_ADOPTION_HURDLE,
+        HARD_EXECUTION,
+        HIGH_CAPABILITY_REQUIREMENT,
+    )
 
 
 def attention_paradigms() -> tuple[Industry, ...]:
-    """Focus panels use cases from the main table, not a second calibration set."""
-    return LOW_VERIFICATION_BURDEN, HIGH_VERIFICATION_BURDEN, CAPABILITY_VALLEY
+    """Return one reference and four cases that each change one parameter."""
+    return (
+        REFERENCE_INDUSTRY,
+        HARD_EXECUTION,
+        LOW_INFERENCE_RETURNS,
+        SLOW_REVIEW_GROWTH,
+        PROPORTIONAL_REVIEW,
+    )
 
 
 def calibration_tables_markdown() -> str:
-    """Parameter rows and condition columns, shared by paper and notebook.
+    """Plot lines as rows and industry parameters as columns.
 
-    Smaller blocks avoid a fourteen-condition-wide matrix. Every numeric
-    cell is explicit; bold cells differ from the reference in that row.
+    Bold cells are the only cells that differ from the reference.  The
+    Execution ease ``a`` is defined at the code's fixed reference model effort
+    level, so it remains comparable when inference returns change.
     """
-    parameters = {
-        "capability_horizon_hours": r"Capability horizon $\lambda$",
-        "capability_shape": r"Frontier shape $\nu$",
-        "execution_scale": r"Execution ease $a$",
-        "inference_returns": r"Inference returns $\alpha$",
-        "verification_fixed_hours": r"Fixed review $h_0$ (hours)",
-        "verification_scale": r"Variable review $h_1$ (hours)",
-        "verification_elasticity": r"Review growth $\beta$",
-        "value_per_work_hour": r"Work value $b$ (dollars)",
-        "adoption_location": r"Hurdle location $\mu$ (dollars)",
-        "adoption_scale": r"Hurdle spread $\sigma$ (dollars)",
-    }
-    groups = (
-        ("Technical conditions", (
-            ("Frontier constraint low", LOW_CAPABILITY_CONSTRAINT),
-            ("Frontier constraint high", HIGH_CAPABILITY_CONSTRAINT),
-            ("Execution difficulty low", LOW_EXECUTION_DIFFICULTY),
-            ("Execution difficulty high", HIGH_EXECUTION_DIFFICULTY),
-            ("Review burden low", LOW_VERIFICATION_BURDEN),
-            ("Review burden high", HIGH_VERIFICATION_BURDEN),
-        ), tuple(parameters)[:7]),
-        ("Economic and adoption conditions", (
-            ("Value low", LOW_ECONOMIC_VALUE),
-            ("Value high", HIGH_ECONOMIC_VALUE),
-            ("Concentration low", LOW_ADOPTION_CONCENTRATION),
-            ("Concentration high", HIGH_ADOPTION_CONCENTRATION),
-        ), ("value_per_work_hour", "adoption_scale", "adoption_location")),
-        ("Singleton conditions", tuple((i.name, i) for i in singleton_industries()), (
-            "capability_horizon_hours", "execution_scale", "inference_returns",
-            "verification_fixed_hours", "verification_elasticity", "adoption_scale",
-        )),
+
+    fields = (
+        ("capability_horizon_hours", r"$\lambda$"),
+        ("capability_shape", r"$\nu$"),
+        ("execution_scale", r"$a$"),
+        ("inference_returns", r"$\alpha$"),
+        ("verification_fixed_hours", r"$h_0$"),
+        ("verification_scale", r"$h_1$"),
+        ("verification_elasticity", r"$\beta$"),
+        ("value_per_work_hour", r"$b$"),
+        ("human_cost_per_hour", r"$w$"),
+        ("adoption_location", r"$\mu$"),
+        ("adoption_scale", r"$\sigma$"),
     )
-    blocks = []
-    for title, variants, fields in groups:
-        columns = (("Reference", REFERENCE_INDUSTRY),) + variants
-        rows = [f"**{title}**", "",
-                "| Parameter | " + " | ".join(label for label, _ in columns) + " |",
-                "|---|" + "---:|" * len(columns)]
-        for field in fields:
-            reference = getattr(REFERENCE_INDUSTRY, field)
+
+    def displayed_value(industry: Industry, field: str) -> float:
+        return getattr(industry, field)
+
+    def block(title: str, industries: tuple[Industry, ...]) -> str:
+        rows = [
+            f"**{title}**",
+            "",
+            "| Plot line | " + " | ".join(label for _, label in fields) + " |",
+            "|---|" + "---:|" * len(fields),
+        ]
+        for industry in industries:
             values = []
-            for _, industry in columns:
-                value = getattr(industry, field)
-                formatted = f"{value:g}"
+            for field, _ in fields:
+                value = displayed_value(industry, field)
+                reference = displayed_value(REFERENCE_INDUSTRY, field)
+                formatted = f"{value:.5g}"
                 values.append(f"**{formatted}**" if value != reference else formatted)
-            rows.append("| " + parameters[field] + " | " + " | ".join(values) + " |")
-        blocks.append("\n".join(rows))
-    return "\n\n".join(blocks)
+            rows.append(f"| {industry.name} | " + " | ".join(values) + " |")
+        return "\n".join(rows)
+
+    return "\n\n".join((
+        block("Work-limited plot lines", work_paradigms()),
+        block("Attention-limited plot lines", attention_paradigms()),
+    ))
 
 
 # Historical calibrations remain available for reproducibility, but are not

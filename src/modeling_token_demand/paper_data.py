@@ -8,6 +8,7 @@ from contextlib import redirect_stdout
 import hashlib
 import io
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
@@ -34,7 +35,7 @@ def figure_payload(figure) -> dict:
                     if len(line.get_xdata()) > 2]
     shared_label = figure._supylabel.get_text() if figure._supylabel else ""
     for axis in figure.axes:
-        lines, guides = [], []
+        lines, guides, points = [], [], []
         series_index = 0
         for line in axis.lines:
             xs = [float(value) for value in line.get_xdata()]
@@ -55,8 +56,31 @@ def figure_payload(figure) -> dict:
                 "color": to_hex(line.get_color()),
                 "dash": {"--": "dash", "-.": "dashdot", ":": "dot"}.get(
                     line.get_linestyle(), "solid"),
+                "marker": {
+                    "o": "circle", "s": "square", "^": "triangle-up",
+                    "v": "triangle-down", "<": "triangle-left",
+                    ">": "triangle-right", "D": "diamond", "x": "x",
+                }.get(line.get_marker()),
                 "width": float(line.get_linewidth()),
                 "order": float(line.get_zorder()),
+            })
+        for collection in axis.collections:
+            identifier = collection.get_gid() or ""
+            if not identifier.startswith("demand-peak:"):
+                continue
+            offsets = collection.get_offsets()
+            colors = collection.get_facecolors()
+            sizes = collection.get_sizes()
+            if len(offsets) != 1 or not len(colors):
+                raise ValueError("A demand-peak marker must contain one colored point")
+            points.append({
+                "name": identifier.removeprefix("demand-peak:"),
+                "kind": "demand-peak",
+                "x": float(offsets[0][0]),
+                "y": float(offsets[0][1]),
+                "color": to_hex(colors[0]),
+                "marker": "star",
+                "size": math.sqrt(float(sizes[0])) if len(sizes) else 11.0,
             })
         panels.append({
             "title": axis.get_title(loc="left") or axis.get_title(),
@@ -65,11 +89,16 @@ def figure_payload(figure) -> dict:
             "xlim": list(axis.get_xlim()), "ylim": list(axis.get_ylim()),
             "xticks": [float(value) for value in axis.get_xticks()
                        if min(axis.get_xlim()) <= value <= max(axis.get_xlim())],
-            "lines": lines, "guides": guides,
+            "lines": lines, "guides": guides, "points": points,
         })
     return {
         "panels": panels,
-        "columns": figure.axes[0].get_subplotspec().get_gridspec().ncols,
+        "columns": getattr(
+            figure,
+            "_paper_columns",
+            figure.axes[0].get_subplotspec().get_gridspec().ncols,
+        ),
+        "center_last": bool(getattr(figure, "_paper_center_last", False)),
         "shared_y": len(panels) > 1 and all(
             figure.axes[0].get_shared_y_axes().joined(figure.axes[0], axis)
             for axis in figure.axes[1:]

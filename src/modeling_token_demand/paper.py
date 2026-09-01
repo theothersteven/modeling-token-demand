@@ -26,6 +26,22 @@ from .paper_data import load_plot_data
 
 ASSETS = Path(__file__).with_name("paper_assets")
 
+# These manuscript notes explain how the displayed indexed figures are
+# normalized. In the interactive edition they belong in the chart footer,
+# beside the interaction instructions, rather than in a detached paragraph.
+INDEXED_FIGURE_NOTES = {
+    "work-capability-demand-spending",
+    "work-efficiency-demand-spending",
+    "work-price-demand-spending",
+    "attention-capability-demand-spending",
+    "attention-efficiency-demand-spending",
+    "attention-price-demand-spending",
+    "attention-capability-value",
+    "lever-review-elasticity-adoption-revenue",
+    "lever-review-cost-adoption-revenue",
+    "lever-inference-returns-adoption-revenue",
+}
+
 
 def manuscript_math(md):
     math(md)
@@ -86,6 +102,25 @@ def render_paper(markdown: str, plots: dict) -> tuple[str, dict]:
 
     add_toc_hook(md, min_level=2, max_level=3, heading_id=heading_id)
     body, state = md.parse(markdown)
+    note_pattern = re.compile(
+        r'(<figure class="interactive-figure" id="(?P<identifier>[^"]+)"'
+        r'(?:(?!</figure>).)*?'
+        r'<p class="chart-help">)(?P<help>.*?)(</p></figure>)\n'
+        r'<p><em>(?P<note>.*?)</em></p>',
+        re.DOTALL,
+    )
+
+    def move_indexed_note(match):
+        if match.group("identifier") not in INDEXED_FIGURE_NOTES:
+            return match.group(0)
+        return (
+            match.group(1)
+            + '<span class="chart-context">' + match.group("note") + '</span>'
+            + '<span class="chart-instructions">' + match.group("help") + '</span>'
+            + match.group(4)
+        )
+
+    body = note_pattern.sub(move_indexed_note, body)
     headings = state.env.get("toc_items", [])
     toc = render_toc_ul(headings)
     # The exact visible title is taken from the manuscript, not a second copy.

@@ -20,9 +20,9 @@ def report():
 
 def test_intervention_outcomes_reproduce_model_and_distinguish_adoption(report):
     assert report["model"] == "single_attempt"
-    assert len(report["curves"]) == 16
+    assert len(report["curves"]) == 28
     assert report["audit"]["boundary_hits"] == []
-    assert report["audit"]["independent_checks"] >= 48
+    assert report["audit"]["independent_checks"] >= 84
     assert report["audit"]["max_relative_objective_error"] < 1e-8
     for curve in report["curves"]:
         assert curve["demand"] == pytest.approx(
@@ -48,13 +48,20 @@ def test_intervention_outcomes_reproduce_model_and_distinguish_adoption(report):
 
 
 def test_uniform_verification_scales_throughput_without_changing_policy(report):
-    curve = next(c for c in report["curves"]
-                 if c["experiment"] == "verification-speed" and c["regime"] == "attention")
-    for metric in ("demand", "assigned_work", "completed_work"):
-        values = np.array(curve[metric])
-        assert values / values[curve["baseline_index"]] == pytest.approx(1 / np.array(curve["values"]))
-    for metric in ("s", "x", "success"):
-        assert curve[metric] == pytest.approx([curve[metric][0]] * len(curve["values"]))
+    curves = [c for c in report["curves"]
+              if c["experiment"] == "verification-speed"
+              and c["regime"] == "attention"]
+    assert len(curves) == 3
+    for curve in curves:
+        for metric in ("demand", "assigned_work", "completed_work"):
+            values = np.array(curve[metric])
+            assert values / values[curve["baseline_index"]] == pytest.approx(
+                1 / np.array(curve["values"])
+            )
+        for metric in ("s", "x", "success"):
+            assert curve[metric] == pytest.approx(
+                [curve[metric][0]] * len(curve["values"])
+            )
 
 
 def test_harness_only_changes_feasibility_not_execution(report):
@@ -63,7 +70,7 @@ def test_harness_only_changes_feasibility_not_execution(report):
     # Same proportional frontier shift; only m also improves execution.
     base_industry, base_scenario = configuration(curves[0], 1)
     baseline = IndustryModel(base_industry)
-    policy = Policy(4, 100_000)
+    policy = Policy(4, 1)
     models = [IndustryModel(configuration(c, 5)[0]) for c in curves]
     scenarios = [configuration(c, 5)[1] for c in curves]
     assert models[0].capability_share(policy, scenarios[0]) == pytest.approx(
@@ -108,3 +115,31 @@ def test_large_efficiency_results_have_the_expected_regime_patterns(report):
         else:
             assert ratios[0] < 1
         assert ratios[1] < 1
+
+
+def test_capability_levers_compare_the_same_three_conditions(report):
+    expected = {
+        "Reference model", "Higher capability (m = 5)",
+        "Hard execution (a = 1)",
+    }
+    for experiment, parameter, baseline in (
+        ("review-growth", "verification_elasticity", .5),
+        ("verification-speed", "verification_time_multiplier", 1),
+        ("inference-returns", "inference_returns", .5),
+    ):
+        curves = [c for c in report["curves"] if c["experiment"] == experiment]
+        assert len(curves) == 6
+        assert {c["label"] for c in curves} == expected
+        for curve in curves:
+            assert curve["parameter"] == parameter
+            assert curve["values"][curve["baseline_index"]] == baseline
+
+
+def test_higher_inference_returns_raise_endpoint_adoption_and_revenue(report):
+    curves = [c for c in report["curves"]
+              if c["experiment"] == "inference-returns"
+              and c["regime"] == "work"]
+    assert len(curves) == 3
+    for curve in curves:
+        assert curve["adoption"][-1] > curve["adoption"][0]
+        assert curve["demand"][-1] > curve["demand"][0]

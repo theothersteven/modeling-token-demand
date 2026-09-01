@@ -35,8 +35,8 @@ class Industry:
     verification_fixed_hours: float
     # h_1: scale of the human review time that grows with delegated scope.
     verification_scale: float
-    # beta: elasticity of the variable review component with respect to scope.
-    # With fixed overhead, the elasticity of total review time is smaller.
+    # beta: curvature of the variable review component as scope grows.
+    # The elasticity of total review time is computed at the chosen scope.
     verification_elasticity: float
 
     # b: value of successfully completing one human-hour-equivalent of work.
@@ -44,7 +44,7 @@ class Industry:
     # w: opportunity cost of one hour of human review time.
     human_cost_per_hour: float
 
-    # mu: location of the logistic distribution before truncation at zero.
+    # mu: location of the logistic distribution of adoption hurdles.
     adoption_location: float
     # sigma: dispersion of per-unit adoption hurdles across industry work.
     adoption_scale: float
@@ -53,10 +53,6 @@ class Industry:
     potential_work_hours: float = 1_000_000.0
     # H: human review hours available. None means attention does not bind.
     human_attention_hours: Optional[float] = None
-
-    # Numerical normalization used inside the execution-reliability function.
-    # The policy variable itself always remains tokens per work-hour.
-    token_reference: float = 100_000.0
 
     def __post_init__(self) -> None:
         positive = {
@@ -69,7 +65,6 @@ class Industry:
             "human_cost_per_hour": self.human_cost_per_hour,
             "adoption_scale": self.adoption_scale,
             "potential_work_hours": self.potential_work_hours,
-            "token_reference": self.token_reference,
         }
         for name, value in positive.items():
             if value <= 0:
@@ -80,6 +75,11 @@ class Industry:
             raise ValueError("verification_fixed_hours cannot be negative")
         if self.verification_elasticity < 0:
             raise ValueError("verification_elasticity cannot be negative")
+        if self.verification_fixed_hours == 0 and self.verification_elasticity == 0:
+            raise ValueError(
+                "verification_fixed_hours and verification_elasticity cannot "
+                "both be zero"
+            )
         if self.human_attention_hours is not None and self.human_attention_hours <= 0:
             raise ValueError("human_attention_hours must be positive when supplied")
 
@@ -94,24 +94,19 @@ class Scenario:
 
     model_capability: float = 1.0
     token_efficiency: float = 1.0
-    token_price_per_million: float = 10.0
+    # c: price of one normalized token unit. The reference scenario sets c=1.
+    token_price: float = 1.0
     verification_time_multiplier: float = 1.0
 
     def __post_init__(self) -> None:
         for name, value in (
             ("model_capability", self.model_capability),
             ("token_efficiency", self.token_efficiency),
-            ("token_price_per_million", self.token_price_per_million),
+            ("token_price", self.token_price),
             ("verification_time_multiplier", self.verification_time_multiplier),
         ):
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
-
-    @property
-    def token_price(self) -> float:
-        """Dollar price of one token."""
-
-        return self.token_price_per_million / 1_000_000.0
 
 
 @dataclass(frozen=True)
@@ -119,9 +114,9 @@ class Policy:
     """A user's policy for one delegated chunk and one review.
 
     delegation_hours (s) is work delegated before a checkpoint,
-    and tokens_per_work_hour (x) is inference intensity for that work.
-    Every chunk consumes sx tokens and h(s) review hours, whether it succeeds
-    or fails. Failed work produces no output in this model.
+    and tokens_per_work_hour (x) is the model effort level in normalized token
+    units. Every chunk consumes sx token units and h(s) review hours, whether
+    it succeeds or fails. Failed work produces no output in this model.
     """
 
     delegation_hours: float
@@ -175,8 +170,9 @@ class IndustryModel:
         """r: single-attempt success, conditional on the task being solvable."""
 
         p = self.industry
-        normalized_tokens = policy.tokens_per_work_hour / p.token_reference
-        effective_inference = scenario.token_efficiency * normalized_tokens
+        effective_inference = (
+            scenario.token_efficiency * policy.tokens_per_work_hour
+        )
         execution_horizon = (
             p.execution_scale
             * scenario.model_capability
@@ -201,29 +197,45 @@ class IndustryModel:
         base_time = (
             p.verification_fixed_hours
             + p.verification_scale
-            * policy.delegation_hours ** p.verification_elasticity
+            * math.expm1(
+                p.verification_elasticity
+                * math.log1p(policy.delegation_hours)
+            )
         )
         return scenario.verification_time_multiplier * base_time
 
-    def adoption_share(self, surplus_per_work_hour: float) -> float:
-        """A: work-weighted adoption with nonnegative outside-option hurdles.
+    def verification_scope_elasticity(self, policy: Policy) -> float:
+        """Return d log h(s) / d log s for the shifted review function."""
 
-        The logistic hurdle distribution is conditioned on a positive hurdle.
-        Thus negative-surplus work is never adopted. The equivalent expression
-        below avoids subtracting almost-equal CDF values near zero.
+        p = self.industry
+        s = policy.delegation_hours
+        growth = math.exp(p.verification_elasticity * math.log1p(s))
+        review_hours = (
+            p.verification_fixed_hours
+            + p.verification_scale * (growth - 1.0)
+        )
+        return (
+            p.verification_elasticity
+            * p.verification_scale
+            * s
+            * growth
+            / ((1.0 + s) * review_hours)
+        )
+
+    def adoption_share(self, surplus_per_work_hour: float) -> float:
+        """A: work-weighted adoption under a logistic hurdle distribution.
+
+        Hurdles may be negative, allowing adoption at negative measured surplus
+        when users value being AI-forward or face an organizational mandate.
         """
 
         p = self.industry
-        if surplus_per_work_hour <= 0:
-            return 0.0
         z = (surplus_per_work_hour - p.adoption_location) / p.adoption_scale
         # Stable logistic evaluation for very high or low adoption surplus.
         if z >= 0:
-            logistic = 1.0 / (1.0 + math.exp(-z))
-        else:
-            exp_z = math.exp(z)
-            logistic = exp_z / (1.0 + exp_z)
-        return -math.expm1(-surplus_per_work_hour / p.adoption_scale) * logistic
+            return 1.0 / (1.0 + math.exp(-z))
+        exp_z = math.exp(z)
+        return exp_z / (1.0 + exp_z)
 
     def evaluate(self, policy: Policy, scenario: Scenario) -> PolicyOutcome:
         """Evaluate reliability, surplus, adoption, and demand for a policy."""
