@@ -215,4 +215,4 @@ Reusable review supports much more token demand because each review hour covers 
 
 ---
 
-The numerical model and figure code are in [`src/modeling_token_demand`](src/modeling_token_demand). Run `.venv/bin/python -m modeling_token_demand.paper refresh` to rebuild the audited figures and HTML reading edition. The figures are comparative statics for stylized industries, not forecasts.
+The numerical model and figure code are in `src/modeling_token_demand`. Run `.venv/bin/python -m modeling_token_demand.paper refresh` to rebuild the audited figures and HTML reading edition. The figures are comparative statics for stylized industries, not forecasts.
