@@ -2,19 +2,22 @@
 
 ## Introduction
 
-AI progress does not translate mechanically into token demand. A more capable or token-efficient model can complete the same work with fewer tokens, but it can also make new work worthwhile, support larger assignments, or induce users to buy more inference. Price declines create a similar ambiguity for revenue: demand rises, yet spending rises only if usage expands faster than price falls. The direction of the response therefore depends on what prevents more AI work from being done.
+Many discussions of AI token demand take a top-down approach: start with an addressable market (e.g. 100k/year salaries for one million software engineers = 100B) and assume models capture some of it. This illustrates scale but not the dynamics at play.
 
-We study these forces in a stylized model in which users jointly choose the scope of a task and the inference effort spent on it. Capability expands the set of feasible tasks, token efficiency changes the effective inference provided by each token, and human verification becomes more costly as assignments grow. We compare two limiting regimes. In the first, the supply of potential work is fixed, while review capacity is sufficient. In the second, worthwhile work is abundant, but human attention is scarce. This distinction separates adoption—the share of existing work assigned to AI—from supervisory leverage—the amount of work supported by each review hour.
+In this work we take a bottom up approach by modeling user's adoption and usage as a function of model capability, price, and efforts required to verify the AI's outputs. This allows us to identify the different market forces at play.
 
-The model is intended to organize the relevant comparative statics rather than produce a point forecast. Its main implication is that the same technical improvement can increase or decrease token demand depending on how much adoption remains to be unlocked and how verification costs scale with task scope.
+We compare two limiting regimes. Limited work, where the total token demand is eventually capped by the total amount of work there is for the model to do. And limited human attention, where there is abundant valuable work for the AI to do, but because humans have to be the one reviewing and verifying the output, the total demand is eventually constrained by human attention.
+
+In the process, we identify cheap scalable human verification as a key lever to increase total token demand. If models handle larger tasks while verification time grows less than proportionally with task horizon, each human reviewer can oversee progressively more AI work. Under stylized assumptions, this effect can support unbounded token-demand growth as capability improves.
 
 ### TL;DR
 
-- [When work is limited, capability can make token demand peak and then fall.](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
-- [Token efficiency has the same competing margins.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) It raises surplus and adoption but lowers tokens per task, so demand rises only while the expansion in adopted work is sufficiently strong.
-- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons-like rebound requires demand to expand faster than price falls, and this is [harder when human attention is already fully used](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
-- [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Larger assignments let each review hour support more work, especially when verification time grows slowly with task scope.
-- [Pricing power and the value of attention obey different ceilings.](#34-capability-raises-the-value-of-scarce-attention) The [work-limited reservation token price eventually plateaus](#24-capability-raises-the-work-limited-reservation-token-price), while the value of a review hour can keep growing roughly as $m^{1-\beta}$ when review time grows sublinearly.
+- [When work is limited, total token demand can increase and then decrease as model capabilities improve](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
+- [Token efficiency can raise or lower token demand.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) It raises surplus and adoption but lowers tokens per task, so demand rises only when the increased adoption dominates the lower token usage per task.
+- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons paradox-like effect requires demand to expand faster than price falls, and this is easier in the work limited regime when adoption level is still very low, and [harder when human attention is the bottleneck](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
+- [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Larger assignments let each review hour support more work, especially when verification time grows slowly with task horizon.
+- [With limited work, customers' willingness to pay eventually levels off.](#24-capability-raises-the-work-limited-reservation-token-price) Once AI can do almost all available work, further improvements in model capability add little value.
+- [In the human attention limited regime, better model capability increases the value of human attention](#34-capability-raises-the-value-of-scarce-attention) When larger tasks remain quick to check, one person can oversee progressively more AI work. Firms' willingness to pay for additional labor / human attention therefore increases unboundedly as a function of model capability.
 
 ## 1. Modeling assumptions
 
@@ -115,7 +118,12 @@ R=cD,
 
 measured in dollars. 
 
-Here is a summary of the modeling parameters that are using. In the next two sections we will study the different adoption and demand curves as a function of model capability, token efficiency, and token price in two distinct regimes.
+In the next two sections we will study the different adoption and demand curves as a function of model capability, token efficiency, and token price in two distinct regimes.
+
+The model parameters are summarized below.
+
+<details class="parameter-reference">
+<summary>Model parameter reference (19 parameters)</summary>
 
 | Parameter | Name | Category | How it is used in the model |
 |---|---|---|---|
@@ -139,6 +147,7 @@ Here is a summary of the modeling parameters that are using. In the next two sec
 | $W$ | Potential work | Industry parameter | Total work available in the work-limited regime, where assigned work is $Q=WA$. |
 | $H$ | Human attention | Industry parameter | Review hours available in the attention-limited regime, where assigned work is $Q=Hs/h(s)$. |
 
+</details>
 
 
 

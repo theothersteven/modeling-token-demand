@@ -90,6 +90,25 @@ def test_manual_text_and_equation_edits_are_rendered():
     assert r'\eta' in revised
 
 
+def test_parameter_reference_is_collapsible_and_other_html_stays_escaped(plot_data):
+    source = (ROOT / 'README.md').read_text()
+    html, _ = paper.render_paper(source, plot_data)
+    opening = (
+        '<details class="parameter-reference">\n'
+        '<summary>Model parameter reference (19 parameters)</summary>'
+    )
+    assert html.count(opening) == 1
+    disclosure = html.split(opening, 1)[1].split('</details>', 1)[0]
+    assert '<table>' in disclosure
+    assert '<th>Parameter</th>' in disclosure
+    assert '&lt;details' not in disclosure
+
+    escaped, _ = paper.render_paper(
+        '<details class="untrusted"><script>alert(1)</script></details>', {})
+    assert '<details class="untrusted">' not in escaped
+    assert '&lt;script&gt;alert(1)&lt;/script&gt;' in escaped
+
+
 def test_manuscript_uses_eight_ordered_figures(plot_data):
     source = (ROOT / 'README.md').read_text()
     figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', source)

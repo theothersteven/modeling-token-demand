@@ -40,6 +40,15 @@ INDEXED_FIGURE_NOTES = {
     "attention-capability-value",
 }
 
+# The manuscript uses one deliberately allowlisted HTML disclosure so the long
+# parameter glossary is collapsible both on GitHub and in the interactive
+# paper. All other raw manuscript HTML remains escaped by PaperRenderer.
+PARAMETER_DISCLOSURE_OPEN = (
+    '<details class="parameter-reference">\n'
+    '<summary>Model parameter reference (19 parameters)</summary>'
+)
+PARAMETER_DISCLOSURE_CLOSE = '</details>'
+
 
 def manuscript_math(md):
     math(md)
@@ -100,6 +109,22 @@ def render_paper(markdown: str, plots: dict) -> tuple[str, dict]:
 
     add_toc_hook(md, min_level=2, max_level=3, heading_id=heading_id)
     body, state = md.parse(markdown)
+
+    escaped_open = '<p>' + escape(PARAMETER_DISCLOSURE_OPEN) + '</p>'
+    escaped_close = '<p>' + escape(PARAMETER_DISCLOSURE_CLOSE) + '</p>'
+    disclosure_start = body.find(escaped_open)
+    if disclosure_start >= 0:
+        disclosure_end = body.find(escaped_close, disclosure_start + len(escaped_open))
+        if disclosure_end < 0:
+            raise ValueError('Parameter reference disclosure is not closed')
+        body = (
+            body[:disclosure_start]
+            + PARAMETER_DISCLOSURE_OPEN
+            + body[disclosure_start + len(escaped_open):disclosure_end]
+            + PARAMETER_DISCLOSURE_CLOSE
+            + body[disclosure_end + len(escaped_close):]
+        )
+
     note_pattern = re.compile(
         r'(<figure class="interactive-figure" id="(?P<identifier>[^"]+)"'
         r'(?:(?!</figure>).)*?'

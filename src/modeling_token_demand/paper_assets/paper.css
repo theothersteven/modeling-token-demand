@@ -39,6 +39,11 @@ article li { margin:6px 0; }
 table { display:block; width:100%; overflow:auto; border-collapse:collapse; margin-top:28px; margin-bottom:28px; font:12px/1.65 system-ui,sans-serif; }
 th,td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
 th { color:var(--green); font-weight:650; background:#eef2ea; }
+.parameter-reference { overflow:hidden; margin-top:24px; margin-bottom:28px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+.parameter-reference summary { cursor:pointer; padding:14px 16px; color:var(--green); background:#f2f5ef; font:650 13px/1.5 system-ui,sans-serif; }
+.parameter-reference summary:hover { background:#eaf0e8; }
+.parameter-reference[open] summary { border-bottom:1px solid var(--line); }
+.parameter-reference table { margin:0; }
 code, pre { font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; }
 code { background:#edf0ea; padding:2px 4px; border-radius:3px; }
 pre { overflow:auto; background:#edf0ea; padding:18px; border:1px solid var(--line); border-radius:4px; }
@@ -86,4 +91,4 @@ footer { max-width:800px; margin:60px auto 0; padding-top:20px; border-top:1px s
 @media(min-width:1500px) { .plot { height:390px; } }
 @media(max-width:1100px) { .reading-layout { grid-template-columns:170px minmax(0,1fr); gap:22px; padding:30px 20px; } #work-capability-reservation-price { width:100%; } .chart-panels { grid-template-columns:1fr; } .chart-panels.center-last-panel .chart-panel:last-child { grid-column:auto; width:100%; } .plot { height:360px; } }
 @media(max-width:760px) { .topbar { padding:0 16px; gap:12px; height:58px; } .wordmark span, .source-link { display:none; } .source-status { font-size:10px; } .reading-layout { display:block; padding:24px 14px; } aside { position:static; height:auto; max-height:180px; margin-bottom:25px; border-bottom:1px solid var(--line); } .nav-note { display:none; } .interactive-figure { padding:14px 8px 8px; } body { font-size:16px; } .chart-panel.expanded { inset:68px 8px 8px; padding:10px; } }
-@media print { .topbar,aside,.reader-note,.edition-label,.chart-controls,.chart-legend,.chart-panels,.chart-instructions,.skip-link { display:none!important; } .reading-layout { display:block; padding:0; } body { background:#fff; font-size:11pt; } .chart-fallback { display:block!important; } .interactive-figure { break-inside:avoid; border:0; } h2,h3,h4 { break-after:avoid; } .display-math,div.math { break-before:avoid; break-inside:avoid; } }
+@media print { .topbar,aside,.reader-note,.edition-label,.chart-controls,.chart-legend,.chart-panels,.chart-instructions,.skip-link,.parameter-reference summary { display:none!important; } .reading-layout { display:block; padding:0; } body { background:#fff; font-size:11pt; } .chart-fallback { display:block!important; } .interactive-figure,.parameter-reference { break-inside:avoid; border:0; } .parameter-reference:not([open]) > table { display:block!important; } h2,h3,h4 { break-after:avoid; } .display-math,div.math { break-before:avoid; break-inside:avoid; } }
