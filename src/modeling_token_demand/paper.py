@@ -33,13 +33,11 @@ INDEXED_FIGURE_NOTES = {
     "work-capability-demand-spending",
     "work-efficiency-demand-spending",
     "work-price-demand-spending",
+    "work-capability-reservation-price",
     "attention-capability-demand-spending",
     "attention-efficiency-demand-spending",
     "attention-price-demand-spending",
     "attention-capability-value",
-    "lever-review-elasticity-adoption-revenue",
-    "lever-review-cost-adoption-revenue",
-    "lever-inference-returns-adoption-revenue",
 }
 
 

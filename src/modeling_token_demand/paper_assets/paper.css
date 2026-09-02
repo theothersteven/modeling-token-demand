@@ -46,6 +46,7 @@ pre code { padding:0; }
 .display-math, div.math { overflow-x:auto; padding:5px 0; }
 article img { max-width:100%; height:auto; }
 .interactive-figure { margin:35px 0 42px; padding:20px 18px 10px; background:#fff; border:1px solid var(--line); border-radius:7px; font:12px/1.5 system-ui,sans-serif; }
+#work-capability-reservation-price { width:calc((100% - 8px)/2); margin-left:auto; margin-right:auto; }
 figcaption { font-size:15px; color:var(--ink); font-weight:650; margin-bottom:14px; }
 .chart-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:14px; }
 .chart-controls button, .chart-controls select, .expand-panel, .fit-panel { border:1px solid #d5ddd4; padding:6px 10px; background:#fff; border-radius:4px; color:#465a4d; font-size:11px; }
@@ -83,6 +84,6 @@ footer { max-width:800px; margin:60px auto 0; padding-top:20px; border-top:1px s
 .skip-link { position:fixed; top:-100px; left:20px; z-index:100; background:white; padding:10px; }
 .skip-link:focus { top:10px; }
 @media(min-width:1500px) { .plot { height:390px; } }
-@media(max-width:1100px) { .reading-layout { grid-template-columns:170px minmax(0,1fr); gap:22px; padding:30px 20px; } .chart-panels { grid-template-columns:1fr; } .chart-panels.center-last-panel .chart-panel:last-child { grid-column:auto; width:100%; } .plot { height:360px; } }
+@media(max-width:1100px) { .reading-layout { grid-template-columns:170px minmax(0,1fr); gap:22px; padding:30px 20px; } #work-capability-reservation-price { width:100%; } .chart-panels { grid-template-columns:1fr; } .chart-panels.center-last-panel .chart-panel:last-child { grid-column:auto; width:100%; } .plot { height:360px; } }
 @media(max-width:760px) { .topbar { padding:0 16px; gap:12px; height:58px; } .wordmark span, .source-link { display:none; } .source-status { font-size:10px; } .reading-layout { display:block; padding:24px 14px; } aside { position:static; height:auto; max-height:180px; margin-bottom:25px; border-bottom:1px solid var(--line); } .nav-note { display:none; } .interactive-figure { padding:14px 8px 8px; } body { font-size:16px; } .chart-panel.expanded { inset:68px 8px 8px; padding:10px; } }
 @media print { .topbar,aside,.reader-note,.edition-label,.chart-controls,.chart-legend,.chart-panels,.chart-instructions,.skip-link { display:none!important; } .reading-layout { display:block; padding:0; } body { background:#fff; font-size:11pt; } .chart-fallback { display:block!important; } .interactive-figure { break-inside:avoid; border:0; } h2,h3,h4 { break-after:avoid; } .display-math,div.math { break-before:avoid; break-inside:avoid; } }

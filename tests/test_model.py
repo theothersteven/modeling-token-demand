@@ -142,6 +142,31 @@ def test_optimizer_returns_a_feasible_policy() -> None:
     assert 0.0 <= outcome.adoption_share <= 1.0
 
 
+def test_work_reservation_price_reoptimizes_to_baseline_surplus() -> None:
+    optimizer = PolicyOptimizer(
+        OptimizationSettings(max_tokens_per_work_hour=2_000)
+    )
+    model = IndustryModel(REFERENCE_INDUSTRY)
+    baseline = optimizer.solve(model, Scenario())
+    capable_at_baseline_price = optimizer.solve(
+        model, Scenario(model_capability=5)
+    )
+
+    result = optimizer.solve_reservation_price(
+        model,
+        Scenario(model_capability=5),
+        baseline.surplus_per_work_hour,
+    )
+
+    assert result.token_price == pytest.approx(9.48206, rel=2e-4)
+    assert result.outcome.surplus_per_work_hour == pytest.approx(
+        baseline.surplus_per_work_hour, rel=1e-6
+    )
+    assert result.outcome.policy != capable_at_baseline_price.policy
+    assert result.outcome.policy.tokens_per_work_hour == pytest.approx(1)
+    assert result.iterations > 0
+
+
 def test_attention_reservation_price_reoptimizes_to_the_target_value() -> None:
     optimizer = AttentionConstrainedOptimizer()
     industry = replace(REFERENCE_INDUSTRY, human_attention_hours=100_000)

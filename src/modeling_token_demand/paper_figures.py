@@ -25,6 +25,10 @@ WORK_CASES = (
         "x",
     ),
 )
+# Retain the adoption-hurdle cases even though their reservation-price curves
+# coincide with the reference.  Their separate controls make that invariance
+# directly inspectable in the interactive figure.
+WORK_RESERVATION_CASES = WORK_CASES
 ATTENTION_CASES = (
     ("Reference industry", "Reference industry", "#595959", "-", None),
     ("Hard execution", "Hard execution", "#1f77b4", "--", "^"),
@@ -32,6 +36,18 @@ ATTENTION_CASES = (
     ("Slow-growing review", "Slow-growing review", "#2ca02c", "--", "s"),
     ("Nearly proportional review", "Nearly proportional review", "#d62728", "--", "x"),
 )
+
+# Every displayed token-price axis stops before the low-inference-returns case
+# reaches the economic effort floor.  The wider price sweep remains in the
+# numerical report for robustness checks.
+TOKEN_PRICE_LIMITS = (.1, 4.0)
+TOKEN_PRICE_TICKS = (.1, .2, .5, 1, 2, 4)
+
+# A modest capability regression keeps every reservation price positive and
+# away from the zero-price/infinite-inference limit, while m=30 shows how the
+# minimum viable effort regularizes large capability improvements.
+RESERVATION_CAPABILITY_LIMITS = (.8, 30.0)
+RESERVATION_CAPABILITY_TICKS = (.8, 1, 2, 5, 10, 30)
 
 LEVER_CASES = (
     ("Reference model", "Reference model", "#595959", "-", None),
@@ -79,8 +95,8 @@ AXES = {
     },
     "price": {
         "xlabel": "Normalized token price, c (cheaper to the right)",
-        "ticks": (.1, .2, .5, 1, 2, 4, 8),
-        "limits": (.1, 8),
+        "ticks": TOKEN_PRICE_TICKS,
+        "limits": TOKEN_PRICE_LIMITS,
         "baseline": 1,
         "reverse": True,
     },
@@ -304,6 +320,10 @@ def _build_pair(directory, report, regime, axis, cases):
         )
     elif axis == "price":
         price_values = np.asarray(_curve(report, cases[0][0], axis, regime)["values"])
+        price_values = price_values[
+            (price_values >= TOKEN_PRICE_LIMITS[0])
+            & (price_values <= TOKEN_PRICE_LIMITS[1])
+        ]
         if price_effort_view:
             _format(
                 axes[0], "(a) Adoption", axis,
@@ -357,6 +377,61 @@ def _build_pair(directory, report, regime, axis, cases):
     return filename
 
 
+def _build_work_reservation_price(directory, report):
+    """Plot the exact work-limited reservation token price."""
+
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import NullFormatter, NullLocator
+
+    axis = "capability"
+    fig, ax = plt.subplots(1, 1, figsize=(7.4, 5.2))
+    fig.subplots_adjust(left=.14, right=.98, bottom=.16, top=.72)
+    lower, upper = RESERVATION_CAPABILITY_LIMITS
+    for case_index, (name, label, color, style, marker) in enumerate(
+        WORK_RESERVATION_CASES
+    ):
+        record = _curve(report, name, axis, "work")
+        reservation_capability = np.asarray(
+            record["reservation_capability"], dtype=float
+        )
+        selected = (
+            (reservation_capability >= lower)
+            & (reservation_capability <= upper)
+        )
+        marker_step = max(1, np.count_nonzero(selected) // 9)
+        ax.plot(
+            reservation_capability[selected],
+            np.asarray(record["reservation_price"])[selected]
+            / record["reservation_price_baseline"],
+            label=label,
+            color=color,
+            linestyle=style,
+            linewidth=2.5,
+            marker=marker,
+            # Offset markers across cases so coincident hurdle-only curves are
+            # visible in the static figure as well as separately toggleable.
+            markevery=(case_index % marker_step, marker_step) if marker else None,
+            markersize=5.5,
+            markerfacecolor="white" if marker else color,
+            markeredgewidth=1.1,
+        )
+
+    _format(
+        ax, "Token price preserving baseline work-limited surplus", axis,
+        r"Reservation token price, $c_{\rm res}^{W}(m)/c_0$",
+    )
+    ax.set_xlim(lower, upper)
+    ax.set_xticks(
+        RESERVATION_CAPABILITY_TICKS,
+        [f"{tick:g}" for tick in RESERVATION_CAPABILITY_TICKS],
+    )
+    ax.xaxis.set_minor_locator(NullLocator())
+    ax.xaxis.set_minor_formatter(NullFormatter())
+    filename = "work-capability-reservation-price.png"
+    _save(fig, [ax], directory, filename)
+    return filename
+
+
 def _build_attention_value(directory, report):
     """Plot hourly attention value and the exact reservation token price."""
 
@@ -369,7 +444,7 @@ def _build_attention_value(directory, report):
     for name, label, color, style, marker in ATTENTION_CASES:
         record = _curve(report, name, axis, "attention")
         x_values = np.asarray(record["values"], dtype=float)
-        lower, upper = 1.0, 5.0
+        lower, upper = RESERVATION_CAPABILITY_LIMITS
         selected = (x_values >= lower) & (x_values <= upper)
         reservation_capability = np.asarray(
             record["reservation_capability"], dtype=float
@@ -379,7 +454,7 @@ def _build_attention_value(directory, report):
             & (reservation_capability <= upper)
         )
         series = (
-            (x_values[selected], np.asarray(record["attention_value"])[selected]),
+            (x_values[selected], _indexed(record, "attention_value")[selected]),
             (
                 reservation_capability[reservation_selected],
                 np.asarray(record["reservation_price"])[reservation_selected]
@@ -402,17 +477,19 @@ def _build_attention_value(directory, report):
             )
 
     _format(
-        axes[0], "(a) Maximum hourly price of reviewer attention", axis,
-        r"Hourly attention price, $\rho^*(m)$ (\$/review hour)",
-        normalized=False,
+        axes[0], "(a) Value of reviewer attention", axis,
+        "Reviewer-attention value index (baseline = 1)",
     )
     _format(
-        axes[1], "(b) Maximum token price for the smarter model", axis,
-        r"Reservation token price, $c_{\rm res}(m)/c_0$",
+        axes[1], "(b) Token price preserving baseline user surplus", axis,
+        r"Reservation token price, $c_{\rm res}^{H}(m)/c_0$",
     )
     for ax in axes:
-        ax.set_xlim(.95, 5.2)
-        ax.set_xticks((1, 2, 5), ("1", "2", "5"))
+        ax.set_xlim(lower, upper)
+        ax.set_xticks(
+            RESERVATION_CAPABILITY_TICKS,
+            [f"{tick:g}" for tick in RESERVATION_CAPABILITY_TICKS],
+        )
         ax.xaxis.set_minor_locator(NullLocator())
         ax.xaxis.set_minor_formatter(NullFormatter())
     filename = "attention-capability-value.png"
@@ -475,14 +552,18 @@ def _build_lever_pair(directory, report, experiment):
 
 
 def build_exposition_figures(directory: Path, paradigms: dict, interventions: dict):
-    """Build seven regime figures and three capability-lever figures."""
+    """Build eight regime figures and three capability-lever figures."""
 
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     files = []
-    for regime, cases in (("work", WORK_CASES), ("attention", ATTENTION_CASES)):
-        for axis in ("capability", "efficiency", "price"):
-            files.append(_build_pair(directory, paradigms, regime, axis, cases))
+    for axis in ("capability", "efficiency", "price"):
+        files.append(_build_pair(directory, paradigms, "work", axis, WORK_CASES))
+    files.append(_build_work_reservation_price(directory, paradigms))
+    for axis in ("capability", "efficiency", "price"):
+        files.append(
+            _build_pair(directory, paradigms, "attention", axis, ATTENTION_CASES)
+        )
     files.append(_build_attention_value(directory, paradigms))
     for experiment in ("review-growth", "verification-speed", "inference-returns"):
         files.append(_build_lever_pair(directory, interventions, experiment))

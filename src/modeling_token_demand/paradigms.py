@@ -183,13 +183,17 @@ def reservation_price_record(
     *,
     baseline_capability=1.0,
     baseline_price=1.0,
-    maximum_capability=5.0,
+    minimum_capability=.8,
+    maximum_capability=30.0,
 ):
     """Solve exact token prices that match baseline optimized user value.
 
-    The plotted comparison focuses on improvements from the baseline through
-    ``maximum_capability``. At every candidate price the attention-constrained
-    user reoptimizes scope and inference effort.
+    The plotted comparison includes a modest regression below the baseline
+    and improvements through ``maximum_capability``. At every candidate price
+    the user reoptimizes scope and inference effort. The optimizer determines
+    whether the preserved objective is surplus per work unit or per review
+    hour. The lower endpoint stays above the capability at which matching
+    baseline value would require a zero or negative marginal token price.
     """
 
     baseline = optimizer.solve(
@@ -199,10 +203,10 @@ def reservation_price_record(
             token_price=baseline_price,
         ),
     )
-    target = baseline.surplus_per_attention_hour
+    target = optimizer.objective_value(baseline)
     selected = np.asarray(capabilities, dtype=float)
     selected = selected[
-        (selected >= baseline_capability) & (selected <= maximum_capability)
+        (selected >= minimum_capability) & (selected <= maximum_capability)
     ]
     results = [
         optimizer.solve_reservation_price(
@@ -220,9 +224,13 @@ def reservation_price_record(
         abs(result.objective_gap) / max(1.0, abs(target))
         for result in results
     ])
-    if len(prices) == 0 or not math.isclose(selected[0], baseline_capability):
-        raise AssertionError("reservation-price curve must include its baseline")
-    if not math.isclose(prices[0], baseline_price, rel_tol=1e-9):
+    baseline_matches = np.flatnonzero(np.isclose(selected, baseline_capability))
+    if len(prices) == 0 or len(baseline_matches) != 1:
+        raise AssertionError("reservation-price curve must include one baseline")
+    baseline_index = int(baseline_matches[0])
+    if not math.isclose(
+        prices[baseline_index], baseline_price, rel_tol=1e-9
+    ):
         raise AssertionError("reservation price must equal token price at baseline")
     if np.min(np.diff(prices)) < -1e-8:
         raise AssertionError("reservation price must rise with capability")
@@ -357,9 +365,9 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
                 assert not boundary_hits(outcomes, settings), (name, regime, axis)
                 model = IndustryModel(industry)
                 record = curve_record(industry, axis, values, outcomes, regime)
-                if regime == "attention" and axis == "capability":
+                if axis == "capability":
                     reservation = reservation_price_record(
-                        model, attention, values
+                        model, work if regime == "work" else attention, values
                     )
                     record.update(reservation)
                     reservation_errors.append(
@@ -385,6 +393,10 @@ def audit_main_sweeps(settings, sweep_sets, scenario_axes, industries):
             "max_relative_objective_error": max(errors),
             "reservation_price_checks": len(reservation_errors),
             "reservation_price_max_relative_gap": max(reservation_errors)}}
+
+
+TOKEN_PRICE_LIMITS = (.1, 4.0)
+TOKEN_PRICE_TICKS = (.1, .2, .5, 1, 2, 4)
 
 
 def _format_axis(ax, xlabel, ticks, baseline, ylabel, log_y=False, reverse=False):
@@ -414,7 +426,7 @@ def build_paradigm_figures(directory: Path, points=81):
         ("(a) Adoption can create a capability hump", "(b) Efficiency: rebound, then savings",
          "(c) Cheaper tokens unlock new work"),
         ("Model capability, m", r"Token efficiency, $\eta$", "Normalized token price, c"),
-        ((.25, .5, 1, 2, 5, 10), (.25, .5, 1, 2, 5, 10), (.1, .2, .5, 1, 2, 4, 8)),
+        ((.25, .5, 1, 2, 5, 10), (.25, .5, 1, 2, 5, 10), TOKEN_PRICE_TICKS),
         (1, 1, 1),
     ):
         for record in (r for r in work if r["axis"] == axis):
@@ -427,6 +439,8 @@ def build_paradigm_figures(directory: Path, points=81):
                     marker=None, label="Constant revenue (1 / price)", linewidth=1.4)
         _format_axis(ax, xlabel, ticks, baseline, "Token demand index (baseline = 1)",
                      log_y=True, reverse=axis == "price")
+        if axis == "price":
+            ax.set_xlim(TOKEN_PRICE_LIMITS[1], TOKEN_PRICE_LIMITS[0])
         ax.axhline(1, color=".75", linestyle=":", linewidth=.9)
         ax.set_title(title, loc="left", fontsize=10)
     fig.legend(*axes[-1].get_legend_handles_labels(), loc="outside upper center",
@@ -446,7 +460,8 @@ def build_paradigm_figures(directory: Path, points=81):
         ("(a) Work assigned to AI approaches a ceiling", "(b) Revenue can rise and then fall"),
         ("Adopted share of potential work (%)", "Token revenue index (c = 1 baseline)")):
         _format_axis(ax, "Normalized token price, c (cheaper to the right)",
-                     (.1, .2, .5, 1, 2, 4, 8), 1, ylabel, reverse=True)
+                     TOKEN_PRICE_TICKS, 1, ylabel, reverse=True)
+        ax.set_xlim(TOKEN_PRICE_LIMITS[1], TOKEN_PRICE_LIMITS[0])
         ax.set_title(title, loc="left", fontsize=10)
         ax.set_ylim(bottom=0)
     axes[0].set_ylim(0, 102)

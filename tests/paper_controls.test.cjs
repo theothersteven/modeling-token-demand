@@ -32,10 +32,16 @@ test('fit visible uses only selected lines, and empty visibility is valid', () =
   assert.deepEqual(fitRanges(spec, new Set(), false), [[-1, 1], [-1, 1], [-1, 1]]);
 });
 
-test('reversed logarithmic price range remains reversed', () => {
-  const panel = plots['attention-limited-token-demand-indexed.png'].panels[2];
-  const range = originalRange(panel.xlim, panel.xscale);
-  assert.ok(range[0] > range[1]);
+test('every displayed token-price range runs from 4 down to 0.1', () => {
+  const pricePanels = Object.values(plots).flatMap(spec => spec.panels)
+    .filter(panel => panel.xlabel.toLowerCase().includes('token price'));
+  assert.equal(pricePanels.length, 15);
+  for (const panel of pricePanels) {
+    assert.deepEqual(panel.xlim, [4, .1]);
+    assert.deepEqual(panel.xticks, [.1, .2, .5, 1, 2, 4]);
+    const range = originalRange(panel.xlim, panel.xscale);
+    assert.ok(range[0] > range[1]);
+  }
 });
 
 test('linear elasticity axes are not converted into log scales', () => {
@@ -47,6 +53,18 @@ test('linear elasticity axes are not converted into log scales', () => {
   assert.equal(plainLabel('Review-cost multiplier, $\\kappa_h$'), 'Review-cost multiplier, κₕ');
   assert.equal(plainLabel('Marginal inference returns, $\\alpha$'), 'Marginal inference returns, α');
   assert.equal(plainLabel('Normalized token price, $c$'), 'Normalized token price, c');
+  assert.equal(
+    plainLabel('Reservation token price, $c_{\\rm res}^{W}(m)/c_0$'),
+    'Reservation token price, cᵣₑₛᵂ(m)/c₀'
+  );
+  assert.equal(
+    plainLabel('Reservation token price, $c_{\\rm res}^{H}(m)/c_0$'),
+    'Reservation token price, cᵣₑₛᴴ(m)/c₀'
+  );
+  assert.equal(
+    plainLabel('Hourly attention price, $\\rho^*(m)$ (\\$/review hour)'),
+    'Hourly attention price, ρ*(m) ($/review hour)'
+  );
 });
 
 // A deliberately small DOM/Plotly test double exercises the actual event
@@ -229,6 +247,19 @@ test('figure three is square and shows adoption, effort, and spending', async ()
 
   const spending = rendered[3].data.find(trace => trace.name === 'Reference industry');
   assert.ok(spending.y.every(value => value > 0));
+});
+
+test('figure four retains and identifies the coincident hurdle-only curves', async () => {
+  const spec = plots['work-capability-reservation-price.png'];
+  assert.deepEqual(overlappingAdoption(spec), [
+    'High adoption hurdle', 'Low adoption hurdle'
+  ]);
+  const {figure, rendered} = await mountedFigure(spec);
+  assert.match(figure.querySelector('.overlap-note').textContent, /separate toggles/);
+  assert.deepEqual(new Set(rendered[0].data.map(trace => trace.name)), new Set([
+    'Reference industry', 'Low adoption hurdle', 'High adoption hurdle',
+    'Hard execution', 'High capability requirement'
+  ]));
 });
 
 test('actual scale selector, linked zoom, and expand/escape handlers work', async () => {

@@ -138,6 +138,94 @@ class PolicyOptimizer:
 
         return outcome.surplus_per_work_hour
 
+    def solve_reservation_price(
+        self,
+        model: IndustryModel,
+        scenario: Scenario,
+        target_value: float,
+        *,
+        log_price_tolerance: float = 1e-6,
+        max_bracket_steps: int = 48,
+    ) -> ReservationPriceResult:
+        """Find the token price that preserves a target optimized user value.
+
+        Every price evaluation reoptimizes delegation scope and inference
+        effort subject to the minimum viable effort constraint. ``target_value``
+        is interpreted through ``objective_value``: surplus per work unit for
+        the base optimizer and surplus per review hour for the attention-
+        constrained optimizer. The root is solved in log price, which preserves
+        positivity and gives a relative rather than absolute price tolerance.
+        """
+
+        if not math.isfinite(target_value):
+            raise ValueError("target value must be finite")
+        if log_price_tolerance <= 0:
+            raise ValueError("log_price_tolerance must be positive")
+        if max_bracket_steps < 1:
+            raise ValueError("max_bracket_steps must be positive")
+
+        evaluations: dict[float, PolicyOutcome] = {}
+
+        def gap(log_price: float) -> float:
+            price = math.exp(float(log_price))
+            outcome = self.solve(
+                model, replace(scenario, token_price=price)
+            )
+            evaluations[float(log_price)] = outcome
+            return self.objective_value(outcome) - target_value
+
+        log_initial = math.log(scenario.token_price)
+        initial_gap = gap(log_initial)
+        value_tolerance = 1e-10 * max(1.0, abs(target_value))
+        if abs(initial_gap) <= value_tolerance:
+            outcome = evaluations[log_initial]
+            return ReservationPriceResult(
+                token_price=scenario.token_price,
+                outcome=outcome,
+                objective_gap=initial_gap,
+                iterations=0,
+                function_calls=1,
+            )
+
+        step = math.log(2.0)
+        if initial_gap > 0:
+            lower, upper = log_initial, log_initial + step
+            for _ in range(max_bracket_steps):
+                if gap(upper) <= 0:
+                    break
+                upper += step
+            else:
+                raise ValueError("could not bracket a finite reservation price")
+        else:
+            lower, upper = log_initial - step, log_initial
+            for _ in range(max_bracket_steps):
+                if gap(lower) >= 0:
+                    break
+                lower -= step
+            else:
+                raise ValueError(
+                    "target value is unattainable at a positive token price"
+                )
+
+        root, details = brentq(
+            gap,
+            lower,
+            upper,
+            xtol=log_price_tolerance,
+            rtol=4 * np.finfo(float).eps,
+            maxiter=64,
+            full_output=True,
+        )
+        final_gap = gap(root)
+        outcome = evaluations[root]
+        return ReservationPriceResult(
+            token_price=math.exp(root),
+            outcome=outcome,
+            objective_gap=final_gap,
+            iterations=details.iterations,
+            function_calls=details.function_calls + 1,
+        )
+
     def _better(
         self,
         current: Optional[PolicyOutcome], candidate: PolicyOutcome
@@ -187,99 +275,6 @@ class AttentionConstrainedOptimizer(PolicyOptimizer):
         """Return expected net surplus per human verification hour."""
 
         return outcome.surplus_per_attention_hour
-
-    def solve_reservation_price(
-        self,
-        model: IndustryModel,
-        scenario: Scenario,
-        target_surplus_per_attention_hour: float,
-        *,
-        log_price_tolerance: float = 1e-6,
-        max_bracket_steps: int = 48,
-    ) -> ReservationPriceResult:
-        """Find the token price that delivers a target optimized user value.
-
-        Every price evaluation reoptimizes delegation scope and inference
-        effort subject to the minimum viable effort constraint. The root is
-        solved in log price, which preserves positivity and gives a relative
-        rather than absolute price tolerance. Starting at
-        ``scenario.token_price``, the method expands a factor-of-two bracket
-        in whichever direction is required.
-        """
-
-        if not math.isfinite(target_surplus_per_attention_hour):
-            raise ValueError("target surplus must be finite")
-        if log_price_tolerance <= 0:
-            raise ValueError("log_price_tolerance must be positive")
-        if max_bracket_steps < 1:
-            raise ValueError("max_bracket_steps must be positive")
-
-        evaluations: dict[float, PolicyOutcome] = {}
-
-        def gap(log_price: float) -> float:
-            price = math.exp(float(log_price))
-            outcome = self.solve(
-                model, replace(scenario, token_price=price)
-            )
-            evaluations[float(log_price)] = outcome
-            return (
-                outcome.surplus_per_attention_hour
-                - target_surplus_per_attention_hour
-            )
-
-        log_initial = math.log(scenario.token_price)
-        initial_gap = gap(log_initial)
-        value_tolerance = 1e-10 * max(
-            1.0, abs(target_surplus_per_attention_hour)
-        )
-        if abs(initial_gap) <= value_tolerance:
-            outcome = evaluations[log_initial]
-            return ReservationPriceResult(
-                token_price=scenario.token_price,
-                outcome=outcome,
-                objective_gap=initial_gap,
-                iterations=0,
-                function_calls=1,
-            )
-
-        step = math.log(2.0)
-        if initial_gap > 0:
-            lower, upper = log_initial, log_initial + step
-            for _ in range(max_bracket_steps):
-                if gap(upper) <= 0:
-                    break
-                upper += step
-            else:
-                raise ValueError("could not bracket a finite reservation price")
-        else:
-            lower, upper = log_initial - step, log_initial
-            for _ in range(max_bracket_steps):
-                if gap(lower) >= 0:
-                    break
-                lower -= step
-            else:
-                raise ValueError(
-                    "target value is unattainable at a positive token price"
-                )
-
-        root, details = brentq(
-            gap,
-            lower,
-            upper,
-            xtol=log_price_tolerance,
-            rtol=4 * np.finfo(float).eps,
-            maxiter=64,
-            full_output=True,
-        )
-        final_gap = gap(root)
-        outcome = evaluations[root]
-        return ReservationPriceResult(
-            token_price=math.exp(root),
-            outcome=outcome,
-            objective_gap=final_gap,
-            iterations=details.iterations,
-            function_calls=details.function_calls + 1,
-        )
 
     def solve_interior(
         self, model: IndustryModel, scenario: Scenario

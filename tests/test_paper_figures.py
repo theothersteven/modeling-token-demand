@@ -1,4 +1,4 @@
-"""The six paper figures must preserve audited indexed quantities."""
+"""The paper figures must preserve audited plotted quantities."""
 
 import json
 from pathlib import Path
@@ -7,7 +7,9 @@ import numpy as np
 import pytest
 
 from modeling_token_demand.paper_figures import (
-    ATTENTION_CASES, AXES, LEVER_AXES, LEVER_CASES, WORK_CASES,
+    ATTENTION_CASES,
+    AXES, LEVER_AXES, LEVER_CASES, RESERVATION_CAPABILITY_LIMITS,
+    TOKEN_PRICE_LIMITS, TOKEN_PRICE_TICKS, WORK_CASES, WORK_RESERVATION_CASES,
 )
 
 
@@ -75,6 +77,11 @@ def test_pair_figures_show_indexed_outcomes_and_price_spending(data, regime, cas
         assert second_labels == expected_labels
 
     lower, upper = AXES[axis]["limits"]
+    if axis == "price":
+        assert (lower, upper) == TOKEN_PRICE_LIMITS
+        for panel in panels:
+            assert panel["xlim"] == pytest.approx((upper, lower))
+            assert panel["xticks"] == pytest.approx(TOKEN_PRICE_TICKS)
     for name, label, _, _, _ in cases:
         record = next(
             curve for curve in curves
@@ -161,15 +168,15 @@ def test_attention_value_figure_shows_hourly_and_token_reservation_prices(data):
     panels = plots["attention-capability-value.png"]["panels"]
     assert len(panels) == 2
     assert panels[0]["ylabel"] == (
-        r"Hourly attention price, $\rho^*(m)$ (\$/review hour)"
+        "Reviewer-attention value index (baseline = 1)"
     )
     assert panels[0]["yscale"] == "log"
     assert panels[1]["ylabel"] == (
-        r"Reservation token price, $c_{\rm res}(m)/c_0$"
+        r"Reservation token price, $c_{\rm res}^{H}(m)/c_0$"
     )
     assert panels[1]["yscale"] == "log"
 
-    lower, upper = 1, 5
+    lower, upper = RESERVATION_CAPABILITY_LIMITS
     for name, label, _, _, _ in ATTENTION_CASES:
         record = next(
             curve for curve in curves
@@ -184,8 +191,12 @@ def test_attention_value_figure_shows_hourly_and_token_reservation_prices(data):
             line for line in panels[1]["lines"] if line["name"] == label
         )
         gross_value = np.asarray(record["attention_value"])
+        gross_value_index = gross_value / gross_value[record["baseline_index"]]
         assert level["x"] == pytest.approx(x_values[selected])
-        assert level["y"] == pytest.approx(gross_value[selected])
+        assert level["y"] == pytest.approx(gross_value_index[selected])
+        level_baseline = np.flatnonzero(np.isclose(x_values[selected], 1))
+        assert len(level_baseline) == 1
+        assert level["y"][int(level_baseline[0])] == pytest.approx(1)
         reservation_capability = np.asarray(record["reservation_capability"])
         reservation_price = np.asarray(record["reservation_price"])
         reservation_selected = (
@@ -199,11 +210,71 @@ def test_attention_value_figure_shows_hourly_and_token_reservation_prices(data):
             reservation_price[reservation_selected]
             / record["reservation_price_baseline"]
         )
-        assert reservation["y"][0] == pytest.approx(1)
+        baseline_index = np.flatnonzero(
+            np.isclose(reservation_capability[reservation_selected], 1)
+        )
+        assert len(baseline_index) == 1
+        assert reservation["y"][int(baseline_index[0])] == pytest.approx(1)
         assert np.all(np.diff(reservation["y"]) >= 0)
         assert record["reservation_x"][-1] == pytest.approx(1)
         assert record["reservation_effort_floor_bindings"] > 0
         assert record["reservation_max_relative_gap"] < 2e-6
+
+
+def test_work_value_figure_shows_exact_token_reservation_prices(data):
+    plots, curves = data
+    panels = plots["work-capability-reservation-price.png"]["panels"]
+    assert len(panels) == 1
+    panel = panels[0]
+    assert panel["ylabel"] == (
+        r"Reservation token price, $c_{\rm res}^{W}(m)/c_0$"
+    )
+    assert panel["yscale"] == "log"
+    assert WORK_RESERVATION_CASES == WORK_CASES
+    assert {line["name"] for line in panel["lines"]} == {
+        case[1] for case in WORK_CASES
+    }
+
+    lower, upper = RESERVATION_CAPABILITY_LIMITS
+    for name, label, _, _, _ in WORK_RESERVATION_CASES:
+        record = next(
+            curve for curve in curves
+            if curve["industry"]["name"] == name
+            and curve["regime"] == "work"
+            and curve["axis"] == "capability"
+        )
+        capability = np.asarray(record["reservation_capability"])
+        price = np.asarray(record["reservation_price"])
+        selected = (capability >= lower) & (capability <= upper)
+        line = next(line for line in panel["lines"] if line["name"] == label)
+        assert line["x"] == pytest.approx(capability[selected])
+        assert line["y"] == pytest.approx(
+            price[selected] / record["reservation_price_baseline"]
+        )
+        baseline = np.flatnonzero(np.isclose(capability[selected], 1))
+        assert len(baseline) == 1
+        assert line["y"][int(baseline[0])] == pytest.approx(1)
+        assert np.all(np.diff(line["y"]) >= 0)
+        assert record["reservation_x"][-1] == pytest.approx(1)
+        assert record["reservation_effort_floor_bindings"] > 0
+        assert record["reservation_max_relative_gap"] < 2e-6
+
+    records = {
+        curve["industry"]["name"]: curve
+        for curve in curves
+        if curve["regime"] == "work" and curve["axis"] == "capability"
+    }
+    for hurdle_case in ("Low adoption hurdle", "High adoption hurdle"):
+        assert records[hurdle_case]["reservation_price"] == pytest.approx(
+            records["Reference industry"]["reservation_price"]
+        )
+        lines = {line["name"]: line for line in panel["lines"]}
+        assert lines[hurdle_case]["x"] == pytest.approx(
+            lines["Reference industry"]["x"]
+        )
+        assert lines[hurdle_case]["y"] == pytest.approx(
+            lines["Reference industry"]["y"]
+        )
 
 
 def test_figure_one_marks_demand_maxima_on_adoption_curves(data):

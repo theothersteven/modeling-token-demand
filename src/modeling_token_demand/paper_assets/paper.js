@@ -5,11 +5,15 @@
   const adoptionNames = ['High adoption hurdle', 'Low adoption hurdle'];
 
   function plainLabel(text) {
-    return text.replace(/\$ per million/g, 'USD / million').replace(/\$|\\left|\\right/g, '')
+    return text.replace(/\\\$/g, '\uE000').replace(/\$ per million/g, 'USD / million')
+      .replace(/\$|\\left|\\right/g, '')
       .replace(/\\kappa_h/g, 'κₕ').replace(/\\alpha/g, 'α')
       .replace(/\\beta/g, 'β').replace(/\\eta/g, 'η').replace(/\\rho/g, 'ρ')
       .replace(/\\star/g, '*').replace(/\\log/g, ' log ')
-      .replace(/c_0/g, 'c₀').replace(/[{}^]/g, '').replace(/\s+/g, ' ').trim();
+      .replace(/c_\{\\rm res\}/g, 'cᵣₑₛ').replace(/\^\{W\}/g, 'ᵂ')
+      .replace(/\^\{H\}/g, 'ᴴ').replace(/c_0/g, 'c₀')
+      .replace(/[{}^]/g, '').replace(/\uE000/g, '$')
+      .replace(/\s+/g, ' ').trim();
   }
 
   function coincide(left, right) {

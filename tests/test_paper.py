@@ -51,15 +51,17 @@ def test_entire_manuscript_renders_with_all_figures(plot_data):
 def test_indexed_figure_notes_move_into_interactive_footer(plot_data):
     source = (ROOT / "README.md").read_text()
     html, _ = paper.render_paper(source, plot_data)
-    assert html.count('class="chart-context"') == 10
-    assert html.count('class="chart-instructions"') == 10
+    assert html.count('class="chart-context"') == 8
+    assert html.count('class="chart-instructions"') == 8
     for identifier in paper.INDEXED_FIGURE_NOTES:
         figure = re.search(
             rf'<figure class="interactive-figure" id="{identifier}".*?</figure>',
             html,
             re.DOTALL,
         ).group(0)
-        if identifier != 'attention-capability-value':
+        if identifier not in {
+            'attention-capability-value', 'work-capability-reservation-price'
+        }:
             assert 'rather than its absolute level' in figure \
                 or 'rather than their absolute levels' in figure
         assert 'class="chart-context"' in figure
@@ -74,41 +76,43 @@ def test_manual_text_and_equation_edits_are_rendered():
     assert r'\eta' in revised
 
 
-def test_manuscript_uses_ten_ordered_indexed_figures(plot_data):
+def test_manuscript_uses_eight_ordered_figures(plot_data):
     source = (ROOT / 'README.md').read_text()
     figures = re.findall(r'!\[[^\]]*\]\(figures/([^)]+)\)', source)
     assert figures == [
         'work-capability-demand-spending.png',
         'work-efficiency-demand-spending.png',
         'work-price-demand-spending.png',
+        'work-capability-reservation-price.png',
         'attention-capability-demand-spending.png',
         'attention-efficiency-demand-spending.png',
         'attention-price-demand-spending.png',
         'attention-capability-value.png',
-        'lever-review-elasticity-adoption-revenue.png',
-        'lever-review-cost-adoption-revenue.png',
-        'lever-inference-returns-adoption-revenue.png',
     ]
     assert '## Abstract' not in source
     assert source.index('## 1. Modeling assumptions') < source.index('## 2. Work is limited')
     assert source.index('## 2. Work is limited') < source.index('## 3. Human attention is limited')
     assert source.index('## 3. Human attention is limited') < source.index(
-        '## 4. Other technical levers for adoption and revenue')
-    assert source.index('## 4. Other technical levers for adoption and revenue') < source.index(
-        '## 5. Conclusion')
-    assert len(source.split()) < 4400
+        '## 4. Conclusion')
+    assert len(source.split()) < 4500
     for filename in figures:
         panels = plot_data[filename]['panels']
         if filename == 'work-efficiency-demand-spending.png':
             expected_panels = 4
         elif filename == 'work-price-demand-spending.png':
             expected_panels = 4
+        elif filename == 'work-capability-reservation-price.png':
+            expected_panels = 1
         else:
             expected_panels = 2
         assert len(panels) == expected_panels
         if filename == 'attention-capability-value.png':
             assert panels[1]['ylabel'] == (
-                r'Reservation token price, $c_{\rm res}(m)/c_0$'
+                r'Reservation token price, $c_{\rm res}^{H}(m)/c_0$'
+            )
+        elif filename == 'work-capability-reservation-price.png':
+            assert panels[0]['ylabel'] == (
+                r'Reservation token price, $c_{\rm res}^{W}(m)/c_0$'
             )
         else:
             assert panels[1]['ylabel'].endswith('index (baseline = 1)')
@@ -158,6 +162,35 @@ def test_notebook_cache_preserves_baselines_overlap_and_price_direction(plot_dat
             lines = {line['name']: line for line in panel['lines']}
             for name in ('High adoption hurdle', 'Low adoption hurdle'):
                 assert lines[name]['y'] == pytest.approx(lines['Reference industry']['y'])
+
+
+def test_every_displayed_token_price_axis_uses_the_shared_window(plot_data):
+    price_panels = {
+        filename: [
+            panel for panel in spec['panels']
+            if 'token price' in panel['xlabel'].lower()
+        ]
+        for filename, spec in plot_data.items()
+    }
+    price_panels = {
+        filename: panels for filename, panels in price_panels.items() if panels
+    }
+    assert set(price_panels) == {
+        'work-limited-token-demand-levels.png',
+        'work-limited-token-demand-indexed.png',
+        'attention-limited-token-demand-levels.png',
+        'attention-limited-token-demand-indexed.png',
+        'token-demand-vs-price.png',
+        'token-spend-vs-price.png',
+        'paradigm-work-demand.png',
+        'paradigm-adoption-and-revenue.png',
+        'work-price-demand-spending.png',
+        'attention-price-demand-spending.png',
+    }
+    for panels in price_panels.values():
+        for panel in panels:
+            assert panel['xlim'] == pytest.approx([4, .1])
+            assert panel['xticks'] == pytest.approx([.1, .2, .5, 1, 2, 4])
 
 
 def test_export_retains_unlabeled_second_panel_and_guides():
