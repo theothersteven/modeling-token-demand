@@ -202,8 +202,8 @@
       label.append(radio, text); regime.append(label);
     });
     regime.append(el('p', 'explore-note', state.regime === 'work'
-      ? 'Objective: surplus per work unit u(s,x). Demand D = W·A(u*)·x*.'
-      : 'Objective: surplus per review hour J(s,x). Demand D = H·[s*/h(s*)]·x*.'));
+      ? 'Objective: surplus per work unit u(s,x). Demand D = W·A(u*)·x*. Other outcomes are evaluated at this work-optimal policy.'
+      : 'Objective: surplus per review hour J(s,x). Demand D = H·[s*/h(s*)]·x*. Other outcomes are evaluated at this attention-optimal policy; adoption is descriptive and does not constrain this regime.'));
 
     const xAxis = el('fieldset', 'explore-fieldset');
     xAxis.append(el('legend', '', 'X axis (swept variable)'));

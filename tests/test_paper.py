@@ -95,7 +95,7 @@ def test_parameter_reference_is_collapsible_and_other_html_stays_escaped(plot_da
     html, _ = paper.render_paper(source, plot_data)
     opening = (
         '<details class="parameter-reference">\n'
-        '<summary>Model parameter reference (19 parameters)</summary>'
+        '<summary>Model notation reference (19 quantities)</summary>'
     )
     assert html.count(opening) == 1
     disclosure = html.split(opening, 1)[1].split('</details>', 1)[0]

@@ -46,6 +46,20 @@ test('evaluate matches the Python model at a recorded optimum', () => {
   assert.ok(relativeError(o.h, record.verification_hours[i]) < 1e-12);
 });
 
+for (const regime of ['work', 'attention']) {
+  test(`efficiency is an effective price cut in the ${regime} regime`, () => {
+    const ind = M.REFERENCE_INDUSTRY;
+    const efficient = M.solve(ind, {m: 1.7, eta: 4, c: 1.3, v: 0.6}, regime);
+    const cheaper = M.solve(ind, {m: 1.7, eta: 1, c: 1.3 / 4, v: 0.6}, regime);
+    const demand = outcome => regime === 'work' ? outcome.workDemand : outcome.attentionDemand;
+    assert.ok(relativeError(efficient.s, cheaper.s) < 1e-6);
+    assert.ok(relativeError(efficient.P, cheaper.P) < 1e-6);
+    assert.ok(relativeError(efficient.A, cheaper.A) < 1e-6);
+    assert.ok(relativeError(efficient.x, cheaper.x / 4) < 1e-6);
+    assert.ok(relativeError(demand(efficient), demand(cheaper) / 4) < 1e-6);
+  });
+}
+
 // Independent re-solution at the endpoints, the baseline, and the demand
 // extrema of every audited main-figure curve, using the Python tolerances.
 for (const record of report.curves) {

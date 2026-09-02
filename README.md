@@ -2,22 +2,22 @@
 
 ## Introduction
 
-Many discussions of AI token demand take a top-down approach: start with an addressable market (e.g. 100k/year salaries for one million software engineers = 100B) and assume models capture some of it. This illustrates scale but not the dynamics at play.
+Many discussions of AI token demand take a top-down approach: start with an addressable market (for example, $100,000 annual salaries for one million software engineers imply $100 billion) and assume models capture some of it. This illustrates scale but not the dynamics at play.
 
-In this work we take a bottom up approach by modeling user's adoption and usage as a function of model capability, price, and efforts required to verify the AI's outputs. This allows us to identify the different market forces at play.
+We instead take a bottom-up approach, modeling users' adoption and usage as functions of model capability, price, and the effort required to verify AI outputs. This lets us isolate the market forces at play.
 
-We compare two limiting regimes. Limited work, where the total token demand is eventually capped by the total amount of work there is for the model to do. And limited human attention, where there is abundant valuable work for the AI to do, but because humans have to be the one reviewing and verifying the output, the total demand is eventually constrained by human attention.
+We compare two limiting regimes. In the work-limited regime, token demand is ultimately capped by the amount of work available. In the attention-limited regime, valuable work is abundant, but human review and verification constrain demand.
 
 In the process, we identify cheap scalable human verification as a key lever to increase total token demand. If models handle larger tasks while verification time grows less than proportionally with task horizon, each human reviewer can oversee progressively more AI work. Under stylized assumptions, this effect can support unbounded token-demand growth as capability improves.
 
 ### TL;DR
 
-- [When work is limited, total token demand can increase and then decrease as model capabilities improve](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
+- [When work is limited, total token demand can increase and then decrease as model capabilities improve.](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
 - [Token efficiency can raise or lower token demand.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) It raises surplus and adoption but lowers tokens per task, so demand rises only when the increased adoption dominates the lower token usage per task.
-- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons paradox-like effect requires demand to expand faster than price falls, and this is easier in the work limited regime when adoption level is still very low, and [harder when human attention is the bottleneck](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
+- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons-like effect requires demand to expand faster than price falls. This is easier when a price cut unlocks adoption and [harder when human attention is the bottleneck](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
 - [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Larger assignments let each review hour support more work, especially when verification time grows slowly with task horizon.
 - [With limited work, customers' willingness to pay eventually levels off.](#24-capability-raises-the-work-limited-reservation-token-price) Once AI can do almost all available work, further improvements in model capability add little value.
-- [In the human attention limited regime, better model capability increases the value of human attention](#34-capability-raises-the-value-of-scarce-attention) When larger tasks remain quick to check, one person can oversee progressively more AI work. Firms' willingness to pay for additional labor / human attention therefore increases unboundedly as a function of model capability.
+- [In the human-attention-limited regime, better model capability increases the value of human attention.](#34-capability-raises-the-value-of-scarce-attention) When larger tasks remain quick to check, one person can oversee progressively more AI work, increasing the value of additional review labor.
 
 ## 1. Modeling assumptions
 
@@ -26,13 +26,13 @@ In the process, we identify cheap scalable human verification as a key lever to 
 For each task, the user chooses two things:
 
 - $s$: the scope of the task as measured in work units. A work unit can be thought of as the work a reference human completes in one hour. "Implement this function" would be a relatively small task, while "Refactor this entire system and ensure the test coverage is good" would be a large task.
-- $x$: the model's normalized effort level per work unit; a task of scope $s$ consumes $sx$ token units. One can understand $x$ as the effort levels in major AI products: "low" "medium" "high" "pro" etc. But things like specialized harness, "/loop" "/goal" etc can also be modeled as $x$. To prevent some degenerate results later we normalize minimum viable effort to $x=1$. The choice of $1$ is unimportant and it can be any positive constant and our qualitative results will stay the same.
+- $x$: the model's normalized effort level per work unit; a task of scope $s$ consumes $sx$ token units. One can understand $x$ as the effort levels in major AI products: "low," "medium," "high," and so on. Specialized harnesses and agent loops can also be modeled through $x$. To prevent degenerate results, we normalize minimum viable effort to $x=1$. Another positive normalization would preserve the qualitative mechanisms, but it would rescale long-run demand levels and the reservation-price ceilings derived below.
 
-After the model attempts each task, the user needs to verify the correctness of its output. All else being equal, the bigger the task, the less reliable the model is. On the other hand, assigning bigger tasks reduces the number of times the user has to manually review the model's output. For example, one can use AI in "tab complete" mode, where each task is simply to complete the next line of code. In this case, the success rate is likely very high and each verification step is quick, but the workflow requires many human verification steps over the course of a day. The other extreme is to assign the AI an entire project. This reduces the number of human verification steps, but each step takes longer, and the AI is much less likely to complete the work correctly.
+After each attempt, the user verifies the output. Larger assignments are less reliable and take longer to review, but they require fewer review checkpoints. Tab completion illustrates one extreme: tiny, reliable suggestions with many checkpoints. Delegating an entire project illustrates the other: few checkpoints, but lower reliability and more review per checkpoint.
 
 For more difficult tasks, higher $x$ can significantly increase the success probability. For easy tasks, however, a large $x$ unnecessarily increases token usage without meaningfully improving the quality of the output.
 
-The user chooses the optimal $s$ and $x$ to maximize their utility, which will be made explicitly shortly.
+The user chooses the optimal $s$ and $x$ to maximize utility, as made explicit below.
 
 ### 1.2 Model capability expands the set of feasible tasks
 
@@ -42,7 +42,7 @@ Let $m$ denote model capability. The share of tasks within the model's capabilit
 q(s;m)=\exp\left[-\left(\frac{s}{\lambda m}\right)^\nu\right],
 ```
 
-where the parameters $\lambda$ and $\nu$ together define how *difficult* the set of possible tasks is. Different industries have different $\lambda$ and $\nu$. Given a fixed model capability $m$ and task scope $s$, $q(s;m)$ is the fraction of work in the industry that is feasible for the model.
+where the parameters $\lambda$ and $\nu$ together define how *difficult* the set of possible tasks is. Different industries have different $\lambda$ and $\nu$. Given a fixed model capability $m$ and task scope $s$, $q(s;m)$ is the fraction of work in the industry that is feasible for the model. This capability-as-horizon setup follows the task-completion-time framing of [Kwa et al. (2025)](https://arxiv.org/abs/2503.14499), although $m$ is a stylized multiplier here rather than a calibrated forecast of calendar time.
 
 Note that feasibility does not imply a 100% success rate, which we model next.
 
@@ -55,7 +55,7 @@ r(s,x;m,\eta)
 =\exp\left[-\frac{s}{a m(\eta x)^\alpha}\right].
 ```
 
-The parameter $\alpha\in(0,1)$ determines the rate of diminishing returns to more inference. $\eta$ measures token efficiency: a model that is twice as token-efficient can achieve the same reliability, or success rate, with half as many tokens. We model token efficiency separately from model capability because capability expands the set of feasible tasks, whereas token efficiency does not. It is common practice for labs to publish model evaluation results on a reward vs tokens plot. Pushing the curve horizontally towards fewer tokens means the token efficiency is improving. Pushing the curve up means the capability ceiling is improving. 
+The parameter $\alpha\in(0,1)$ determines diminishing returns to inference. $\eta$ measures token efficiency: doubling $\eta$ achieves the same reliability with half as many tokens. We separate efficiency from capability because capability expands the feasible task set, whereas efficiency shifts the reward-versus-tokens curve toward fewer tokens.
 
 Combined with the task feasibility set, a model can successfully complete a task with scope $s$ with probability
 
@@ -71,7 +71,7 @@ We model the review time for one task as
 h(s)=h_0+h_1\left[(1+s)^\beta-1\right].
 ```
 
-$h_0$ is the fixed time associated with one review. The second term grows with assignment size. Depending on the type of workflow, $\beta$ can be small, which means that human verification time is nearly fixed with respect to task horizon $s$. When $\beta$ is close to one, review grows almost in proportion to the work delegated. As $\beta$ approaches 0 the review cost approaches $h_0$, and as $\beta$ approaches 1 the review cost approaches $h_0 + h_1s$
+$h_0$ is the fixed time associated with one review. The second term grows with assignment size. Depending on the type of workflow, $\beta$ can be small, which means that human verification time grows slowly with task horizon $s$. When $\beta$ is close to one, review grows almost in proportion to the work delegated. As $\beta$ approaches 0, review time approaches $h_0$; as $\beta$ approaches 1, it approaches $h_0+h_1s$. For very small $s$, however, the variable term is approximately $h_1\beta s$ for every $\beta$; the $s^\beta$ behavior used later is a large-scope approximation.
 
 
 Examples of workflows with small $\beta$ include software engineering work with automated tests and reliable benchmarks. Examples with large $\beta$ include insurance claims and legal cases, where each case still requires human supervision and the amount of human verification work grows nearly linearly with the task scope. 
@@ -94,7 +94,7 @@ Given a fixed set of model and industry parameters, let $s^*$ and $x^*$ be the s
 
 ### 1.6 Adoption depends on the value of using AI
 
-A positive optimized surplus, $u^*:=u(s^*,x^*)>0$, does not by itself guarantee that the user will adopt AI. This could be because completing the work manually generates even more surplus, or it could be due to inherent frictions in adopting a new technology. Conversely, some users may adopt even when measured surplus is negative because they value being AI-forward or has an organizational mandate to use AI. We capture these considerations with an adoption hurdle $\phi$, which can be positive or negative and is distributed logistically across tasks. A user adopts when surplus exceeds this hurdle. The fraction of work that adopts AI given some surplus is then given by
+A positive optimized surplus, $u^*:=u(s^*,x^*)>0$, does not by itself guarantee that a user will adopt AI. Completing the work manually may generate even more surplus, or adoption may face organizational frictions. Conversely, some users may adopt even when measured surplus is negative because they value being AI-forward or have a mandate to use AI. We capture these considerations with an adoption hurdle $\phi$, which can be positive or negative and is distributed logistically across work units. A user adopts when surplus exceeds this hurdle. The fraction of work that adopts AI at a given surplus is then
 
 ```math
 A(u)=\Pr(\phi\leq u)=\frac{1}{1+\exp[-(u-\mu)/\sigma]}.
@@ -102,7 +102,9 @@ A(u)=\Pr(\phi\leq u)=\frac{1}{1+\exp[-(u-\mu)/\sigma]}.
 
 The location $\mu$ sets the typical hurdle. The spread $\sigma$ determines whether adoption is gradual or concentrated around a threshold.
 
-### 1.7 Token revenue is proportional to number of tokens used
+Heterogeneity enters only through $\phi$. Conditional on adoption, all work units share the same value and technical parameters and use the same optimized policy $(s^*,x^*)$; changes in task mix are outside the model.
+
+### 1.7 Token spending equals provider revenue
 
 Let $Q$ be the number of work units assigned to AI during the period. Then
 
@@ -110,20 +112,20 @@ Let $Q$ be the number of work units assigned to AI during the period. Then
 D=Qx
 ```
 
-is **token demand**, measured in normalized token units. **Token spending** is simply demand times unit price
+is **token demand**, measured in normalized token units. **Token spending** is demand times unit price
 
 ```math
 R=cD,
 ```
 
-measured in dollars. 
+measured in dollars. In this model, users' token spending is the model provider's token revenue.
 
 In the next two sections we will study the different adoption and demand curves as a function of model capability, token efficiency, and token price in two distinct regimes.
 
 The model parameters are summarized below.
 
 <details class="parameter-reference">
-<summary>Model parameter reference (19 parameters)</summary>
+<summary>Model notation reference (19 quantities)</summary>
 
 | Parameter | Name | Category | How it is used in the model |
 |---|---|---|---|
@@ -138,10 +140,10 @@ The model parameters are summarized below.
 | $\alpha$ | Inference returns | Industry parameter | Controls the diminishing return from effective inference $\eta x$ in the execution horizon. |
 | $h_0$ | Fixed review time | Industry parameter | Captures the fixed time required to open, understand, and close a review in $h(s)=h_0+h_1[(1+s)^\beta-1]$. |
 | $h_1$ | Variable review scale | Industry parameter | Scales the part of human verification time that grows with delegated scope in $h(s)$. |
-| $\beta$ | Review elasticity | Industry parameter | Controls how quickly human verification time grows with delegated scope through the term $s^\beta$. |
+| $\beta$ | Review elasticity | Industry parameter | Controls the curvature of the shifted-power term in review time; $h(s)$ behaves like $s^\beta$ only at large scope. |
 | $b$ | Value of successful work | Industry parameter | Dollar value of one successfully completed work unit. Expected benefit per assigned work unit is $bP(s,x;m,\eta)$. |
 | $w$ | Value of human attention | Industry parameter | Dollar value of one hour of human review. Review cost per assigned work unit is $wh(s)/s$. |
-| $\phi$ | Adoption hurdle | Industry parameter | Task-specific hurdle that optimized surplus must exceed for adoption. It can be positive or negative. |
+| $\phi$ | Adoption hurdle | Work-level heterogeneity | Random hurdle that optimized surplus must exceed for adoption. It can be positive or negative. |
 | $\mu$ | Hurdle location | Industry parameter | Sets the location of the logistic distribution of adoption hurdles in $A(u)$. |
 | $\sigma$ | Hurdle spread | Industry parameter | Controls whether adoption is gradual or concentrated around the hurdle location in $A(u)$. |
 | $W$ | Potential work | Industry parameter | Total work available in the work-limited regime, where assigned work is $Q=WA$. |
@@ -153,9 +155,9 @@ The model parameters are summarized below.
 
 ## 2. Work is limited
 
-In this regime, there are only $W$ potential work units. Better or cheaper AI can increase token demand by increasing surplus for the user and thus bringing more of the users over the adoption threshold.
+In this regime, there are only $W$ potential work units. Better or cheaper AI can increase token demand by increasing user surplus and bringing more work over the adoption threshold.
 
-We start with a reference industry and vary one parameter at a time to produce a set of stylized, not quantitatively calibrated, industries. We then vary model capabilities, token efficiency, and token cost and study how adoption/token revenue changes. Every line uses $W=1{,}000{,}000$.
+We start with a reference industry and vary one parameter at a time to produce stylized, not quantitatively calibrated, industries. We then vary model capability, token efficiency, and token price and study how adoption, demand, and spending change. Every line uses $W=1{,}000{,}000$.
 
 | Plot line | $\lambda$ | $\nu$ | $a$ | $\alpha$ | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -170,9 +172,18 @@ We start with a reference industry and vary one parameter at a time to produce a
 
 ![Figure 1. Adoption and token demand as a function of model capability.](figures/work-capability-demand-spending.png)
 
-*Each demand curve is normalized to 1 at $m=1$ to show its trend rather than its absolute level. A star on each adoption curve marks the value of $m$ where the corresponding token-demand curve reaches its maximum over the plotted range.*
+*Each demand curve is normalized to 1 at $m=1$ to show its trend rather than its absolute level. A star on each adoption curve marks the plotted value of $m$ where the corresponding token-demand curve is highest; this includes endpoints rather than implying an interior peak.*
 
-Higher capability raises reliability and adoption but reduces tokens per task. In industries with already high adoption, token savings effect dominate and overall token spending decreases as models improve. The stars in Figure 1a) marks the model capability level where the token demand peaks.
+Higher capability raises reliability and adoption but reduces tokens per task. In industries with already high adoption, the token-saving effect dominates and demand decreases as models improve. Figure 1(a) marks the capability at which each plotted demand curve is highest.
+
+The accounting gives a simple bound that does not depend on the logistic adoption curve. Since $D=WAx$ and $A\leq1$, suppose effort eventually falls to a fraction $r$ of its baseline value. Even if adoption then reached 100%, demand must fall below baseline whenever baseline adoption exceeds $r$:
+
+```math
+\frac{D_{\rm later}}{D_1}\leq\frac{r}{A_1}<1
+\quad\text{if}\quad A_1>r.
+```
+
+In the reference case, $A_1=0.455$ and the effort floor reduces $x^*$ from 2.85 to 1, so $r=0.35$ and later demand is at most 77% of baseline; the numerical curve is at 74% by $m=30$. The bound highlights the mechanism, while the precise long-run level also depends on the adoption distribution and on the $x\geq1$ normalization.
 
 
 
@@ -182,7 +193,17 @@ Higher capability raises reliability and adoption but reduces tokens per task. I
 
 *A value of $\eta=2$ means that each token provides twice as much effective inference as at $\eta=1$. Panel (b) normalizes each demand curve to 1 at $\eta=1$ to show its trend rather than its absolute level; the black horizontal line marks unchanged token revenue because token price is fixed. Panels (c) and (d) report the model effort level $x$ and effective inference $\eta x$. The three hurdle-only cases overlap in these panels because adoption hurdles do not change the optimal policy conditional on use.*
 
-As models get more token efficient, users can spend fewer tokens for the same level of reliability, which drives down token demand. On the other hand, higher token efficiency leaves users with higher surplus which increases adoption. Which effect dominates depends on the current state of adoption and the industry setting: in industries with low adoption rate / tasks that are difficult to execute, the adoption effect dominates and the overall token demand grows (green and orange line). But in other industry settings, where token efficiency cannot drive enough additional adoption, the total token demand eventually falls as token efficiency improves.
+There is an exact link between efficiency and price. Away from the effort floor, reliability depends on effective inference $z=\eta x$, while token cost is $(c/\eta)z$. In either regime this implies
+
+```math
+R(\eta,c)=R(1,c/\eta),
+\qquad
+D(\eta,c)=\frac{1}{\eta}D(1,c/\eta).
+```
+
+An efficiency improvement therefore poses the same optimization problem as a proportional price cut, but uses $1/\eta$ as many tokens to obtain the same effective inference. This is why the demand index in Figure 2(b) equals the spending index in Figure 3(d) evaluated at $c=1/\eta$. The identity can fail once the minimum effort $x=1$ binds.
+
+Economically, higher efficiency leaves users with more surplus and can increase adoption, but it also reduces tokens per task. The adoption effect dominates in the high-hurdle and hard-execution cases over much of the plotted range. In settings where efficiency cannot unlock enough additional adoption, token demand eventually falls.
 
 ### 2.3 Cheaper tokens raise demand, but spending eventually falls
 
@@ -190,31 +211,46 @@ As models get more token efficient, users can spend fewer tokens for the same le
 
 *Price falls from left to right. Panel (a) reports adoption in levels. Panels (b) and (d) normalize every curve to 1 at $c=1$ to show its trend rather than its absolute level. Panel (c) reports the optimal model effort level $x$ in levels. The black line in panel (b) is the demand increase required to keep spending unchanged.*
 
-Unlike in the case of increasing token efficiency, at a per task level, users actually choose to use more tokens (i.e. higher effort, see Figure 3c vs Figure 2c). As a result, the token demand increases universally, even in industries with already high adoption. However total token spending does not necessarily increase as token price drops. It's only in industries with still low-ish adoption rate that we observe Jevons paradox, where decreasing price increases overall token spending. In industries with already significant adoptions (reference industry and low adoption hurdle), the increase in token demand does not lead to overall increase in token revenue.
+Unlike an increase in token efficiency, a lower token price induces users to choose more tokens per task (Figure 3(c) versus Figure 2(c)). Demand therefore rises in every plotted industry, including those with high adoption. Spending rises only if the demand response is proportionally larger than the price cut.
+
+The model makes that Jevons threshold precise. Let $\varepsilon_x=d\ln x^*/d\ln c<0$ be the local price elasticity of optimized effort. The envelope theorem gives $du^*/dc=-x^*$, and the logistic adoption curve then gives $d\ln A/d\ln c=-(1-A)cx^*/\sigma$. Since $R=cWAx^*$, spending rises as price falls exactly when
+
+```math
+\underbrace{(1-A)\frac{cx^*}{\sigma}}_{\text{adoption response}}
++\underbrace{|\varepsilon_x|}_{\text{effort response}}>1.
+```
+
+The first term is large when much work remains unadopted, token spending per work unit is high, or adoption hurdles are tightly concentrated. The second captures users moving to higher effort as tokens get cheaper. Together they must exceed one to offset a 1% price decline. In the reference industry at $c=1$, the two terms are 0.39 and 0.77, so a small price cut raises spending locally; as adoption saturates, the first term shrinks and further price cuts eventually reduce spending.
 
 ### 2.4 Capability raises the work-limited reservation token price
-So far we have treated the token price as an exogenous variable that the model providers choose. We can also try to analyze the model providers' pricing power by solving for the "reservation price" of a smarter model. Intuitively, the reservation price represents "how much more the user is willing to pay for a smarter model relative to a baseline model". More concretely, let the optimized surplus per assigned work unit be $u^*(m,c)$. We define the work-limited reservation token price by
+So far token price has been exogenous. To study provider pricing power, let optimized surplus per assigned work unit be $u^*(m,c)$. We define the work-limited reservation token price of a more capable model by
 
 ```math
 u^*\!\left(m,c_{\rm res}^{W}(m)\right)=u^*(1,c_0).
 ```
 
-It is the highest token price that preserves baseline optimized surplus and therefore adoption $A(u^*)$. Every candidate price reoptimizes $s$ and $x$. The superscript $W$ distinguishes it from the attention-limited $c_{\rm res}^{H}$ which we will study in the next section.
+It is the highest price that preserves baseline optimized surplus and therefore adoption $A(u^*)$, after reoptimizing $s$ and $x$. The superscript $W$ distinguishes it from the attention-limited price below.
 
 ![Figure 4. Work-limited reservation token prices rise with model capability.](figures/work-capability-reservation-price.png)
 
 *The vertical axis reports $c_{\rm res}^{W}(m)/c_0$ on a logarithmic scale. The adoption-hurdle-only cases coincide with the reference because the hurdle does not enter $u^*$; we retain them to make that invariance visible, with staggered markers in the static figure and separate toggles in the interactive figure. The user reoptimizes $s$ and $x$ at every point.*
 
-We start with a model at capability level $m=1$ and price $c_0$. We can solve for $c_{\rm res}^{W}$ as a function of evolving $m$ and other industry parameters.
-At $m=0.8$, preserving baseline surplus requires a price of $0.29c_0$ to $0.61c_0$ (i.e. user would demand a discount relative to the baseline model to use a dumber model). At $m=30$, it reaches $14.6c_0$ in the reference, $18.9c_0$ under high capability requirements, and $22.2c_0$ under hard execution.
-Note that the reservation price eventually plateaus instead of increasing forever as models get smarter. The intuition is basically that once the model is "smart enough", it can do approximately ALL the work in that industry, and because token usage $x$ is bounded from below at $1$, it eventually will not make sense for user to pay for even smarter models.
+We start with a model at capability $m=1$ and price $c_0$. At $m=0.8$, preserving baseline surplus requires a price of $0.29c_0$ to $0.61c_0$: the user demands a discount for a less capable model. At $m=30$, the reservation price reaches $14.6c_0$ in the reference, $18.9c_0$ under high capability requirements, and $22.2c_0$ under hard execution.
+
+The reservation price approaches a finite ceiling rather than increasing forever. With $x_{\min}=1$ and $\beta<1$, sufficiently capable models approach perfect reliability while review cost per work unit vanishes, so
+
+```math
+c_{\rm res}^{W}(\infty)=b-u^*(1,c_0).
+```
+
+This ceiling is 19.7 in the reference and 30.6 under hard execution. The result is conditional on the effort-floor normalization: once effort cannot fall further, additional capability cannot support an ever-higher price per token.
 
 
-In summary, we see that in this work limited regime, the returns on smarter model / more token efficiency eventually becomes negative (Figure 1, 2), and that the strategy of increasing total revenue by lowering token cost (Jevons paradox) only works in some settings where existing adoption level is still low (Figure 3). Even if the model company is able to extract ALL the surplus from the user, the return on more intelligence eventually plateaus (Figure 4).
+In summary, capability and efficiency can eventually reduce token demand once adoption gains no longer offset token savings (Figures 1 and 2). Lower prices raise spending only where adoption and effort respond strongly enough (Figure 3), and even complete extraction of incremental user surplus faces a finite work-limited reservation-price ceiling (Figure 4).
 
 ## 3. Human attention is limited
 
-In this regime, there is abundant worthwhile work but only $H$ human review hours. Let $n$ tasks use the same policy $(s,x)$. Because each task contains $s$ work units and requires $h(s)$ review hours, the attention constraint is
+In this regime, worthwhile work is abundant but only $H$ human review hours are available. If $n$ tasks use policy $(s,x)$, the attention constraint is
 
 ```math
 n h(s)\leq H.
@@ -243,6 +279,8 @@ Conditional on the objective being greater than 0, the constraint is binding, so
 
 $J(s,x)$ is expected surplus per review hour. Since $H>0$ is fixed, maximizing total surplus subject to the attention constraint is equivalent to maximizing $J(s,x)$.
 
+The work- and attention-limited cases are polar regimes of the same resource accounting. At a work-limited policy, required review time is $WA\,h(s^*)/s^*$; attention becomes the relevant bottleneck when that requirement exceeds $H$.
+
 These figures use $H=100{,}000$ review hours. Again, every alternative industry changes exactly one parameter from the reference and the difference is marked in bold.
 
 | Plot line | $\lambda$ | $\nu$ | $a$ | $\alpha$ | $h_0$ | $h_1$ | $\beta$ | $b$ | $w$ | $\mu$ | $\sigma$ |
@@ -261,7 +299,7 @@ The slow-growing-review case represents workflows where automated tests, benchma
 
 *Both outcomes are normalized to 1 at $m=1$ to show their trends rather than their absolute levels. Price is fixed, so spending has the same shape as demand.*
 
-A better model uses fewer tokens for a given task, but can also handle larger tasks. In the reference, hard-execution, low-inference-returns, and slow-growing-review industries, work supervised per review hour expands enough that token demand rises. The increase is especially strong when $\beta$ is small, because review time grows slowly relative to task scope. Intuitively, this means the user can assign models longer and more valuable tasks, while keeping their verification time constant.  When $\beta=0.95$, human verification time grows nearly in proportion to task horizon. In this case the supervisory leverage expands too slowly to keep offsetting token savings from smarter models, so demand peaks and falls.
+A better model uses fewer tokens for a given task, but can also handle larger tasks. In the reference, hard-execution, low-inference-returns, and slow-growing-review industries, work supervised per review hour expands enough that token demand rises. The increase is especially strong when $\beta$ is small, because review time grows slowly relative to task scope. The user can therefore assign longer and more valuable tasks without a proportional increase in verification time. When $\beta=0.95$, human verification time grows nearly in proportion to task horizon. Supervisory leverage then expands too slowly to keep offsetting token savings from smarter models, so demand peaks and falls.
 
 ### 3.2 Token efficiency can expand work per review hour
 
@@ -269,9 +307,9 @@ A better model uses fewer tokens for a given task, but can also handle larger ta
 
 *Both outcomes are normalized to 1 at $\eta=1$ to show their trends rather than their absolute levels. Capability, review hours, and token price are fixed.*
 
-Efficiency does not create more review hours, but it can change the size of the task that user decides to send to the model. In the reference, slow-growing-review, and nearly proportional-review industries, that expansion is too small to offset fewer tokens per work unit, so demand falls over most of the range. When execution is hard, greater efficiency makes larger assignments worthwhile and demand rises. When returns to inference are low, those forces nearly cancel and demand stays almost flat. These are intensive-margin responses: all review hours were already in use, but each hour can support a different amount of work.
+Efficiency does not create more review hours, but it can change the size of the task the user sends to the model. In the reference, slow-growing-review, and nearly proportional-review industries, that expansion is too small to offset fewer tokens per work unit, so demand falls over most of the range. When execution is hard, greater efficiency makes larger assignments worthwhile and demand rises. When returns to inference are low, those forces nearly cancel and demand stays almost flat. These are intensive-margin responses: all review hours were already in use, but each hour can support a different amount of work.
 
-Compared to the work limited regime, token efficiency seems to be a much worse lever for generating additional token revenue in the regime of limited human attention.
+Compared with the work-limited regime, token efficiency is a weaker lever for generating additional token revenue when human attention is scarce.
 
 ### 3.3 Jevons paradox is harder to reproduce in the attention limited regime
 
@@ -281,11 +319,11 @@ Compared to the work limited regime, token efficiency seems to be a much worse l
 
 In this regime, all $H$ review hours are used, and token demand is $D=H[s/h(s)]x$. When tokens get cheaper, the user chooses a higher effort level $x$. The extra inference can also make larger assignments $s$ worthwhile, which may increase the work assigned per review hour, $s/h(s)$. Demand therefore grows through both more tokens per unit of work and more work per scarce review hour. Token revenue rises only if this combined increase in demand is larger than the inverse price decline shown in Figure 7a.
 
-These forces are strongest when execution is hard: extra inference meaningfully improves success and supports larger assignments, so demand rises faster than price falls. In most other cases, the increase in demand is unable to compensate the lowered prices. It is interesting to note that compared to the work limited case in Figure 3, it is much more difficult to produce a Jevons paradox like effect. This is somewhat intuitive: it's easier to convert users from not using AI to using AI by lowering prices, than to increase the token usage of existing use cases.
+These forces are strongest when execution is hard: extra inference meaningfully improves success and supports larger assignments, so demand rises faster than price falls. In most other cases, demand does not grow enough to offset the lower price. The work-limited Jevons condition above has an adoption term; here it does not. Spending can rise only if the combined price response of optimized effort and supervisory leverage exceeds one. Put differently, a price cut can bring new work into the market when work is limited, whereas an attention-limited user can respond only by changing how each already-scarce review hour is used.
 
 ### 3.4 Capability raises the value of scarce attention
 
-Figures 5–7 study how technology and prices affect token demand and revenue. Similar to Figure 4, here we also ask the question of how much user surplus increases as a function of model capability (which in turn implies the total *potential* revenue the model producer can generate). Since attention is the bottleneck, we additionally ask the question of, how much the userwould be willing to pay to get one additional hour of human attention. This in theory informs the question of how the labor wage will change in the age of AI.
+Figures 5–7 study token demand and revenue. We now ask how capability changes user surplus and the value of an additional review hour. This is a measure of labor demand, not a wage forecast: the model holds $H$ fixed and omits labor supply.
 
 At token price $c$, we define optimized user surplus per review hour (i.e. the value of reviewer attention) as
 
@@ -295,7 +333,7 @@ J^*(m,c)=\max_{s,x}\left\{\frac{s}{h(s)}\left[bP(s,x;m,\eta)-cx\right]-w\right\}
 \rho^*(m,c)=J^*(m,c)+w.
 ```
 
-$J^*(m,c)$ is the user's net surplus after paying for tokens and accounting for the opportunity cost $w$ of the review hour. Adding $w$ back gives $\rho^*(m,c)$, the value created by one review hour after token spending. Equivalently, it is the maximum hourly price the user could pay for reviewer attention while still choosing to operate. Panel (a) evaluates this quantity at the baseline token price $c_0=1$.
+$J^*(m,c)$ is net surplus after token spending and the opportunity cost $w$ of review. Adding $w$ back gives $\rho^*(m,c)$, the value created by one review hour after token spending, or the maximum hourly review price consistent with operating. Panel (a) evaluates it at $c_0=1$.
 
 The model provider may instead capture some of this value through the token price. Starting from a baseline model with capability $m=1$ and price $c_0$, define the attention-limited reservation token price $c_{\mathrm{res}}^{H}(m)$ by
 
@@ -303,13 +341,15 @@ The model provider may instead capture some of this value through the token pric
 J^*\!\left(m,c_{\mathrm{res}}^{H}(m)\right)=J^*(1,c_0).
 ```
 
-This is the highest token price that leaves the user with the same optimized surplus as the baseline model. At every candidate price, the user reoptimizes both task scope $s$ and inference effort $x$. The reservation price is therefore an upper bound on the user's willingness to pay for capability, not a prediction of the market price the provider will actually charge.
+This is the highest token price that preserves baseline optimized surplus after reoptimizing $s$ and $x$. It is an upper bound on willingness to pay for capability, not a predicted market price.
 
 ![Figure 8. Capability raises reservation prices for scarce attention and model tokens.](figures/attention-capability-value.png)
 
 *Panel (a) normalizes each $\rho^*(m,c_0)$ curve by that same line's value at $m=1$, so every line equals 1 at the baseline capability. Panel (b) reports the fully reoptimized $c_{\rm res}^{H}(m)/c_0$, which also equals 1 at $m=1$. Both vertical axes are logarithmic, $\eta=1$, and $m$ ranges from $0.8$ to $30$.*
 
-The increase in reviewer attention value is pretty striking. At $m=30$, the value of a review hour is 5.3 times its baseline in the reference industry and 15.8 times its baseline with slow-growing review, compared with only 1.8 times its baseline when review time grows nearly in proportion to task scope. The difference comes from supervisory leverage: larger tasks create much more work per review hour when $\beta$ is small, but much less when $\beta$ is close to one. As a back-of-the-envelope calculation, success depends on the ratio $s/m$, so keeping reliability roughly constant allows task scope to grow in proportion to capability, $s\propto m$. At large task scope, review time is approximately $h(s)\approx h_1s^\beta$. The total value created by one hour of human review after token cost is therefore roughly:
+At $m=30$, the value of a review hour is 5.3 times its baseline in the reference industry and 15.8 times its baseline with slow-growing review, compared with only 1.8 times its baseline when review time grows nearly in proportion to task scope. The difference comes from supervisory leverage: larger tasks create much more work per review hour when $\beta$ is small, but much less when $\beta$ is close to one. In a model that allowed hiring, this rising value would create an incentive to expand review labor, illustrating complementarity between more capable models and human verification.
+
+As a back-of-the-envelope calculation, success depends on the ratio $s/m$, so keeping reliability roughly constant allows task scope to grow in proportion to capability, $s\propto m$. At large task scope, review time is approximately $h(s)\approx h_1s^\beta$. The total value created by one hour of human review after token cost is therefore roughly
 
 ```math
 \rho^*(m,c_0)\propto \frac{s}{h(s)}\propto m^{1-\beta}.
@@ -317,12 +357,12 @@ The increase in reviewer attention value is pretty striking. At $m=30$, the valu
 
 This means approximately $m^{0.5}$ growth in the reference industry, $m^{0.85}$ with slow-growing review, and only $m^{0.05}$ with nearly proportional review. At exactly $\beta=1$, $s/h(s)$ instead approaches $1/h_1$, and the value of attention approaches the finite ceiling $(b-c_0)/h_1$.
 
-The reservation token price follows the same intuition. At $m=0.8$, a less capable model requires a discount, with $c_{\rm res}^{H}$ ranging from $0.20c_0$ to $0.57c_0$. By $m=30$, a more capable model supports prices between $39.4c_0$ and $70.7c_0$ while preserving baseline user surplus. Once the optimal effort level reaches its lower bound $x=1$, the reservation price bends toward the value $b$ of one successful work unit: each work unit creates at most $b$ in expected value and consumes at least one token. This limits the price per token, but not the value of scarce attention. When review time grows less than proportionally with task scope, a more capable model can continue increasing $s/h(s)$, so the same human hour supports more work even after token use per work unit reaches its minimum. This is the key difference from the work-limited regime, where the total amount of available work is fixed.
+The reservation token price follows the same intuition. At $m=0.8$, a less capable model requires a discount, with $c_{\rm res}^{H}$ ranging from $0.20c_0$ to $0.57c_0$. By $m=30$, a more capable model supports prices between $39.4c_0$ and $70.7c_0$ while preserving baseline user surplus. With $\beta<1$ and the effort floor $x=1$, the reservation price converges to $b$: each work unit creates at most $b$ in expected value and consumes at least one token. This limits the price per token, but not the value of scarce attention. When review time grows less than proportionally with task scope, a more capable model can continue increasing $s/h(s)$, so the same human hour supports more work even after token use per work unit reaches its minimum. This is the key difference from the work-limited regime, where the total amount of available work is fixed.
 
 ## 4. Conclusion
 
 We studied how model capability, token efficiency, and token prices affect token demand and revenue under two limiting resource constraints: finite work and finite human attention. When work is limited, capability and efficiency raise adoption but reduce token use per task. As adoption saturates, token demand can peak and eventually fall. Similarly, lower token prices increase demand but raise revenue only when they unlock enough additional adoption. The work-limited reservation token price eventually plateaus because total work is fixed and inference effort cannot fall below its minimum.
 
-When human attention is limited, the key limiting factor is the amount of work supported by each review hour. More capable models can make larger assignments worthwhile, so token demand and the value of reviewer attention can continue to grow even as token use per unit of work falls. This effect is strongest when review time grows slowly with task scope. If review time grows approximately as $s^\beta$, the value of attention grows roughly as $m^{1-\beta}$. The reservation token price also has a per-token ceiling, even when the value of scarce attention continues to rise.
+When human attention is limited, the key limiting factor is the amount of work supported by each review hour. More capable models can make larger assignments worthwhile, so token demand and the value of reviewer attention can continue to grow even as token use per unit of work falls. This effect is strongest when review time grows slowly with task scope. At large scope, if review time grows approximately as $s^\beta$, the value of attention grows roughly as $m^{1-\beta}$. The reservation token price also has a per-token ceiling, even when the value of scarce attention continues to rise.
 
 Taken together, our results show that technical progress alone does not determine token demand or revenue. The outcome depends on which resource is scarce, how much adoption remains to be unlocked, and crucially how verification costs scale with task scope. An interesting avenue for future work is to study how the pricing dynamics change when there are multiple competing model providers.

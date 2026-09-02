@@ -419,3 +419,33 @@ def test_efficiency_equals_an_effective_price_cut_and_token_rescaling(optimizer_
     assert efficient.success_probability == pytest.approx(cheaper.success_probability, rel=1e-5)
     assert efficient.adoption_share == pytest.approx(cheaper.adoption_share, rel=1e-5)
     assert getattr(efficient, demand) == pytest.approx(getattr(cheaper, demand) / 4, rel=1e-5)
+
+
+def test_work_jevons_condition_decomposes_adoption_and_effort_responses() -> None:
+    model = IndustryModel(REFERENCE_INDUSTRY)
+    optimizer = PolicyOptimizer(OptimizationSettings(max_tokens_per_work_hour=200))
+    epsilon = 1e-4
+    center = optimizer.solve(model, Scenario(token_price=1))
+    cheaper = optimizer.solve(model, Scenario(token_price=math.exp(-epsilon)))
+    dearer = optimizer.solve(model, Scenario(token_price=math.exp(epsilon)))
+
+    effort_elasticity = math.log(
+        dearer.policy.tokens_per_work_hour / cheaper.policy.tokens_per_work_hour
+    ) / (2 * epsilon)
+    revenue_elasticity = math.log(
+        (math.exp(epsilon) * dearer.work_limited_tokens)
+        / (math.exp(-epsilon) * cheaper.work_limited_tokens)
+    ) / (2 * epsilon)
+    adoption_response = (
+        (1 - center.adoption_share)
+        * center.policy.tokens_per_work_hour
+        / REFERENCE_INDUSTRY.adoption_scale
+    )
+
+    assert adoption_response == pytest.approx(.38749, rel=2e-4)
+    assert effort_elasticity == pytest.approx(-.77, abs=.003)
+    assert revenue_elasticity == pytest.approx(
+        1 - adoption_response + effort_elasticity, abs=2e-4
+    )
+    assert adoption_response + abs(effort_elasticity) > 1
+    assert revenue_elasticity < 0  # A small price cut raises spending locally.
