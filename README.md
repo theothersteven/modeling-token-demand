@@ -1,5 +1,21 @@
 # Modeling Token Demand
 
+## Introduction
+
+AI progress does not translate mechanically into token demand. A more capable or token-efficient model can complete the same work with fewer tokens, but it can also make new work worthwhile, support larger assignments, or induce users to buy more inference. Price declines create a similar ambiguity for revenue: demand rises, yet spending rises only if usage expands faster than price falls. The direction of the response therefore depends on what prevents more AI work from being done.
+
+We study these forces in a stylized model in which users jointly choose the scope of a task and the inference effort spent on it. Capability expands the set of feasible tasks, token efficiency changes the effective inference provided by each token, and human verification becomes more costly as assignments grow. We compare two limiting regimes. In the first, the supply of potential work is fixed, while review capacity is sufficient. In the second, worthwhile work is abundant, but human attention is scarce. This distinction separates adoption—the share of existing work assigned to AI—from supervisory leverage—the amount of work supported by each review hour.
+
+The model is intended to organize the relevant comparative statics rather than produce a point forecast. Its main implication is that the same technical improvement can increase or decrease token demand depending on how much adoption remains to be unlocked and how verification costs scale with task scope.
+
+### TL;DR
+
+- [When work is limited, capability can make token demand peak and then fall.](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
+- [Token efficiency has the same competing margins.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) It raises surplus and adoption but lowers tokens per task, so demand rises only while the expansion in adopted work is sufficiently strong.
+- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons-like rebound requires demand to expand faster than price falls, and this is [harder when human attention is already fully used](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
+- [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Larger assignments let each review hour support more work, especially when verification time grows slowly with task scope.
+- [Pricing power and the value of attention obey different ceilings.](#34-capability-raises-the-value-of-scarce-attention) The [work-limited reservation token price eventually plateaus](#24-capability-raises-the-work-limited-reservation-token-price), while the value of a review hour can keep growing roughly as $m^{1-\beta}$ when review time grows sublinearly.
+
 ## 1. Modeling assumptions
 
 ### 1.1 The user chooses scope and effort level
@@ -141,7 +157,7 @@ We start with a reference industry and vary one parameter at a time to produce a
 | High capability requirement | **3** | 1.25 | 4 | 0.5 | 0.03 | 0.05 | 0.5 | 100 | 100 | 81 | 4 |
 
 
-### Token demand peaks as adoption nearly saturates
+### 2.1 Token demand peaks as adoption nearly saturates
 
 ![Figure 1. Adoption and token demand as a function of model capability.](figures/work-capability-demand-spending.png)
 
@@ -151,7 +167,7 @@ Higher capability raises reliability and adoption but reduces tokens per task. I
 
 
 
-### Token efficiency can raise demand before it saves tokens
+### 2.2 Token efficiency can raise demand before it saves tokens
 
 ![Figure 2. Work-limited adoption and indexed token demand as token efficiency changes.](figures/work-efficiency-demand-spending.png)
 
@@ -159,7 +175,7 @@ Higher capability raises reliability and adoption but reduces tokens per task. I
 
 As models get more token efficient, users can spend fewer tokens for the same level of reliability, which drives down token demand. On the other hand, higher token efficiency leaves users with higher surplus which increases adoption. Which effect dominates depends on the current state of adoption and the industry setting: in industries with low adoption rate / tasks that are difficult to execute, the adoption effect dominates and the overall token demand grows (green and orange line). But in other industry settings, where token efficiency cannot drive enough additional adoption, the total token demand eventually falls as token efficiency improves.
 
-### Cheaper tokens raise demand, but spending eventually falls
+### 2.3 Cheaper tokens raise demand, but spending eventually falls
 
 ![Figure 3. Work-limited adoption, indexed token demand and spending, and optimal model effort level, as token price changes.](figures/work-price-demand-spending.png)
 
@@ -167,7 +183,7 @@ As models get more token efficient, users can spend fewer tokens for the same le
 
 Unlike in the case of increasing token efficiency, at a per task level, users actually choose to use more tokens (i.e. higher effort, see Figure 3c vs Figure 2c). As a result, the token demand increases universally, even in industries with already high adoption. However total token spending does not necessarily increase as token price drops. It's only in industries with still low-ish adoption rate that we observe Jevons paradox, where decreasing price increases overall token spending. In industries with already significant adoptions (reference industry and low adoption hurdle), the increase in token demand does not lead to overall increase in token revenue.
 
-### Capability raises the work-limited reservation token price
+### 2.4 Capability raises the work-limited reservation token price
 So far we have treated the token price as an exogenous variable that the model providers choose. We can also try to analyze the model providers' pricing power by solving for the "reservation price" of a smarter model. Intuitively, the reservation price represents "how much more the user is willing to pay for a smarter model relative to a baseline model". More concretely, let the optimized surplus per assigned work unit be $u^*(m,c)$. We define the work-limited reservation token price by
 
 ```math
@@ -230,7 +246,7 @@ These figures use $H=100{,}000$ review hours. Again, every alternative industry 
 
 The slow-growing-review case represents workflows where automated tests, benchmarks, or standardized checks keep verification time from growing quickly with task horizon $s$. The low-inference-returns case represents workflows where additional inference has sharply diminishing value.
 
-### Capability raises demand when verification cost grows slowly
+### 3.1 Capability raises demand when verification cost grows slowly
 
 ![Figure 5. Supervisory leverage and indexed attention-limited token demand as model capability changes.](figures/attention-capability-demand-spending.png)
 
@@ -238,7 +254,7 @@ The slow-growing-review case represents workflows where automated tests, benchma
 
 A better model uses fewer tokens for a given task, but can also handle larger tasks. In the reference, hard-execution, low-inference-returns, and slow-growing-review industries, work supervised per review hour expands enough that token demand rises. The increase is especially strong when $\beta$ is small, because review time grows slowly relative to task scope. Intuitively, this means the user can assign models longer and more valuable tasks, while keeping their verification time constant.  When $\beta=0.95$, human verification time grows nearly in proportion to task horizon. In this case the supervisory leverage expands too slowly to keep offsetting token savings from smarter models, so demand peaks and falls.
 
-### Token efficiency can expand work per review hour
+### 3.2 Token efficiency can expand work per review hour
 
 ![Figure 6. Supervisory leverage and indexed attention-limited token demand as token efficiency changes.](figures/attention-efficiency-demand-spending.png)
 
@@ -248,7 +264,7 @@ Efficiency does not create more review hours, but it can change the size of the 
 
 Compared to the work limited regime, token efficiency seems to be a much worse lever for generating additional token revenue in the regime of limited human attention.
 
-### Jevons paradox is harder to reproduce in the attention limited regime
+### 3.3 Jevons paradox is harder to reproduce in the attention limited regime
 
 ![Figure 7. Attention-limited token demand and spending as token price changes.](figures/attention-price-demand-spending.png)
 
@@ -258,7 +274,7 @@ In this regime, all $H$ review hours are used, and token demand is $D=H[s/h(s)]x
 
 These forces are strongest when execution is hard: extra inference meaningfully improves success and supports larger assignments, so demand rises faster than price falls. In most other cases, the increase in demand is unable to compensate the lowered prices. It is interesting to note that compared to the work limited case in Figure 3, it is much more difficult to produce a Jevons paradox like effect. This is somewhat intuitive: it's easier to convert users from not using AI to using AI by lowering prices, than to increase the token usage of existing use cases.
 
-### Capability raises the value of scarce attention
+### 3.4 Capability raises the value of scarce attention
 
 Figures 5–7 study how technology and prices affect token demand and revenue. Similar to Figure 4, here we also ask the question of how much user surplus increases as a function of model capability (which in turn implies the total *potential* revenue the model producer can generate). Since attention is the bottleneck, we additionally ask the question of, how much the userwould be willing to pay to get one additional hour of human attention. This in theory informs the question of how the labor wage will change in the age of AI.
 

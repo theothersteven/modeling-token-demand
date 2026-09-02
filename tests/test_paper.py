@@ -33,6 +33,20 @@ def test_entire_manuscript_renders_with_all_figures(plot_data):
     assert set(figures) == {Path(name).stem for name in image_names}
     assert html.count('class="interactive-figure"') == len(image_names)
     assert '<p><figure' not in html
+    assert 'id="introduction"' in html
+    tldr = html.split('<h3 id="tldr">', 1)[1].split(
+        '<h2 id="1-modeling-assumptions">', 1
+    )[0]
+    for target in (
+        '21-token-demand-peaks-as-adoption-nearly-saturates',
+        '22-token-efficiency-can-raise-demand-before-it-saves-tokens',
+        '23-cheaper-tokens-raise-demand-but-spending-eventually-falls',
+        '33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime',
+        '31-capability-raises-demand-when-verification-cost-grows-slowly',
+        '34-capability-raises-the-value-of-scarce-attention',
+        '24-capability-raises-the-work-limited-reservation-token-price',
+    ):
+        assert f'href="#{target}"' in tldr
     assert 'id="1-modeling-assumptions"' in html
     assert 'href="#1-modeling-assumptions"' in html
     assert 'id="3-human-attention-is-limited"' in html
@@ -90,11 +104,12 @@ def test_manuscript_uses_eight_ordered_figures(plot_data):
         'attention-capability-value.png',
     ]
     assert '## Abstract' not in source
+    assert source.index('## Introduction') < source.index('## 1. Modeling assumptions')
     assert source.index('## 1. Modeling assumptions') < source.index('## 2. Work is limited')
     assert source.index('## 2. Work is limited') < source.index('## 3. Human attention is limited')
     assert source.index('## 3. Human attention is limited') < source.index(
         '## 4. Conclusion')
-    assert len(source.split()) < 4500
+    assert len(source.split()) < 5000
     for filename in figures:
         panels = plot_data[filename]['panels']
         if filename == 'work-efficiency-demand-spending.png':
