@@ -47,9 +47,68 @@ def test_entire_manuscript_renders_with_all_figures(plot_data):
         '24-capability-raises-the-work-limited-reservation-token-price',
     ):
         assert f'href="#{target}"' in tldr
+    assert 'increase and then <strong>decrease</strong>' in tldr
+    assert (
+        'can <strong>increase the value of human attention without bound.'
+        '</strong>' in tldr
+    )
+    assert (
+        'useful task scope has no fixed ceiling and review time grows less '
+        'than proportionally with scope' in tldr
+    )
     assert 'id="1-modeling-assumptions"' in html
     assert 'href="#1-modeling-assumptions"' in html
     assert 'id="3-human-attention-is-limited"' in html
+    major_toc = re.search(
+        r'<nav class="major-toc".*?</nav>', html, re.DOTALL
+    ).group(0)
+    assert re.findall(r'href="(#[^"]+)"', major_toc) == [
+        '#tldr',
+        '#1-modeling-assumptions',
+        '#2-work-is-limited',
+        '#3-human-attention-is-limited',
+        '#4-conclusion',
+        '#explore',
+    ]
+    sidebar = re.search(
+        r'<nav aria-label="Paper contents">(.*?)</nav>', html, re.DOTALL
+    ).group(1)
+    assert re.findall(r'href="(#[^"]+)"', sidebar) == [
+        '#tldr',
+        '#1-modeling-assumptions',
+        '#2-work-is-limited',
+        '#3-human-attention-is-limited',
+        '#4-conclusion',
+        '#explore',
+    ]
+    assert '<title>Modeling Token Demand</title>' in html
+    assert '<meta property="og:title" content="Modeling Token Demand">' in html
+    assert (
+        '<meta property="og:description" content="token demand, jevons paradox, '
+        'the value of human attention">' in html
+    )
+    assert (
+        '<meta property="og:image" '
+        'content="https://theothersteven.github.io/modeling-token-demand/assets/social-card.png">'
+        in html
+    )
+    assert '<meta property="og:image:width" content="1200">' in html
+    assert '<meta property="og:image:height" content="630">' in html
+    assert '<meta name="twitter:card" content="summary_large_image">' in html
+    assert (
+        '<link rel="canonical" '
+        'href="https://theothersteven.github.io/modeling-token-demand/">' in html
+    )
+    assert '<a class="wordmark" href="#paper">Modeling Token Demand</a>' in html
+    assert '<p class="paper-byline">Steven Yin</p>' in html
+    assert 'INTERACTIVE EDITION' not in html
+    assert html.count('✨ Explore the model yourself!') == 3
+    assert 'One manuscript.' not in html
+    assert 'Markdown source' not in html
+    assert 'live-status' not in html
+    assert '/ working paper' not in html
+    css = (ROOT / 'src/modeling_token_demand/paper_assets/paper.css').read_text()
+    assert '.major-toc ul { display:block;' in css
     assert 'language-math' not in html
     assert '<div class="math display-math">\\[' in html
     assert '<span class="math">\\(' in html
@@ -325,6 +384,15 @@ def test_build_packages_linked_reading_files_without_exposing_other_files(tmp_pa
     assert (output / 'notebooks/comparative_statics.ipynb').read_text() == notebook.read_text()
     assert (output / 'REVIEW.md').read_text() == '# Review'
     assert not (output / 'private.txt').exists()
+
+
+def test_build_packages_social_preview(tmp_path, monkeypatch):
+    monkeypatch.setattr(paper, 'load_plot_data', lambda root, refresh=False: {})
+    (tmp_path / 'README.md').write_text('# Paper')
+    output = tmp_path / 'build/paper'
+    paper.build(tmp_path, output)
+    social_card = output / 'assets/social-card.png'
+    assert social_card.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
 
 
 def test_local_images_cannot_escape_output(tmp_path):

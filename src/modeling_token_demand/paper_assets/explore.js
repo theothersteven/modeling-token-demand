@@ -155,6 +155,29 @@
   function formatNumber(value) {
     return Number.isFinite(value) ? Number(value.toPrecision(6)).toString() : '';
   }
+  let tooltipId = 0;
+  function addParameterTooltip(host, control, spec) {
+    const tooltip = el('span', 'explore-param-tooltip');
+    tooltip.id = `explore-param-tooltip-${spec.key}-${++tooltipId}`;
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.append(
+      el('strong', 'explore-tooltip-title', `${spec.symbol} · ${spec.label}`),
+      el('span', 'explore-tooltip-description', spec.help),
+      el('span', 'explore-tooltip-equation', `Equation: ${spec.equation}`),
+    );
+    host.classList.add('explore-tooltip-host');
+    host.setAttribute('data-parameter', spec.key);
+    control.setAttribute('aria-describedby', tooltip.id);
+    const align = () => requestAnimationFrame(() => {
+      host.classList.remove('tooltip-align-left', 'tooltip-align-right');
+      const bounds = tooltip.getBoundingClientRect();
+      if (bounds.left < 12) host.classList.add('tooltip-align-left');
+      else if (bounds.right > window.innerWidth - 12) host.classList.add('tooltip-align-right');
+    });
+    host.addEventListener('mouseenter', align);
+    host.addEventListener('focusin', align);
+    host.append(tooltip);
+  }
 
   /* ---------- build the controls ---------- */
 
@@ -208,11 +231,16 @@
     const xAxis = el('fieldset', 'explore-fieldset');
     xAxis.append(el('legend', '', 'X axis (swept variable)'));
     const row = el('div', 'explore-row');
-    row.append(labelled('Variable ', select(X_OPTIONS.map(o => [o.key, o.label]), state.x.key, value => {
+    const xSpec = [...M.SCENARIO_PARAMETERS, ...M.INDUSTRY_PARAMETERS]
+      .find(parameter => parameter.key === state.x.key);
+    const xSelect = select(X_OPTIONS.map(o => [o.key, o.label]), state.x.key, value => {
       const [min, max, scale] = X_DEFAULTS[value];
       state.x = {key: value, min, max, points: state.x.points, scale, reverse: value === 'c'};
       renderConfig(); renderIndustries(); schedule();
-    }, 'Swept variable')));
+    }, 'Swept variable');
+    const xLabel = labelled('Variable ', xSelect);
+    addParameterTooltip(xLabel, xSelect, xSpec);
+    row.append(xLabel);
     row.append(labelled('Min ', numberInput(state.x.min, value => { state.x.min = value; schedule(); }, {ariaLabel: 'Minimum'})));
     row.append(labelled('Max ', numberInput(state.x.max, value => { state.x.max = value; schedule(); }, {ariaLabel: 'Maximum'})));
     row.append(labelled('Points ', numberInput(state.x.points, value => {
@@ -271,7 +299,7 @@
       renderIndustries(); schedule();
     }, 'explore-small'));
     industryHost.append(heading);
-    industryHost.append(el('p', 'explore-note', 'Values that differ from the reference industry are highlighted, as in the paper’s tables. Hover a symbol for its definition.'));
+    industryHost.append(el('p', 'explore-note', 'Values that differ from the reference industry are highlighted, as in the paper’s tables. Hover or focus any parameter to see what it represents and where it enters the model.'));
     const list = el('div', 'explore-industry-list');
     state.industries.forEach((industry, index) => list.append(industryCard(industry, index)));
     industryHost.append(list);
@@ -302,7 +330,6 @@
     const grid = el('div', 'explore-params');
     for (const spec of M.INDUSTRY_PARAMETERS) {
       const wrapper = el('label', 'explore-param');
-      wrapper.title = `${spec.label}: ${spec.help}`;
       const input = numberInput(industry.params[spec.key], value => {
         industry.params[spec.key] = value;
         wrapper.classList.toggle('changed', value !== M.REFERENCE_INDUSTRY[spec.key]);
@@ -311,6 +338,7 @@
       wrapper.classList.toggle('changed', industry.params[spec.key] !== M.REFERENCE_INDUSTRY[spec.key]);
       wrapper.classList.toggle('swept', spec.key === state.x.key);
       wrapper.append(el('span', 'explore-symbol', spec.symbol), input);
+      addParameterTooltip(wrapper, input, spec);
       grid.append(wrapper);
     }
     card.append(grid);

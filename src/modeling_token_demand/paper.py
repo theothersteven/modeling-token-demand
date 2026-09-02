@@ -151,7 +151,24 @@ def render_paper(markdown: str, plots: dict) -> tuple[str, dict]:
 
     body = note_pattern.sub(move_indexed_note, body)
     headings = state.env.get("toc_items", [])
-    toc = render_toc_ul(headings)
+    major_headings = [
+        (2, identifier, text)
+        for _, identifier, text in headings
+        if identifier == "tldr" or re.fullmatch(r"[1-4]-.*", identifier)
+    ]
+    toc = render_toc_ul(major_headings)
+    major_toc_headings = major_headings + [
+        (2, "explore", "✨ Explore the model yourself!")
+    ]
+    major_toc = (
+        '<nav class="major-toc" aria-labelledby="major-toc-heading">\n'
+        '<div class="major-toc-heading" id="major-toc-heading">'
+        'Table of contents</div>\n'
+        + render_toc_ul(major_toc_headings)
+        + '</nav>'
+    )
+    byline = '<p class="paper-byline">Steven Yin</p>'
+    body = body.replace('</h1>', '</h1>\n' + byline + '\n' + major_toc, 1)
     # The exact visible title is taken from the manuscript, not a second copy.
     title_match = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
     title = title_match.group(1) if title_match else "Research paper"
@@ -194,7 +211,7 @@ def build(root: Path, output: Path, refresh=False) -> Path:
     output.mkdir(parents=True, exist_ok=True)
     assets = output / "assets"
     assets.mkdir(exist_ok=True)
-    for name in ("paper.css", "paper.js", "model.js", "explore.js"):
+    for name in ("paper.css", "paper.js", "model.js", "explore.js", "social-card.png"):
         shutil.copyfile(ASSETS / name, assets / name)
     # Package the plotting runtime locally: opening index.html needs no Python.
     plotly_path = assets / "plotly.min.js"

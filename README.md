@@ -2,22 +2,22 @@
 
 ## Introduction
 
-Many discussions of AI token demand take a top-down approach: start with an addressable market (for example, $100,000 annual salaries for one million software engineers imply $100 billion) and assume models capture some of it. This illustrates scale but not the dynamics at play.
+Many discussions of AI token demand take a top-down approach: they start with an addressable market (for example, 100k annual salaries for 1 million software engineers = $100 billion TAM) and assume models capture some of it. This is a valid approach but does not illustrate the more nuanced dynamics at play.
 
 We instead take a bottom-up approach, modeling users' adoption and usage as functions of model capability, price, and the effort required to verify AI outputs. This lets us isolate the market forces at play.
 
 We compare two limiting regimes. In the work-limited regime, token demand is ultimately capped by the amount of work available. In the attention-limited regime, valuable work is abundant, but human review and verification constrain demand.
 
-In the process, we identify cheap scalable human verification as a key lever to increase total token demand. If models handle larger tasks while verification time grows less than proportionally with task horizon, each human reviewer can oversee progressively more AI work. Under stylized assumptions, this effect can support unbounded token-demand growth as capability improves.
+In the process, we identify cheap scalable human verification as a key lever to increase total token demand. If models can handle larger tasks while keeping verification time growth in check, then each human reviewer can oversee progressively more AI outputs. Under stylized assumptions, this effect can support unbounded token-demand growth as capability improves.
 
 ### TL;DR
 
-- [When work is limited, total token demand can increase and then decrease as model capabilities improve.](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models raise reliability and adoption but require less inference for a given task; once adoption saturates, the token-saving effect dominates.
-- [Token efficiency can raise or lower token demand.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) It raises surplus and adoption but lowers tokens per task, so demand rises only when the increased adoption dominates the lower token usage per task.
-- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons-like effect requires demand to expand faster than price falls. This is easier when a price cut unlocks adoption and [harder when human attention is the bottleneck](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
-- [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Larger assignments let each review hour support more work, especially when verification time grows slowly with task horizon.
+- [When work is limited, total token demand can increase and then **decrease** as model capabilities improve.](#21-token-demand-peaks-as-adoption-nearly-saturates) Better models increase reliability and therefore uses fewer tokens for a given task; On the other hand better models also increase user surplus which increase adoption. Once adoption saturates, the token-saving effect dominates and overall token demand decreases.
+- [Token efficiency can raise or lower token demand.](#22-token-efficiency-can-raise-demand-before-it-saves-tokens) Better token efficiency means fewer tokens required for tasks which raises surplus and adoption. Demand rises only when the increased adoption dominates the lower token usage per task.
+- [Lower token prices always raise demand, but not necessarily revenue.](#23-cheaper-tokens-raise-demand-but-spending-eventually-falls) A Jevons paradox like effect requires demand to grow faster than price falls. This is easier when current adoption level is low and [harder when human attention is the bottleneck](#33-jevons-paradox-is-harder-to-reproduce-in-the-attention-limited-regime).
+- [When human attention is scarce, capability creates value by raising supervisory leverage.](#31-capability-raises-demand-when-verification-cost-grows-slowly) Supervisory leverage is essentially the ratio between the task horizon that model is capable of, and the amount of human attention that is required to review and verify the AI's output.
 - [With limited work, customers' willingness to pay eventually levels off.](#24-capability-raises-the-work-limited-reservation-token-price) Once AI can do almost all available work, further improvements in model capability add little value.
-- [In the human-attention-limited regime, better model capability increases the value of human attention.](#34-capability-raises-the-value-of-scarce-attention) When larger tasks remain quick to check, one person can oversee progressively more AI work, increasing the value of additional review labor.
+- [In the human-attention-limited regime, better model capability can **increase the value of human attention without bound.**](#34-capability-raises-the-value-of-scarce-attention) When useful task scope has no fixed ceiling and review time grows less than proportionally with scope, one person can oversee progressively more AI work.
 
 ## 1. Modeling assumptions
 
@@ -42,7 +42,7 @@ Let $m$ denote model capability. The share of tasks within the model's capabilit
 q(s;m)=\exp\left[-\left(\frac{s}{\lambda m}\right)^\nu\right],
 ```
 
-where the parameters $\lambda$ and $\nu$ together define how *difficult* the set of possible tasks is. Different industries have different $\lambda$ and $\nu$. Given a fixed model capability $m$ and task scope $s$, $q(s;m)$ is the fraction of work in the industry that is feasible for the model. This capability-as-horizon setup follows the task-completion-time framing of [Kwa et al. (2025)](https://arxiv.org/abs/2503.14499), although $m$ is a stylized multiplier here rather than a calibrated forecast of calendar time.
+where the parameters $\lambda$ and $\nu$ together define how *difficult* the set of possible tasks is. Different industries have different $\lambda$ and $\nu$. Given a fixed model capability $m$ and task scope $s$, $q(s;m)$ is the fraction of work in the industry that is feasible for the model.
 
 Note that feasibility does not imply a 100% success rate, which we model next.
 

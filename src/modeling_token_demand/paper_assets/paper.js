@@ -334,7 +334,6 @@
     }, {rootMargin:'400px'});
     document.querySelectorAll('[data-chart]').forEach(figure => observer.observe(figure));
 
-    const status = document.getElementById('live-status');
     if (location.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(location.hostname)) return;
     let version = null;
     async function poll() {
@@ -342,12 +341,9 @@
         const response = await fetch('/__paper_status', {cache:'no-store'});
         if (!response.ok) return;
         const state = await response.json();
-        status.textContent = state.error ? 'Rebuild failed — see terminal'
-          : state.building ? 'Rebuilding… last good page shown' : 'Live · edits refresh on save';
-        status.title = state.error || 'Editing README.md updates this page.';
         if (version !== null && version !== state.version) location.reload();
         version = state.version;
-      } catch (_) { status.textContent = 'Preview disconnected · last saved page'; }
+      } catch (_) { /* Keep the last rendered page if the local preview stops. */ }
     }
     await poll();
     setInterval(poll, 1200);

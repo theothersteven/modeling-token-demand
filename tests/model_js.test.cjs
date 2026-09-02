@@ -34,6 +34,17 @@ test('presets reproduce the calibration table', () => {
   assert.ok(M.validateIndustry(Object.assign({}, M.REFERENCE_INDUSTRY, {alpha: 1})).length);
 });
 
+test('every explorer parameter explains its role and model equation', () => {
+  const parameters = [...M.SCENARIO_PARAMETERS, ...M.INDUSTRY_PARAMETERS];
+  assert.equal(parameters.length, 17);
+  for (const parameter of parameters) {
+    assert.ok(parameter.help.length >= 30, `${parameter.symbol} needs a useful description`);
+    assert.ok(parameter.equation.includes('='), `${parameter.symbol} needs its model equation`);
+    assert.ok(parameter.equation.includes(parameter.symbol),
+      `${parameter.symbol} should appear in its displayed equation`);
+  }
+});
+
 test('evaluate matches the Python model at a recorded optimum', () => {
   const record = report.curves.find(c => c.regime === 'work' && c.axis === 'capability'
     && c.industry.name === 'Reference industry');
