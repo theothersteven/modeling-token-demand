@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 from urllib.parse import urlsplit, unquote
@@ -40,14 +42,15 @@ INDEXED_FIGURE_NOTES = {
     "attention-capability-value",
 }
 
-# The manuscript uses one deliberately allowlisted HTML disclosure so the long
-# parameter glossary is collapsible both on GitHub and in the interactive
-# paper. All other raw manuscript HTML remains escaped by PaperRenderer.
-PARAMETER_DISCLOSURE_OPEN = (
-    '<details class="parameter-reference">\n'
-    '<summary>Model parameter reference (19 parameters)</summary>'
+# The manuscript may use a plain HTML <details> disclosure so that a long table
+# (the parameter glossary) is collapsible both on GitHub and in the interactive
+# paper. Only these exact shapes pass through; every other raw HTML block in
+# the manuscript stays escaped by PaperRenderer.
+DISCLOSURE_BLOCK = re.compile(
+    r'^<details(?: class="(?P<cls>[\w-]+)")?>\s*'
+    r'<summary>(?P<summary>[^<>]*)</summary>\s*$'
 )
-PARAMETER_DISCLOSURE_CLOSE = '</details>'
+DISCLOSURE_CLOSE = re.compile(r'^</details>\s*$')
 
 
 def manuscript_math(md):
@@ -63,6 +66,22 @@ class PaperRenderer(mistune.HTMLRenderer):
         super().__init__(escape=True)
         self.plots = plots
         self.used_plots = {}
+        self.open_disclosures = 0
+
+    def block_html(self, html):
+        """Allow a collapsible <details> disclosure; escape all other HTML."""
+        text = html.strip()
+        opened = DISCLOSURE_BLOCK.match(text)
+        if opened:
+            self.open_disclosures += 1
+            cls = opened.group("cls")
+            attributes = f' class="{escape(cls)}"' if cls else ""
+            return (f'<details{attributes}>\n'
+                    f'<summary>{escape(opened.group("summary"))}</summary>\n')
+        if DISCLOSURE_CLOSE.match(text) and self.open_disclosures > 0:
+            self.open_disclosures -= 1
+            return '</details>\n'
+        return super().block_html(html)
 
     def block_code(self, code, info=None):
         if info and info.strip() == "math":
@@ -109,21 +128,8 @@ def render_paper(markdown: str, plots: dict) -> tuple[str, dict]:
 
     add_toc_hook(md, min_level=2, max_level=3, heading_id=heading_id)
     body, state = md.parse(markdown)
-
-    escaped_open = '<p>' + escape(PARAMETER_DISCLOSURE_OPEN) + '</p>'
-    escaped_close = '<p>' + escape(PARAMETER_DISCLOSURE_CLOSE) + '</p>'
-    disclosure_start = body.find(escaped_open)
-    if disclosure_start >= 0:
-        disclosure_end = body.find(escaped_close, disclosure_start + len(escaped_open))
-        if disclosure_end < 0:
-            raise ValueError('Parameter reference disclosure is not closed')
-        body = (
-            body[:disclosure_start]
-            + PARAMETER_DISCLOSURE_OPEN
-            + body[disclosure_start + len(escaped_open):disclosure_end]
-            + PARAMETER_DISCLOSURE_CLOSE
-            + body[disclosure_end + len(escaped_close):]
-        )
+    if renderer.open_disclosures:
+        raise ValueError('A <details> disclosure in the manuscript is not closed')
 
     note_pattern = re.compile(
         r'(<figure class="interactive-figure" id="(?P<identifier>[^"]+)"'
@@ -188,7 +194,7 @@ def build(root: Path, output: Path, refresh=False) -> Path:
     output.mkdir(parents=True, exist_ok=True)
     assets = output / "assets"
     assets.mkdir(exist_ok=True)
-    for name in ("paper.css", "paper.js"):
+    for name in ("paper.css", "paper.js", "model.js", "explore.js"):
         shutil.copyfile(ASSETS / name, assets / name)
     # Package the plotting runtime locally: opening index.html needs no Python.
     plotly_path = assets / "plotly.min.js"
@@ -248,7 +254,24 @@ class PreviewState:
         return {"version": self.version, "building": self.building, "error": self.error}
 
 
-def watch(root: Path, output: Path, state: PreviewState, stop: threading.Event, interval=0.8):
+def build_in_subprocess(root: Path, output: Path) -> None:
+    """Rebuild with a fresh interpreter so edits to this package take effect.
+
+    The in-process watcher would otherwise keep serving pages rendered by the
+    module version that was imported when the preview started.
+    """
+    completed = subprocess.run(
+        [sys.executable, "-m", "modeling_token_demand.paper", "build",
+         "--root", str(root), "--output", str(output)],
+        cwd=root, capture_output=True, text=True,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip().splitlines()
+        raise RuntimeError(detail[-1] if detail else f"exit status {completed.returncode}")
+
+
+def watch(root: Path, output: Path, state: PreviewState, stop: threading.Event, interval=0.8,
+          builder=None):
     signature = watch_signature(root)
     while not stop.wait(interval):
         try:
@@ -257,7 +280,7 @@ def watch(root: Path, output: Path, state: PreviewState, stop: threading.Event, 
                 continue
             signature = updated
             state.building, state.error = True, ""
-            build(root, output)
+            (builder or build)(root, output)
             # Keep the pre-build signature: an edit made during a long refresh
             # must be noticed on the next pass, not silently marked as rendered.
             state.version += 1
@@ -301,10 +324,12 @@ def serve(root: Path, output: Path, port=8000):
     state, stop = PreviewState(), threading.Event()
     handler = partial(PreviewHandler, directory=str(output), state=state)
     server = ThreadingHTTPServer(("127.0.0.1", port), handler)
-    thread = threading.Thread(target=watch, args=(root, output, state, stop), daemon=True)
+    thread = threading.Thread(target=watch, args=(root, output, state, stop),
+                              kwargs={"builder": build_in_subprocess}, daemon=True)
     thread.start()
     print(f"Local paper: http://127.0.0.1:{server.server_port}\n"
-          "Watching README.md, figure images, and model sources. Ctrl-C to stop.", flush=True)
+          "Watching README.md, figure images, page assets, and model sources; "
+          "each rebuild runs in a fresh process. Ctrl-C to stop.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -396,3 +396,42 @@ def test_preview_status_endpoint_and_no_directory_listing(tmp_path):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_details_disclosure_allowlist_is_structural():
+    """The <details> pass-through must not depend on one exact summary text."""
+    html, _ = paper.render_paper(
+        '# Paper\n\n<details class="parameter-reference">\n<summary>Any summary</summary>\n\n'
+        '| a | b |\n|---|---|\n| 1 | 2 |\n\n</details>\n', {})
+    assert '<details class="parameter-reference">\n<summary>Any summary</summary>' in html
+    assert html.count('</details>') == 1 and '<table>' in html
+    # Attributes other than a class name, nested tags, and event handlers stay escaped.
+    for hostile in ('<details open><summary>x</summary>',
+                    '<details class="a" onclick="alert(1)"><summary>x</summary>',
+                    '<details class="a"><summary><b>x</b></summary>'):
+        escaped, _ = paper.render_paper(f'# Paper\n\n{hostile}\n\ntext\n\n</details>\n', {})
+        assert '<details' not in escaped and '&lt;details' in escaped
+    with pytest.raises(ValueError):
+        paper.render_paper('# Paper\n\n<details class="a">\n<summary>x</summary>\n\ntext\n', {})
+
+
+def test_build_includes_the_plot_builder_and_its_assets(tmp_path, monkeypatch):
+    (tmp_path / 'README.md').write_text('# Paper\n\nText.')
+    monkeypatch.setattr(paper, 'load_plot_data', lambda root, refresh=False: {})
+    output = tmp_path / 'build/paper'
+    paper.build(tmp_path, output)
+    html = (output / 'index.html').read_text()
+    assert 'id="explore"' in html and 'href="#explore"' in html
+    for asset in ('model.js', 'explore.js', 'paper.js', 'paper.css'):
+        assert (output / 'assets' / asset).is_file(), asset
+        assert f'assets/{asset}' in html
+    # The browser model is a faithful copy of the reference calibration.
+    model = (output / 'assets/model.js').read_text()
+    assert 'lambda: 12, nu: 1.25, a: 4, alpha: 0.5, h0: 0.03, h1: 0.05, beta: 0.5' in model
+
+
+def test_subprocess_builder_reports_failures(tmp_path):
+    (tmp_path / 'README.md').write_text('# Paper\n\nText.')
+    with pytest.raises(RuntimeError):
+        # The output directory may not be the source directory.
+        paper.build_in_subprocess(tmp_path, tmp_path)

@@ -133,3 +133,54 @@ This short draft deliberately stops after the six comparative statics. It does n
 The manuscript is about 1,800 words and contains six figures. The notebook exports 24 figures and again passes all optimizer and boundary audits. The Python suite passes 70 tests with one environment-dependent live-server test skipped; all 11 JavaScript interaction tests pass. The HTML build contains six interactive figure hosts, no broken static images, no math rendering errors, and no horizontal overflow in the checked desktop layout.
 
 The final print edition is 11 pages and identifies manuscript commit `48632d9` in its metadata and footer. All pages were rendered and inspected. Equations, tables, figures, headers, footers, and page transitions are legible, with no clipping or repeated browser controls. Each footer links to the exact committed manuscript source.
+
+## Round 5 — external review of the intro/TL;DR draft (2026-09-02)
+
+Scope: README.md at commit `2fade6f` (branch `codex/intro-tldr`). Every number quoted in the text was re-derived from `figures/paradigms.json` and by re-solving with the packaged optimizer. The browser port (`paper_assets/model.js`) reproduces all 48 audited curves to relative objective error below 1e-13 and demand/policy error below 2e-6, so the interactive builder and the paper agree.
+
+### Verdict
+
+Short, readable, mechanism clear: capability, efficiency, or price moves demand through (adoption or supervisory leverage) × tokens per work unit, and the active constraint picks the margin. The two-regime split is the contribution and it survives numerical audit. Three weaknesses. (1) The two most general results were dropped between Rounds 3 and 4 (price–efficiency identity, adoption-saturation bound); without them the draft reads as "here are curves" when it can state exact conditions. (2) Every long-run claim in Section 2 and the ceilings in Figures 4 and 8b are consequences of the effort floor $x\geq1$, a units convention; the text does not flag that. (3) Prose needs a copy-edit (list at the end).
+
+### Quantitative check
+
+All quoted numbers match the data: $c^W_{\rm res}(0.8)\in[0.29,0.61]$, $c^W_{\rm res}(30)=14.6/18.9/22.2$; $\rho^*(30)/\rho^*(1)=5.3/15.8/1.8$; $c^H_{\rm res}(0.8)\in[0.20,0.57]$, $c^H_{\rm res}(30)\in[39.4,70.7]$. Two things the text should say:
+
+- Figure 1 stars: the low-hurdle peak is at $m=0.1$ and the high-hurdle peak at $m=30$, both edges of the plotted range, not interior maxima. Say so or drop those two stars.
+- In both reservation-price curves, 45–50 of the 88 points per line sit on $x=1$. The Figure 4 "plateau" and the Figure 8b "bend toward $b$" are floor effects. Below are the closed forms.
+
+### Results that can be stated exactly
+
+1. **Price–efficiency identity.** $\eta$ and $x$ enter only through $\eta x$ in $P$ and $cx$ in cost, so $u(s,x;\eta,c)=bP(s,\eta x)-(c/\eta)(\eta x)-wh(s)/s$. Hence $x^*(\eta,c)=x^*(1,c/\eta)/\eta$, $D(\eta,c)=D(1,c/\eta)/\eta$, $R(\eta,c)=R(1,c/\eta)$; identical for $J$. Corollary: the demand index in Figure 2b equals the spending index in Figure 3d read at $c=1/\eta$ (checked: 1.0601 vs 1.0601 at $\eta=2$ reference; 1.8750 vs 1.8750 hard execution; both regimes). Exact wherever the floor does not bind (it binds for low inference returns at $c\geq2$). This is Round 1's strongest result; one displayed equation replaces most of the 2.2/3.2 prose and tells the reader that an efficiency release and a price cut are the same experiment for the customer, and differ for the provider only by the factor $\eta$ in quantity.
+2. **Adoption-saturation bound** (Round 3 corollary). $D=WAx$ with $A\leq1$: if $x^*$ falls to a fraction $r$ of its baseline, demand falls whenever baseline adoption exceeds $r$. Reference: $A(1)=0.455$, $x^*(1)=2.85$, floor gives $r=0.35$, so $D(\infty)/D(1)\leq0.77$ (data: 0.74 at $m=30$). Functional-form free; explains Figure 1 without the logistic.
+3. **Long-run work-limited demand is pinned by the floor.** $A\to1$, $x^*\to1$, so $D(\infty)=W$ in every industry; the level in Section 2 is set by $x_{\min}=1$. Say what the floor is (tokens needed to emit the output, which $\eta$ does not reduce). If minimal output tokens fall over time, long-run work-limited demand falls with them.
+4. **Reservation-price ceilings.** Work-limited: $m\to\infty$ gives $P\to1$, $h(s)/s\to0$ ($\beta<1$), $x=1$, so $u^*\to b-c$ and $c^W_{\rm res}(\infty)=b-u^*(1,c_0)$: 19.7 reference, 30.6 hard execution, 18.1 slow review (data at $m=3000$: 18.6, 28.9, 17.6). The provider ends up charging the value of a work unit minus the surplus the user must keep. Attention-limited: $J^*=\ell(s)[bP-c]-w$ with $\ell\to\infty$ forces $bP-c\to0$, so $c^H_{\rm res}\to b$ (reference at $m=3000$: 91.3; $\beta=0.95$: 55.4, converging like $m^{0.05}$). One line each; they explain Figures 4 and 8b better than the current prose. 2.4 says "eventually plateaus" while the curve is at 14.6 of 19.7 at $m=30$; say "approaches $b-u^*_0$".
+5. **Jevons condition, work regime.** Envelope: $du^*/dc=-x^*$. With logistic adoption, $d\ln A/d\ln c=-(1-A)\,c\,x^*/\sigma$. Spending rises as price falls iff $(1-A)\,c\,x^*/\sigma+|\varepsilon_x|>1$, $\varepsilon_x=d\ln x^*/d\ln c$. Reference at $c=1$: $0.39+0.77=1.16$ (finite differences agree to four digits): mild Jevons near baseline, gone once $A$ rises. This is the sentence in 2.3 in symbols: non-adopted share × token spend per work unit ÷ hurdle spread. Attention regime has no adoption term, so it needs $|d\ln\ell/d\ln c+\varepsilon_x|>1$; that is why 3.3 is "harder".
+6. **At the floor, demand and attention value grow together.** $D=H\ell(s^*)$ and $\rho^*\approx b\,\ell(s^*)$, both $\propto m^{1-\beta}$. One sentence links 3.1 and 3.4.
+
+### Modeling assumptions
+
+- Capability as a horizon multiplier ($q$, $r$ depend on $s/m$) is the METR task-horizon framing (Kwa et al. 2025; horizon doubling roughly every 7 months). Cite it: it anchors the functional form and maps $m$ to time ($m=30$ is about five doublings).
+- $h(s)=h_0+h_1[(1+s)^\beta-1]$ is $h_0+h_1\beta s$ for $s\ll1$ regardless of $\beta$; the $s^\beta$ behaviour appears only for $s\gg1$. Reference $s^*(1)=0.41$, so the figures live in the transition zone and the $m^{1-\beta}$ asymptotics in 3.4 are a large-$s$ statement. The parameter table's "through the term $s^\beta$" is inaccurate.
+- Adoption depends on $u^*$ alone and every adopter uses the same $(s^*,x^*)$; heterogeneity is only in the hurdle. Clean, but say that task heterogeneity in $s$ or $b$ is deliberately absent, otherwise readers ask why adoption does not change the task mix.
+- One attempt, review paid regardless, no retry (Round 1 decision). Keep one sentence; retries would change tokens per success and the Figure 5 shapes.
+- Work-limited ignores review capacity; attention-limited ignores $W$. Round 1's shadow-price formulation (charge $w+\tau$ per review hour) is the bridge. No need to solve it; one paragraph on when each regime applies (compare $W A h(s^*)/s^*$ with $H$) makes the two sections one model.
+- $H$ fixed while $\rho^*$ rises 5–16×: a firm would hire reviewers. That is the complementarity result (labor demand for review rises with $m$ when $\beta<1$) and the link to the labor-share question; one sentence in 3.4 or the conclusion.
+- $\phi$ is a random variable, not a parameter; "19 parameters" counts $s$, $x$, $\phi$.
+- 1.7 heading says revenue, text says spending, 2.3 uses both. Define once: spending by users equals revenue to providers.
+
+### Exposition
+
+- TL;DR: bullet 1 lacks a period after the link; bullets 4 and 6 overlap; each bullet should carry its mechanism in one clause.
+- Sections 2 and 3 run capability → efficiency → price symmetrically. Close with a six-cell sign table (regime × lever: demand, spending, ceiling); that is the figure people will screenshot.
+- Normalization is explained in three captions; once suffices.
+
+### Line edits
+
+"user's adoption" → "users'"; "has an organizational mandate" → "have"; "userwould" → "user would"; "Figure 1a) marks" → "Figure 1(a) mark"; "token savings effect dominate" → "the token-saving effect dominates"; "significant adoptions" → "adoption"; "(green and orange line)" → "lines"; "low-ish" and "pretty striking" are informal; "Similar to Figure 4, here we also ask the question of" → "As in Figure 4, we ask"; "made explicitly shortly" → "made explicit shortly"; last sentence of 1.4 lacks a period.
+
+### Project
+
+- Quoted numbers are typed by hand and have drifted before; have the build inject them from `paradigms.json` (placeholder syntax in README.md, resolved by `paper.py`).
+- Preview server rebuilt in-process, so edits to `paper.py` were not picked up until restart (root cause of the "disclosure not collapsible" report). Fixed this round: rebuilds run in a subprocess, and `<details>` pass-through is a strict allowlist in the renderer instead of string surgery on rendered HTML.
+- Added: browser-side model (`model.js`, Node-tested against the audited Python curves), plot builder section (`explore.js`), GitHub Pages workflow. Suites: 81 Python, 83 Node.

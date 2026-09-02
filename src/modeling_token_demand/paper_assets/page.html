@@ -10,13 +10,15 @@
     window.MathJax = {
       tex: {inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]'], ['$$', '$$']]},
       options: {skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                ignoreHtmlClass: 'chart-panels|chart-legend'},
+                ignoreHtmlClass: 'chart-panels|chart-legend|explore-controls'},
       startup: {typeset: true}
     };
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
   <script defer src="assets/plotly.min.js"></script>
   <script defer src="assets/paper.js"></script>
+  <script defer src="assets/model.js"></script>
+  <script defer src="assets/explore.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#paper">Skip to paper</a>
@@ -30,6 +32,7 @@
       <nav aria-label="Paper contents">
         <div class="nav-heading">IN THIS PAPER</div>
         {{TOC}}
+        <ul class="toc-extra"><li><a href="#explore">Explore the model</a></li></ul>
       </nav>
       <p class="nav-note">One manuscript.<br>Two ways to read it.</p>
     </aside>
@@ -37,6 +40,24 @@
       <div class="edition-label">RESEARCH NOTE <span>INTERACTIVE EDITION</span></div>
       <div class="reader-note">The complete manuscript, with explorable figures. Toggle a line to hide it; double-click to isolate it. Text and equations come directly from the README.</div>
       <article>{{BODY}}</article>
+      <section id="explore" class="explore" aria-labelledby="explore-heading">
+        <h2 id="explore-heading">Explore the model</h2>
+        <p class="explore-intro">Build your own comparative statics. Every point re-solves the user’s optimal scope <em>s</em> and effort <em>x</em> in your browser, using the same model and search bounds as the paper’s figures. Pick a regime, the variable to sweep on the x-axis, up to four outcomes to plot, and any number of industries with your own parameters. The paper’s eight figures are available as starting points.</p>
+        <div class="explore-controls">
+          <div class="explore-toolbar"></div>
+          <div class="explore-grid">
+            <div class="explore-config"></div>
+            <div class="explore-industries"></div>
+          </div>
+        </div>
+        <div class="explore-output">
+          <div class="chart-legend"></div>
+          <div class="chart-panels"></div>
+          <p class="explore-status" role="status"></p>
+          <p class="explore-warnings" role="alert"></p>
+          <p class="explore-help">Click a line label to toggle; double-click to isolate. Drag to zoom; double-click a chart to reset. The camera icon downloads a panel as PNG. Solutions are computed with a JavaScript port of the Python solver; the port is tested to agree with the paper’s audited results to relative error below 10⁻⁵.</p>
+        </div>
+      </section>
     </main>
   </div>
   <script type="application/json" id="chart-data">{{CHART_DATA}}</script>

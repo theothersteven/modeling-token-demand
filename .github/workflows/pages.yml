@@ -1,0 +1,56 @@
+# Build the interactive edition of README.md and publish it with GitHub Pages.
+#
+# One-time setup in the repository settings: Pages → Build and deployment →
+# Source: "GitHub Actions". The site is then served at
+# https://theothersteven.github.io/modeling-token-demand/ on every push to main.
+name: Publish paper
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install the paper toolchain
+        run: python -m pip install -e ".[paper]"
+      - name: Check the browser model against the audited Python results
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/model_js.test.cjs tests/paper_controls.test.cjs
+      - name: Build the page
+        # figures/interactive.json is committed; the build only re-runs the
+        # notebook if the model sources changed since it was exported.
+        run: |
+          token-demand-paper build --output build/paper
+          touch build/paper/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/paper
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
